@@ -439,6 +439,25 @@
             ]
         },
         {
+            "name": "azureAIFoundry",
+            "models": [
+                {
+                    "label": "gpt-4o",
+                    "name": "gpt-4o",
+                    "description": "GPT-4o in Azure AI Foundry",
+                    "input_cost": 0.0000025,
+                    "output_cost": 0.00001
+                },
+                {
+                    "label": "gpt-4o-mini",
+                    "name": "gpt-4o-mini",
+                    "description": "GPT-4o Mini in Azure AI Foundry",
+                    "input_cost": 0.00000015,
+                    "output_cost": 0.0000006
+                }
+            ]
+        },
+        {
             "name": "azureChatOpenAI_LlamaIndex",
             "models": [
                 {

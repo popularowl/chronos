@@ -1,9 +1,9 @@
-import { AzureOpenAI, AzureOpenAIInput, OpenAIInput } from '@langchain/openai'
+import { AzureChatOpenAI as LangchainAzureChatOpenAI, AzureOpenAIInput, ChatOpenAIFields } from '@langchain/openai'
 import { BaseCache } from '@langchain/core/caches'
-import { BaseLLMParams } from '@langchain/core/language_models/llms'
-import { ICommonObject, INode, INodeData, INodeOptionsValue, INodeParams } from '../../../src/Interface'
+import { ICommonObject, IMultiModalOption, INode, INodeData, INodeOptionsValue, INodeParams } from '../../../src/Interface'
 import { getBaseClasses, getCredentialData, getCredentialParam } from '../../../src/utils'
 import { getModels, MODEL_TYPE } from '../../../src/modelLoader'
+import { AzureAIFoundryChatOpenAI } from './ChronosAzureAIFoundry'
 
 class AzureAIFoundry_LLMs implements INode {
     label: string
@@ -23,9 +23,9 @@ class AzureAIFoundry_LLMs implements INode {
         this.version = 1.0
         this.type = 'AzureAIFoundry'
         this.icon = 'Azure.svg'
-        this.category = 'LLMs'
-        this.description = 'Azure AI Foundry LLM with private endpoint support using Managed Identity or API Key'
-        this.baseClasses = [this.type, ...getBaseClasses(AzureOpenAI)]
+        this.category = 'Chat Models'
+        this.description = 'Azure AI Foundry Chat Model with private endpoint support using Managed Identity or API Key'
+        this.baseClasses = [this.type, ...getBaseClasses(LangchainAzureChatOpenAI)]
         this.credential = {
             label: 'Connect Credential',
             name: 'credential',
@@ -44,7 +44,7 @@ class AzureAIFoundry_LLMs implements INode {
                 name: 'modelName',
                 type: 'asyncOptions',
                 loadMethod: 'listModels',
-                default: 'gpt-4'
+                default: 'gpt-4o'
             },
             {
                 label: 'Temperature',
@@ -100,7 +100,7 @@ class AzureAIFoundry_LLMs implements INode {
     //@ts-ignore
     loadMethods = {
         async listModels(): Promise<INodeOptionsValue[]> {
-            return await getModels(MODEL_TYPE.LLM, 'azureAIFoundry')
+            return await getModels(MODEL_TYPE.CHAT, 'azureAIFoundry')
         }
     }
 
@@ -120,11 +120,12 @@ class AzureAIFoundry_LLMs implements INode {
         const azureAIFoundryApiKey = getCredentialParam('azureAIFoundryApiKey', credentialData, nodeData)
         const azureAIFoundryDeploymentName = getCredentialParam('azureAIFoundryDeploymentName', credentialData, nodeData)
         const azureAIFoundryApiVersion = getCredentialParam('azureAIFoundryApiVersion', credentialData, nodeData)
+        const azureClientId = getCredentialParam('azureClientId', credentialData, nodeData)
 
         const cache = nodeData.inputs?.cache as BaseCache
 
         // Prepare configuration based on authentication method
-        let obj: Partial<AzureOpenAIInput> & BaseLLMParams & Partial<OpenAIInput> = {
+        const obj: ChatOpenAIFields & Partial<AzureOpenAIInput> = {
             temperature: parseFloat(temperature),
             modelName,
             azureOpenAIApiDeploymentName: azureAIFoundryDeploymentName,
@@ -136,17 +137,24 @@ class AzureAIFoundry_LLMs implements INode {
             // For Managed Identity, we use azureADTokenProvider
             // The @langchain/openai library will use DefaultAzureCredential automatically
             // when azureADTokenProvider is set and no API key is provided
-            obj.azureOpenAIBasePath = azureAIFoundryEndpoint?.replace(/\/$/, '')
+            obj.azureOpenAIEndpoint = azureAIFoundryEndpoint?.replace(/\/$/, '')
 
             // Import and configure Azure Identity for Managed Identity
             const { DefaultAzureCredential, getBearerTokenProvider } = require('@azure/identity')
-            const credential = new DefaultAzureCredential()
+
+            // Configure credential options for User-Assigned Managed Identity if Client ID is provided
+            const credentialOptions: any = {}
+            if (azureClientId) {
+                credentialOptions.managedIdentityClientId = azureClientId
+            }
+
+            const credential = new DefaultAzureCredential(credentialOptions)
             const scope = 'https://cognitiveservices.azure.com/.default'
             obj.azureADTokenProvider = getBearerTokenProvider(credential, scope)
         } else {
             // For API Key authentication
             obj.azureOpenAIApiKey = azureAIFoundryApiKey
-            obj.azureOpenAIBasePath = azureAIFoundryEndpoint?.replace(/\/$/, '')
+            obj.azureOpenAIEndpoint = azureAIFoundryEndpoint?.replace(/\/$/, '')
         }
 
         if (maxTokens) obj.maxTokens = parseInt(maxTokens, 10)
@@ -156,7 +164,14 @@ class AzureAIFoundry_LLMs implements INode {
         if (timeout) obj.timeout = parseInt(timeout, 10)
         if (cache) obj.cache = cache
 
-        const model = new AzureOpenAI(obj)
+        const multiModalOption: IMultiModalOption = {
+            image: {
+                allowImageUploads: false
+            }
+        }
+
+        const model = new AzureAIFoundryChatOpenAI(nodeData.id, obj)
+        model.setMultiModalOption(multiModalOption)
         return model
     }
 }
