@@ -2,10 +2,10 @@
 
 [Chronos](https://github.com/popularowl/chronos) is a fork of [Flowise](https://github.com/FlowiseAI/Flowise) - with the goal to maintain a lean visual AI builder tool, focused on the local and self hosted deployments.
 
--   [⚡ Quick Start](#-quick-start)
--   [🐳 Docker](#-docker)
--   [🌱 Env Variables](#-env-variables)
--   [📄 License](#-license)
+-   [Quick Start](#quick-start)
+-   [Docker](#docker)
+-   [Env Variables](#env-variables)
+-   [License](#license)
 
 ## Quick Start
 
@@ -31,7 +31,7 @@ docker stop chronos
 
 ## Env Variables
 
-Chronos allows configuration via set of supported environment variables. See example [env variables](chronos_app/.env.template).
+Chronos allows configuration via set of supported environment variables. See example [env variables](chronos_app/docker/.env.example).
 
 ## License
 
