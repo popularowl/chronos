@@ -1,6 +1,7 @@
 # Chronos - Visual AI agent builder
 
-[Chronos](https://github.com/popularowl/chronos) is a fork of [Flowise](https://github.com/FlowiseAI/Flowise) - with the goal to maintain a lean visual AI builder tool, focused on the local and self hosted deployments.
+[Chronos](https://github.com/popularowl/chronos) project is a fork of [Flowise](https://github.com/FlowiseAI/Flowise) - with the goal to maintain a lean visual AI agent builder tool, focused on the local and self hosted deployments.
+
 
 -   [Quick Start](#quick-start)
 -   [Docker](#docker)
@@ -9,7 +10,7 @@
 
 ## Quick Start
 
-Chronos is designed for local and self hosted deployments. Most convinient way to get started is to use docker compose.
+Chronos is tailored for the local and self hosted deployments. Most convinient way to get started with the app is to use the provided example docker compose file.
 
 ```bash
 cd chronos_app/docker
