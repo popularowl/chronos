@@ -24,8 +24,9 @@ Use the local container image in [docker compose](https://docs.docker.com/compos
 
 ```bash
 cd chronos_app/docker
-docker compose up -d
+docker compose up  # or docker compose up -d
 docker compose ls
+docker-compose down # or docker-compose down --volumes
 # chronos is now accessable on http://localhost:3001
 ```
 

@@ -1,13 +1,4 @@
 services:
-    postgres:
-      image: postgres:15
-      volumes:
-        - local_data:/var/lib/postgresql/data
-      environment:
-        POSTGRES_DB: chronos
-        POSTGRES_USER: chronos
-        POSTGRES_PASSWORD: secret
-
     chronos:
       image: chronos:local
       environment:
@@ -17,10 +8,35 @@ services:
         DATABASE_NAME: chronos
         DATABASE_USER: chronos
         DATABASE_PASSWORD: secret
+        DEBUG: true
       ports:
         - "3001:3000"
       depends_on:
         - postgres
 
+    postgres:
+      image: postgres:15
+      ports:
+        - "5432:5432"
+      volumes:
+        - local_data:/var/lib/postgresql/data
+      environment:
+        POSTGRES_DB: chronos
+        POSTGRES_USER: chronos
+        POSTGRES_PASSWORD: secret
+
+    ## example for running pgvector data store
+    # postgresv:
+    #   image: pgvector/pgvector:pg17
+    #   ports:
+    #     - "5435:5432"
+    #   volumes:
+    #     - vector_data:/var/lib/postgresql/data
+    #   environment:
+    #     POSTGRES_DB: vector
+    #     POSTGRES_USER: chronos
+    #     POSTGRES_PASSWORD: secret
+
 volumes:
   local_data:
+  #vector_data:
