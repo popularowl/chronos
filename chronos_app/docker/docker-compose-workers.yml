@@ -1,0 +1,80 @@
+services:
+  # Main server - runs migrations first
+  chronos-server:
+    image: chronos:local
+    ports:
+      - "3001:3000"
+    environment:
+      MODE: queue
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: chronos
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_HOST: redis
+      QUEUE_NAME: chronos-queue
+      ENABLE_BULLMQ_DASHBOARD: true
+      CHRONOS_SECRETKEY_OVERWRITE: "cHr0n0s-S3cr3tK3y-32CharsLong!"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  # Worker nodes - wait for server to be healthy (migrations complete)
+  chronos-worker:
+    image: chronos:local
+    command: pnpm start-worker
+    environment:
+      MODE: queue
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: chronos
+      DATABASE_USER: postgres
+      DATABASE_PASSWORD: postgres
+      REDIS_HOST: redis
+      QUEUE_NAME: chronos-queue
+      WORKER_CONCURRENCY: 10
+      CHRONOS_SECRETKEY_OVERWRITE: "cHr0n0s-S3cr3tK3y-32CharsLong!"
+    depends_on:
+      chronos-server:
+        condition: service_healthy
+    deploy:
+      replicas: 2
+
+  # Redis for queue management
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+  # PostgreSQL database
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: chronos
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  redis_data:
+  postgres_data:

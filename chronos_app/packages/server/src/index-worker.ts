@@ -47,21 +47,21 @@ async function run() {
             const queueManager = QueueManager.getInstance()
             if (predictionWorkerId) {
                 const predictionWorker = queueManager.getQueue('prediction').getWorker()
-                logger.info(`Shutting down Flowise Prediction Worker ${predictionWorkerId}...`)
+                logger.info(`Shutting down Chronos Prediction Worker ${predictionWorkerId}...`)
                 await predictionWorker.close()
             }
             if (upsertionWorkerId) {
                 const upsertWorker = queueManager.getQueue('upsert').getWorker()
-                logger.info(`Shutting down Flowise Upsertion Worker ${upsertionWorkerId}...`)
+                logger.info(`Shutting down Chronos Upsertion Worker ${upsertionWorkerId}...`)
                 await upsertWorker.close()
             }
         } catch (error) {
-            logger.error('There was an error shutting down Flowise Worker...', error)
+            logger.error('There was an error shutting down Chronos Worker...', error)
             throw error
         }
     })
 
-    logger.info('Starting Flowise Worker...')
+    logger.info('Starting Chronos Worker...')
 
     const { appDataSource, telemetry, componentNodes, cachePool, abortControllerPool, usageCacheManager } = await prepareData()
 

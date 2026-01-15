@@ -28,6 +28,13 @@ docker compose up  # or docker compose up -d
 docker compose ls
 docker-compose down # or docker-compose down --volumes
 # chronos is now accessable on http://localhost:3001
+
+# run the docker compose which shows how to operate Chronos in queue / worker mode
+docker compose -f docker-compose-workers.yml up 
+# scale workers if needed
+docker compose up -d --scale chronos-worker=5
+# if enable you will see BullMQ dashboard at http://localhost:3001/admin/queues
+
 ```
 
 ## Env Variables
