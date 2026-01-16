@@ -43,6 +43,9 @@ services:
       REDIS_HOST: redis
       QUEUE_NAME: chronos-queue
       WORKER_CONCURRENCY: 10
+      # WORKER_DRAIN_DELAY: 100         # ms - how often idle workers check for jobs (default: 100)
+      # WORKER_STALLED_INTERVAL: 5000   # ms - how often to check for stalled jobs (default: 5000)
+      # WORKER_LOCK_DURATION: 60000     # ms - how long a job is locked to a worker (default: 60000)
       CHRONOS_SECRETKEY_OVERWRITE: "cHr0n0s-S3cr3tK3y-32CharsLong!"
     depends_on:
       chronos-server:

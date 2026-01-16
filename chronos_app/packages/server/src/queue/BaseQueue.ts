@@ -6,6 +6,9 @@ const QUEUE_REDIS_EVENT_STREAM_MAX_LEN = process.env.QUEUE_REDIS_EVENT_STREAM_MA
     ? parseInt(process.env.QUEUE_REDIS_EVENT_STREAM_MAX_LEN)
     : 10000
 const WORKER_CONCURRENCY = process.env.WORKER_CONCURRENCY ? parseInt(process.env.WORKER_CONCURRENCY) : 100000
+const WORKER_DRAIN_DELAY = process.env.WORKER_DRAIN_DELAY ? parseInt(process.env.WORKER_DRAIN_DELAY) : 100
+const WORKER_STALLED_INTERVAL = process.env.WORKER_STALLED_INTERVAL ? parseInt(process.env.WORKER_STALLED_INTERVAL) : 5000
+const WORKER_LOCK_DURATION = process.env.WORKER_LOCK_DURATION ? parseInt(process.env.WORKER_LOCK_DURATION) : 60000
 const REMOVE_ON_AGE = process.env.REMOVE_ON_AGE ? parseInt(process.env.REMOVE_ON_AGE) : -1
 const REMOVE_ON_COUNT = process.env.REMOVE_ON_COUNT ? parseInt(process.env.REMOVE_ON_COUNT) : -1
 
@@ -81,7 +84,10 @@ export abstract class BaseQueue {
                 },
                 {
                     connection: this.connection,
-                    concurrency
+                    concurrency,
+                    drainDelay: WORKER_DRAIN_DELAY,
+                    stalledInterval: WORKER_STALLED_INTERVAL,
+                    lockDuration: WORKER_LOCK_DURATION
                 }
             )
 
