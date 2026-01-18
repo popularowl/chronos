@@ -109,6 +109,7 @@
 .DS_Store
 local_data
 .claude
+docs
 AGENTS.md
 CLAUDE.md
 GEMINI.md

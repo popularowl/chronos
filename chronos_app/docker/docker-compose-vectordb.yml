@@ -1,0 +1,90 @@
+# Docker Compose example for Chronos with Vector Database support
+# This setup includes Qdrant (vector store) and Ollama (local embeddings)
+# for a complete self-hosted RAG (Retrieval Augmented Generation) pipeline.
+#
+# Usage:
+#   cd chronos_app/docker
+#   docker compose -f docker-compose-vectordb.yml up
+#
+# After startup, pull the embedding model:
+#   docker compose -f docker-compose-vectordb.yml exec ollama ollama pull nomic-embed-text
+#
+# Then configure in Chronos UI (http://localhost:3001):
+#   - Vector Store: Qdrant, URL: http://qdrant:6333
+#   - Embeddings: Ollama, URL: http://ollama:11434, Model: nomic-embed-text
+#
+# See https://www.popularowl.com/chronos/vector-database-with-local-embedings/
+
+services:
+  chronos:
+    image: chronos:local
+    environment:
+      DATABASE_TYPE: postgres
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
+      DATABASE_NAME: chronos
+      DATABASE_USER: chronos
+      DATABASE_PASSWORD: secret
+      DEBUG: true
+    ports:
+      - "3001:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      qdrant:
+        condition: service_started
+
+  postgres:
+    image: postgres:15
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: chronos
+      POSTGRES_USER: chronos
+      POSTGRES_PASSWORD: secret
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chronos"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # Qdrant vector database for document embeddings
+  # High-performance, production-ready vector store
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"  # REST API
+      - "6334:6334"  # gRPC API
+    volumes:
+      - qdrant_data:/qdrant/storage
+    environment:
+      QDRANT__SERVICE__GRPC_PORT: 6334
+      # Uncomment to enable API key authentication:
+      # QDRANT__SERVICE__API_KEY: your-secure-api-key
+
+  # Ollama for local embedding generation (no external model APIs required)
+  # Supports privacy-friendly, fully self-hosted embeddings
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    # Note: After container starts, run:
+    # docker compose -f docker-compose-vectordb.yml exec ollama ollama pull nomic-embed-text
+
+  # optional: Redis for embedding cache (improves performance)
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+
+volumes:
+  postgres_data:
+  qdrant_data:
+  ollama_data:
+  redis_data:
