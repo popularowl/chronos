@@ -108,6 +108,7 @@
 ## local
 .DS_Store
 local_data
+Dockerfile
 .claude
 docs
 AGENTS.md

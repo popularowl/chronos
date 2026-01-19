@@ -23,6 +23,7 @@ BLOB_STORAGE_PATH=/root/.chronos/storage
 
 Multiple examples exists in this directory to to showcase more complex Cronos AI agent builder deployments. Including workers / queue mode; vector database and self hosted ollama setup; and others:
 
+- [single service deployment](./docker-compose.yml)
 - [multiple worker example](./docker-compose-workers.yml)
 - [vector embeddings with self hosted models](./docker-compose-vectordb.yml)
 
