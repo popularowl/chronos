@@ -32,7 +32,7 @@ WORKDIR /app
 COPY . .
 
 # Install production dependencies only (skip postinstall hooks like husky) and build
-RUN pnpm install && pnpm build
+RUN pnpm install && pnpm build && CI=true pnpm prune --prod
 
 # =============================================================================
 # Stage 2: Production - Minimal runtime image
@@ -53,13 +53,25 @@ ENV NODE_ENV=production
 
 WORKDIR /app
 
-# Copy only what's needed from builder (after prune)
+# Copy workspace config and dependencies
 COPY --from=builder /app/package.json ./
 COPY --from=builder /app/pnpm-lock.yaml ./
 COPY --from=builder /app/pnpm-workspace.yaml ./
-COPY --from=builder /app/turbo.json ./
 COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/packages ./packages
+
+# Server: compiled output + runtime marketplaces JSON templates
+COPY --from=builder /app/packages/server/dist ./packages/server/dist
+COPY --from=builder /app/packages/server/package.json ./packages/server/
+COPY --from=builder /app/packages/server/marketplaces ./packages/server/marketplaces
+
+# UI: Vite build output
+COPY --from=builder /app/packages/ui/build ./packages/ui/build
+COPY --from=builder /app/packages/ui/package.json ./packages/ui/
+
+# Components: compiled output (includes icons via gulp) + models config
+COPY --from=builder /app/packages/components/dist ./packages/components/dist
+COPY --from=builder /app/packages/components/package.json ./packages/components/
+COPY --from=builder /app/packages/components/models.json ./packages/components/
 
 EXPOSE 3000
 
