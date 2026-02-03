@@ -1,0 +1,1038 @@
+{
+    "description": "A multi-agent debate council where a supervisor answers user questions, then delegates to council members for debate, critique, and reasoning before synthesizing a final answer",
+    "badge": "NEW",
+    "usecases": ["Multi-Agent", "Debate Council", "Reasoning", "Decision Making"],
+    "framework": ["Langchain"],
+    "nodes": [
+        {
+            "id": "startAgentflow_0",
+            "type": "agentFlow",
+            "position": {
+                "x": -400,
+                "y": 200
+            },
+            "data": {
+                "id": "startAgentflow_0",
+                "label": "Start",
+                "version": 1.1,
+                "name": "startAgentflow",
+                "type": "Start",
+                "color": "#7EE787",
+                "hideInput": true,
+                "baseClasses": ["Start"],
+                "category": "Agent Flows",
+                "description": "Starting point of the agentflow",
+                "inputParams": [
+                    {
+                        "label": "Input Type",
+                        "name": "startInputType",
+                        "type": "options",
+                        "options": [
+                            {
+                                "label": "Chat Input",
+                                "name": "chatInput",
+                                "description": "Start the conversation with chat input"
+                            },
+                            {
+                                "label": "Form Input",
+                                "name": "formInput",
+                                "description": "Start the workflow with form inputs"
+                            }
+                        ],
+                        "default": "chatInput",
+                        "id": "startAgentflow_0-input-startInputType-options",
+                        "display": true
+                    },
+                    {
+                        "label": "Flow State",
+                        "name": "startState",
+                        "description": "Runtime state during the execution of the workflow",
+                        "type": "array",
+                        "optional": true,
+                        "array": [
+                            {
+                                "label": "Key",
+                                "name": "key",
+                                "type": "string",
+                                "placeholder": "Foo"
+                            },
+                            {
+                                "label": "Value",
+                                "name": "value",
+                                "type": "string",
+                                "placeholder": "Bar"
+                            }
+                        ],
+                        "id": "startAgentflow_0-input-startState-array",
+                        "display": true
+                    }
+                ],
+                "inputAnchors": [],
+                "inputs": {
+                    "startInputType": "chatInput",
+                    "startState": [
+                        {
+                            "key": "initialAnswer",
+                            "value": ""
+                        },
+                        {
+                            "key": "advocateResponse",
+                            "value": ""
+                        },
+                        {
+                            "key": "criticResponse",
+                            "value": ""
+                        },
+                        {
+                            "key": "analystResponse",
+                            "value": ""
+                        }
+                    ]
+                },
+                "outputAnchors": [
+                    {
+                        "id": "startAgentflow_0-output-startAgentflow",
+                        "label": "Start",
+                        "name": "startAgentflow"
+                    }
+                ],
+                "outputs": {},
+                "selected": false
+            },
+            "width": 101,
+            "height": 65,
+            "selected": false,
+            "positionAbsolute": {
+                "x": -400,
+                "y": 200
+            },
+            "dragging": false
+        },
+        {
+            "id": "agentAgentflow_supervisor",
+            "position": {
+                "x": -200,
+                "y": 180
+            },
+            "data": {
+                "id": "agentAgentflow_supervisor",
+                "label": "Supervisor Agent",
+                "version": 3.2,
+                "name": "agentAgentflow",
+                "type": "Agent",
+                "color": "#9C27B0",
+                "baseClasses": ["Agent"],
+                "category": "Agent Flows",
+                "description": "Answers the user question and prepares it for council debate",
+                "inputParams": [
+                    {
+                        "label": "Model",
+                        "name": "agentModel",
+                        "type": "asyncOptions",
+                        "loadMethod": "listModels",
+                        "loadConfig": true,
+                        "id": "agentAgentflow_supervisor-input-agentModel-asyncOptions",
+                        "display": true
+                    },
+                    {
+                        "label": "Messages",
+                        "name": "agentMessages",
+                        "type": "array",
+                        "optional": true,
+                        "acceptVariable": true,
+                        "array": [
+                            {
+                                "label": "Role",
+                                "name": "role",
+                                "type": "options",
+                                "options": [
+                                    {"label": "System", "name": "system"},
+                                    {"label": "Assistant", "name": "assistant"},
+                                    {"label": "Developer", "name": "developer"},
+                                    {"label": "User", "name": "user"}
+                                ]
+                            },
+                            {
+                                "label": "Content",
+                                "name": "content",
+                                "type": "string",
+                                "acceptVariable": true,
+                                "generateInstruction": true,
+                                "rows": 4
+                            }
+                        ],
+                        "id": "agentAgentflow_supervisor-input-agentMessages-array",
+                        "display": true
+                    },
+                    {
+                        "label": "Enable Memory",
+                        "name": "agentEnableMemory",
+                        "type": "boolean",
+                        "description": "Enable memory for the conversation thread",
+                        "default": true,
+                        "optional": true,
+                        "id": "agentAgentflow_supervisor-input-agentEnableMemory-boolean",
+                        "display": true
+                    },
+                    {
+                        "label": "Memory Type",
+                        "name": "agentMemoryType",
+                        "type": "options",
+                        "options": [
+                            {"label": "All Messages", "name": "allMessages", "description": "Retrieve all messages from the conversation"},
+                            {"label": "Window Size", "name": "windowSize", "description": "Uses a fixed window size to surface the last N messages"}
+                        ],
+                        "optional": true,
+                        "default": "allMessages",
+                        "show": {"agentEnableMemory": true},
+                        "id": "agentAgentflow_supervisor-input-agentMemoryType-options",
+                        "display": true
+                    },
+                    {
+                        "label": "Update Flow State",
+                        "name": "agentUpdateState",
+                        "description": "Update runtime state during the execution of the workflow",
+                        "type": "array",
+                        "optional": true,
+                        "acceptVariable": true,
+                        "array": [
+                            {
+                                "label": "Key",
+                                "name": "key",
+                                "type": "asyncOptions",
+                                "loadMethod": "listRuntimeStateKeys",
+                                "freeSolo": true
+                            },
+                            {
+                                "label": "Value",
+                                "name": "value",
+                                "type": "string",
+                                "acceptVariable": true,
+                                "acceptNodeOutputAsVariable": true
+                            }
+                        ],
+                        "id": "agentAgentflow_supervisor-input-agentUpdateState-array",
+                        "display": true
+                    }
+                ],
+                "inputAnchors": [],
+                "inputs": {
+                    "agentModel": "chatOpenAI",
+                    "agentMessages": [
+                        {
+                            "role": "system",
+                            "content": "<p>You are the Supervisor Agent in a debate council. Your role is to:</p><p></p><p>1. Carefully analyze the user's question</p><p>2. Provide a comprehensive initial answer</p><p>3. Present your answer clearly so it can be debated by the council</p><p></p><p>Be thorough but concise. Your answer will be reviewed by:</p><p>- An Advocate (who will support and strengthen your answer)</p><p>- A Critic (who will challenge and find weaknesses)</p><p>- An Analyst (who will provide balanced evaluation)</p><p></p><p>Format your response as:</p><p>**Initial Answer:** [Your comprehensive answer]</p><p>**Key Points:** [Bullet points of main arguments]</p><p>**Confidence Level:** [High/Medium/Low with brief explanation]</p>"
+                        }
+                    ],
+                    "agentTools": "",
+                    "agentEnableMemory": true,
+                    "agentMemoryType": "allMessages",
+                    "agentReturnResponseAs": "userMessage",
+                    "agentUpdateState": [
+                        {
+                            "key": "initialAnswer",
+                            "value": "$flow.output"
+                        }
+                    ],
+                    "agentModelConfig": {
+                        "modelName": "gpt-4o",
+                        "temperature": 0.7,
+                        "streaming": true,
+                        "agentModel": "chatOpenAI"
+                    }
+                },
+                "outputAnchors": [
+                    {
+                        "id": "agentAgentflow_supervisor-output-agentAgentflow",
+                        "label": "Agent",
+                        "name": "agentAgentflow"
+                    }
+                ],
+                "outputs": {},
+                "selected": false
+            },
+            "type": "agentFlow",
+            "width": 200,
+            "height": 80,
+            "selected": false,
+            "positionAbsolute": {
+                "x": -200,
+                "y": 180
+            },
+            "dragging": false
+        },
+        {
+            "id": "agentAgentflow_advocate",
+            "position": {
+                "x": 100,
+                "y": 50
+            },
+            "data": {
+                "id": "agentAgentflow_advocate",
+                "label": "Advocate Agent",
+                "version": 3.2,
+                "name": "agentAgentflow",
+                "type": "Agent",
+                "color": "#4CAF50",
+                "baseClasses": ["Agent"],
+                "category": "Agent Flows",
+                "description": "Supports and strengthens the supervisor's answer with additional arguments",
+                "inputParams": [
+                    {
+                        "label": "Model",
+                        "name": "agentModel",
+                        "type": "asyncOptions",
+                        "loadMethod": "listModels",
+                        "loadConfig": true,
+                        "id": "agentAgentflow_advocate-input-agentModel-asyncOptions",
+                        "display": true
+                    },
+                    {
+                        "label": "Messages",
+                        "name": "agentMessages",
+                        "type": "array",
+                        "optional": true,
+                        "acceptVariable": true,
+                        "array": [
+                            {
+                                "label": "Role",
+                                "name": "role",
+                                "type": "options",
+                                "options": [
+                                    {"label": "System", "name": "system"},
+                                    {"label": "Assistant", "name": "assistant"},
+                                    {"label": "Developer", "name": "developer"},
+                                    {"label": "User", "name": "user"}
+                                ]
+                            },
+                            {
+                                "label": "Content",
+                                "name": "content",
+                                "type": "string",
+                                "acceptVariable": true,
+                                "generateInstruction": true,
+                                "rows": 4
+                            }
+                        ],
+                        "id": "agentAgentflow_advocate-input-agentMessages-array",
+                        "display": true
+                    },
+                    {
+                        "label": "Enable Memory",
+                        "name": "agentEnableMemory",
+                        "type": "boolean",
+                        "description": "Enable memory for the conversation thread",
+                        "default": true,
+                        "optional": true,
+                        "id": "agentAgentflow_advocate-input-agentEnableMemory-boolean",
+                        "display": true
+                    },
+                    {
+                        "label": "Input Message",
+                        "name": "agentUserMessage",
+                        "type": "string",
+                        "description": "Add an input message as user message at the end of the conversation",
+                        "rows": 4,
+                        "optional": true,
+                        "acceptVariable": true,
+                        "show": {"agentEnableMemory": true},
+                        "id": "agentAgentflow_advocate-input-agentUserMessage-string",
+                        "display": true
+                    },
+                    {
+                        "label": "Update Flow State",
+                        "name": "agentUpdateState",
+                        "description": "Update runtime state during the execution of the workflow",
+                        "type": "array",
+                        "optional": true,
+                        "acceptVariable": true,
+                        "array": [
+                            {
+                                "label": "Key",
+                                "name": "key",
+                                "type": "asyncOptions",
+                                "loadMethod": "listRuntimeStateKeys",
+                                "freeSolo": true
+                            },
+                            {
+                                "label": "Value",
+                                "name": "value",
+                                "type": "string",
+                                "acceptVariable": true,
+                                "acceptNodeOutputAsVariable": true
+                            }
+                        ],
+                        "id": "agentAgentflow_advocate-input-agentUpdateState-array",
+                        "display": true
+                    }
+                ],
+                "inputAnchors": [],
+                "inputs": {
+                    "agentModel": "chatOpenAI",
+                    "agentMessages": [
+                        {
+                            "role": "system",
+                            "content": "<p>You are the ADVOCATE in a debate council. Your role is to SUPPORT and STRENGTHEN the supervisor's answer.</p><p></p><p>Your responsibilities:</p><p>1. Identify the strongest points in the initial answer</p><p>2. Provide additional evidence, examples, or reasoning that supports the answer</p><p>3. Anticipate potential criticisms and preemptively address them</p><p>4. Highlight why this answer is correct or beneficial</p><p></p><p>Format your response as:</p><p>**Supporting Arguments:**</p><p>- [List strong supporting points]</p><p></p><p>**Additional Evidence:**</p><p>- [Examples, data, or reasoning that strengthens the answer]</p><p></p><p>**Preemptive Defense:**</p><p>- [Address potential weaknesses before they're raised]</p><p></p><p>Be constructive and thorough in your advocacy.</p>"
+                        }
+                    ],
+                    "agentTools": "",
+                    "agentEnableMemory": true,
+                    "agentMemoryType": "allMessages",
+                    "agentUserMessage": "<p>Please review and advocate for this answer from the Supervisor:</p><p></p><p><span class=\"variable\" data-type=\"mention\" data-id=\"$flow.state.initialAnswer\" data-label=\"initialAnswer\">{{ $flow.state.initialAnswer }}</span></p>",
+                    "agentReturnResponseAs": "userMessage",
+                    "agentUpdateState": [
+                        {
+                            "key": "advocateResponse",
+                            "value": "$flow.output"
+                        }
+                    ],
+                    "agentModelConfig": {
+                        "modelName": "gpt-4o-mini",
+                        "temperature": 0.7,
+                        "streaming": true,
+                        "agentModel": "chatOpenAI"
+                    }
+                },
+                "outputAnchors": [
+                    {
+                        "id": "agentAgentflow_advocate-output-agentAgentflow",
+                        "label": "Agent",
+                        "name": "agentAgentflow"
+                    }
+                ],
+                "outputs": {},
+                "selected": false
+            },
+            "type": "agentFlow",
+            "width": 200,
+            "height": 80,
+            "selected": false,
+            "positionAbsolute": {
+                "x": 100,
+                "y": 50
+            },
+            "dragging": false
+        },
+        {
+            "id": "agentAgentflow_critic",
+            "position": {
+                "x": 100,
+                "y": 180
+            },
+            "data": {
+                "id": "agentAgentflow_critic",
+                "label": "Critic Agent",
+                "version": 3.2,
+                "name": "agentAgentflow",
+                "type": "Agent",
+                "color": "#F44336",
+                "baseClasses": ["Agent"],
+                "category": "Agent Flows",
+                "description": "Challenges and critiques the supervisor's answer to find weaknesses",
+                "inputParams": [
+                    {
+                        "label": "Model",
+                        "name": "agentModel",
+                        "type": "asyncOptions",
+                        "loadMethod": "listModels",
+                        "loadConfig": true,
+                        "id": "agentAgentflow_critic-input-agentModel-asyncOptions",
+                        "display": true
+                    },
+                    {
+                        "label": "Messages",
+                        "name": "agentMessages",
+                        "type": "array",
+                        "optional": true,
+                        "acceptVariable": true,
+                        "array": [
+                            {
+                                "label": "Role",
+                                "name": "role",
+                                "type": "options",
+                                "options": [
+                                    {"label": "System", "name": "system"},
+                                    {"label": "Assistant", "name": "assistant"},
+                                    {"label": "Developer", "name": "developer"},
+                                    {"label": "User", "name": "user"}
+                                ]
+                            },
+                            {
+                                "label": "Content",
+                                "name": "content",
+                                "type": "string",
+                                "acceptVariable": true,
+                                "generateInstruction": true,
+                                "rows": 4
+                            }
+                        ],
+                        "id": "agentAgentflow_critic-input-agentMessages-array",
+                        "display": true
+                    },
+                    {
+                        "label": "Enable Memory",
+                        "name": "agentEnableMemory",
+                        "type": "boolean",
+                        "description": "Enable memory for the conversation thread",
+                        "default": true,
+                        "optional": true,
+                        "id": "agentAgentflow_critic-input-agentEnableMemory-boolean",
+                        "display": true
+                    },
+                    {
+                        "label": "Input Message",
+                        "name": "agentUserMessage",
+                        "type": "string",
+                        "description": "Add an input message as user message at the end of the conversation",
+                        "rows": 4,
+                        "optional": true,
+                        "acceptVariable": true,
+                        "show": {"agentEnableMemory": true},
+                        "id": "agentAgentflow_critic-input-agentUserMessage-string",
+                        "display": true
+                    },
+                    {
+                        "label": "Update Flow State",
+                        "name": "agentUpdateState",
+                        "description": "Update runtime state during the execution of the workflow",
+                        "type": "array",
+                        "optional": true,
+                        "acceptVariable": true,
+                        "array": [
+                            {
+                                "label": "Key",
+                                "name": "key",
+                                "type": "asyncOptions",
+                                "loadMethod": "listRuntimeStateKeys",
+                                "freeSolo": true
+                            },
+                            {
+                                "label": "Value",
+                                "name": "value",
+                                "type": "string",
+                                "acceptVariable": true,
+                                "acceptNodeOutputAsVariable": true
+                            }
+                        ],
+                        "id": "agentAgentflow_critic-input-agentUpdateState-array",
+                        "display": true
+                    }
+                ],
+                "inputAnchors": [],
+                "inputs": {
+                    "agentModel": "chatOpenAI",
+                    "agentMessages": [
+                        {
+                            "role": "system",
+                            "content": "<p>You are the CRITIC in a debate council. Your role is to CHALLENGE and find WEAKNESSES in the supervisor's answer.</p><p></p><p>Your responsibilities:</p><p>1. Identify logical flaws, gaps, or inconsistencies in the answer</p><p>2. Present counter-arguments or alternative perspectives</p><p>3. Question assumptions that may be incorrect</p><p>4. Highlight potential risks or negative consequences</p><p>5. Play devil's advocate constructively</p><p></p><p>Format your response as:</p><p>**Weaknesses Identified:**</p><p>- [List logical flaws or gaps]</p><p></p><p>**Counter-Arguments:**</p><p>- [Alternative viewpoints or opposing evidence]</p><p></p><p>**Questioned Assumptions:**</p><p>- [Assumptions that need verification]</p><p></p><p>**Potential Risks:**</p><p>- [Negative consequences to consider]</p><p></p><p>Be rigorous but fair in your criticism. The goal is to improve the answer, not destroy it.</p>"
+                        }
+                    ],
+                    "agentTools": "",
+                    "agentEnableMemory": true,
+                    "agentMemoryType": "allMessages",
+                    "agentUserMessage": "<p>Please critically analyze this answer from the Supervisor:</p><p></p><p><span class=\"variable\" data-type=\"mention\" data-id=\"$flow.state.initialAnswer\" data-label=\"initialAnswer\">{{ $flow.state.initialAnswer }}</span></p>",
+                    "agentReturnResponseAs": "userMessage",
+                    "agentUpdateState": [
+                        {
+                            "key": "criticResponse",
+                            "value": "$flow.output"
+                        }
+                    ],
+                    "agentModelConfig": {
+                        "modelName": "gpt-4o-mini",
+                        "temperature": 0.7,
+                        "streaming": true,
+                        "agentModel": "chatOpenAI"
+                    }
+                },
+                "outputAnchors": [
+                    {
+                        "id": "agentAgentflow_critic-output-agentAgentflow",
+                        "label": "Agent",
+                        "name": "agentAgentflow"
+                    }
+                ],
+                "outputs": {},
+                "selected": false
+            },
+            "type": "agentFlow",
+            "width": 200,
+            "height": 80,
+            "selected": false,
+            "positionAbsolute": {
+                "x": 100,
+                "y": 180
+            },
+            "dragging": false
+        },
+        {
+            "id": "agentAgentflow_analyst",
+            "position": {
+                "x": 100,
+                "y": 310
+            },
+            "data": {
+                "id": "agentAgentflow_analyst",
+                "label": "Analyst Agent",
+                "version": 3.2,
+                "name": "agentAgentflow",
+                "type": "Agent",
+                "color": "#2196F3",
+                "baseClasses": ["Agent"],
+                "category": "Agent Flows",
+                "description": "Provides balanced analysis and evaluation of the answer",
+                "inputParams": [
+                    {
+                        "label": "Model",
+                        "name": "agentModel",
+                        "type": "asyncOptions",
+                        "loadMethod": "listModels",
+                        "loadConfig": true,
+                        "id": "agentAgentflow_analyst-input-agentModel-asyncOptions",
+                        "display": true
+                    },
+                    {
+                        "label": "Messages",
+                        "name": "agentMessages",
+                        "type": "array",
+                        "optional": true,
+                        "acceptVariable": true,
+                        "array": [
+                            {
+                                "label": "Role",
+                                "name": "role",
+                                "type": "options",
+                                "options": [
+                                    {"label": "System", "name": "system"},
+                                    {"label": "Assistant", "name": "assistant"},
+                                    {"label": "Developer", "name": "developer"},
+                                    {"label": "User", "name": "user"}
+                                ]
+                            },
+                            {
+                                "label": "Content",
+                                "name": "content",
+                                "type": "string",
+                                "acceptVariable": true,
+                                "generateInstruction": true,
+                                "rows": 4
+                            }
+                        ],
+                        "id": "agentAgentflow_analyst-input-agentMessages-array",
+                        "display": true
+                    },
+                    {
+                        "label": "Enable Memory",
+                        "name": "agentEnableMemory",
+                        "type": "boolean",
+                        "description": "Enable memory for the conversation thread",
+                        "default": true,
+                        "optional": true,
+                        "id": "agentAgentflow_analyst-input-agentEnableMemory-boolean",
+                        "display": true
+                    },
+                    {
+                        "label": "Input Message",
+                        "name": "agentUserMessage",
+                        "type": "string",
+                        "description": "Add an input message as user message at the end of the conversation",
+                        "rows": 4,
+                        "optional": true,
+                        "acceptVariable": true,
+                        "show": {"agentEnableMemory": true},
+                        "id": "agentAgentflow_analyst-input-agentUserMessage-string",
+                        "display": true
+                    },
+                    {
+                        "label": "Update Flow State",
+                        "name": "agentUpdateState",
+                        "description": "Update runtime state during the execution of the workflow",
+                        "type": "array",
+                        "optional": true,
+                        "acceptVariable": true,
+                        "array": [
+                            {
+                                "label": "Key",
+                                "name": "key",
+                                "type": "asyncOptions",
+                                "loadMethod": "listRuntimeStateKeys",
+                                "freeSolo": true
+                            },
+                            {
+                                "label": "Value",
+                                "name": "value",
+                                "type": "string",
+                                "acceptVariable": true,
+                                "acceptNodeOutputAsVariable": true
+                            }
+                        ],
+                        "id": "agentAgentflow_analyst-input-agentUpdateState-array",
+                        "display": true
+                    }
+                ],
+                "inputAnchors": [],
+                "inputs": {
+                    "agentModel": "chatOpenAI",
+                    "agentMessages": [
+                        {
+                            "role": "system",
+                            "content": "<p>You are the ANALYST in a debate council. Your role is to provide BALANCED and OBJECTIVE evaluation.</p><p></p><p>Your responsibilities:</p><p>1. Objectively assess the strengths and weaknesses of the answer</p><p>2. Consider multiple perspectives without bias</p><p>3. Evaluate the quality of reasoning and evidence</p><p>4. Identify what additional information might be needed</p><p>5. Assess confidence level and uncertainty</p><p></p><p>Format your response as:</p><p>**Objective Assessment:**</p><p>- [Balanced view of the answer's quality]</p><p></p><p>**Strength-Weakness Balance:**</p><p>- Strengths: [List]</p><p>- Weaknesses: [List]</p><p></p><p>**Evidence Quality:**</p><p>- [Evaluation of reasoning and support]</p><p></p><p>**Information Gaps:**</p><p>- [What additional data would help]</p><p></p><p>**Confidence Assessment:**</p><p>- [How confident should we be in this answer]</p><p></p><p>Be impartial and thorough in your analysis.</p>"
+                        }
+                    ],
+                    "agentTools": "",
+                    "agentEnableMemory": true,
+                    "agentMemoryType": "allMessages",
+                    "agentUserMessage": "<p>Please provide balanced analysis of this answer from the Supervisor:</p><p></p><p><span class=\"variable\" data-type=\"mention\" data-id=\"$flow.state.initialAnswer\" data-label=\"initialAnswer\">{{ $flow.state.initialAnswer }}</span></p>",
+                    "agentReturnResponseAs": "userMessage",
+                    "agentUpdateState": [
+                        {
+                            "key": "analystResponse",
+                            "value": "$flow.output"
+                        }
+                    ],
+                    "agentModelConfig": {
+                        "modelName": "gpt-4o-mini",
+                        "temperature": 0.5,
+                        "streaming": true,
+                        "agentModel": "chatOpenAI"
+                    }
+                },
+                "outputAnchors": [
+                    {
+                        "id": "agentAgentflow_analyst-output-agentAgentflow",
+                        "label": "Agent",
+                        "name": "agentAgentflow"
+                    }
+                ],
+                "outputs": {},
+                "selected": false
+            },
+            "type": "agentFlow",
+            "width": 200,
+            "height": 80,
+            "selected": false,
+            "positionAbsolute": {
+                "x": 100,
+                "y": 310
+            },
+            "dragging": false
+        },
+        {
+            "id": "agentAgentflow_synthesizer",
+            "position": {
+                "x": 400,
+                "y": 180
+            },
+            "data": {
+                "id": "agentAgentflow_synthesizer",
+                "label": "Synthesizer Agent",
+                "version": 3.2,
+                "name": "agentAgentflow",
+                "type": "Agent",
+                "color": "#FF9800",
+                "baseClasses": ["Agent"],
+                "category": "Agent Flows",
+                "description": "Synthesizes all council input into a final, refined answer for the user",
+                "inputParams": [
+                    {
+                        "label": "Model",
+                        "name": "agentModel",
+                        "type": "asyncOptions",
+                        "loadMethod": "listModels",
+                        "loadConfig": true,
+                        "id": "agentAgentflow_synthesizer-input-agentModel-asyncOptions",
+                        "display": true
+                    },
+                    {
+                        "label": "Messages",
+                        "name": "agentMessages",
+                        "type": "array",
+                        "optional": true,
+                        "acceptVariable": true,
+                        "array": [
+                            {
+                                "label": "Role",
+                                "name": "role",
+                                "type": "options",
+                                "options": [
+                                    {"label": "System", "name": "system"},
+                                    {"label": "Assistant", "name": "assistant"},
+                                    {"label": "Developer", "name": "developer"},
+                                    {"label": "User", "name": "user"}
+                                ]
+                            },
+                            {
+                                "label": "Content",
+                                "name": "content",
+                                "type": "string",
+                                "acceptVariable": true,
+                                "generateInstruction": true,
+                                "rows": 4
+                            }
+                        ],
+                        "id": "agentAgentflow_synthesizer-input-agentMessages-array",
+                        "display": true
+                    },
+                    {
+                        "label": "Enable Memory",
+                        "name": "agentEnableMemory",
+                        "type": "boolean",
+                        "description": "Enable memory for the conversation thread",
+                        "default": true,
+                        "optional": true,
+                        "id": "agentAgentflow_synthesizer-input-agentEnableMemory-boolean",
+                        "display": true
+                    },
+                    {
+                        "label": "Input Message",
+                        "name": "agentUserMessage",
+                        "type": "string",
+                        "description": "Add an input message as user message at the end of the conversation",
+                        "rows": 4,
+                        "optional": true,
+                        "acceptVariable": true,
+                        "show": {"agentEnableMemory": true},
+                        "id": "agentAgentflow_synthesizer-input-agentUserMessage-string",
+                        "display": true
+                    }
+                ],
+                "inputAnchors": [],
+                "inputs": {
+                    "agentModel": "chatOpenAI",
+                    "agentMessages": [
+                        {
+                            "role": "system",
+                            "content": "<p>You are the SYNTHESIZER in a debate council. Your role is to combine all perspectives into a FINAL, REFINED answer for the user.</p><p></p><p>You have access to:</p><p>1. The original answer from the Supervisor</p><p>2. Supporting arguments from the Advocate</p><p>3. Criticisms and challenges from the Critic</p><p>4. Balanced analysis from the Analyst</p><p></p><p>Your responsibilities:</p><p>1. Integrate the strongest points from all council members</p><p>2. Address valid criticisms in the final answer</p><p>3. Acknowledge limitations and uncertainties</p><p>4. Present a clear, actionable, and well-reasoned final answer</p><p>5. Make the answer accessible and useful for the user</p><p></p><p>Format your FINAL response as:</p><p>**Final Answer:**</p><p>[Clear, comprehensive answer that integrates council debate]</p><p></p><p>**Key Insights from Council Debate:**</p><p>- [Most important points that emerged]</p><p></p><p>**Confidence Level:** [High/Medium/Low]</p><p></p><p>**Caveats & Limitations:**</p><p>- [What the user should be aware of]</p><p></p><p>Produce a polished, user-friendly final answer.</p>"
+                        }
+                    ],
+                    "agentTools": "",
+                    "agentEnableMemory": true,
+                    "agentMemoryType": "allMessages",
+                    "agentUserMessage": "<p>Please synthesize the following council debate into a final answer:</p><p></p><p>**ORIGINAL ANSWER (Supervisor):**</p><p><span class=\"variable\" data-type=\"mention\" data-id=\"$flow.state.initialAnswer\" data-label=\"initialAnswer\">{{ $flow.state.initialAnswer }}</span></p><p></p><p>**ADVOCATE'S SUPPORT:**</p><p><span class=\"variable\" data-type=\"mention\" data-id=\"$flow.state.advocateResponse\" data-label=\"advocateResponse\">{{ $flow.state.advocateResponse }}</span></p><p></p><p>**CRITIC'S CHALLENGES:**</p><p><span class=\"variable\" data-type=\"mention\" data-id=\"$flow.state.criticResponse\" data-label=\"criticResponse\">{{ $flow.state.criticResponse }}</span></p><p></p><p>**ANALYST'S EVALUATION:**</p><p><span class=\"variable\" data-type=\"mention\" data-id=\"$flow.state.analystResponse\" data-label=\"analystResponse\">{{ $flow.state.analystResponse }}</span></p>",
+                    "agentReturnResponseAs": "assistantMessage",
+                    "agentModelConfig": {
+                        "modelName": "gpt-4o",
+                        "temperature": 0.6,
+                        "streaming": true,
+                        "agentModel": "chatOpenAI"
+                    }
+                },
+                "outputAnchors": [
+                    {
+                        "id": "agentAgentflow_synthesizer-output-agentAgentflow",
+                        "label": "Agent",
+                        "name": "agentAgentflow"
+                    }
+                ],
+                "outputs": {},
+                "selected": false
+            },
+            "type": "agentFlow",
+            "width": 220,
+            "height": 80,
+            "selected": false,
+            "positionAbsolute": {
+                "x": 400,
+                "y": 180
+            },
+            "dragging": false
+        },
+        {
+            "id": "stickyNoteAgentflow_0",
+            "position": {
+                "x": -400,
+                "y": 50
+            },
+            "data": {
+                "id": "stickyNoteAgentflow_0",
+                "label": "Sticky Note",
+                "version": 1,
+                "name": "stickyNoteAgentflow",
+                "type": "StickyNote",
+                "color": "#fee440",
+                "baseClasses": ["StickyNote"],
+                "category": "Agent Flows",
+                "description": "Add notes to the agent flow",
+                "inputParams": [
+                    {
+                        "label": "",
+                        "name": "note",
+                        "type": "string",
+                        "rows": 1,
+                        "placeholder": "Type something here",
+                        "optional": true,
+                        "id": "stickyNoteAgentflow_0-input-note-string",
+                        "display": true
+                    }
+                ],
+                "inputAnchors": [],
+                "inputs": {
+                    "note": "DEBATE LLM COUNCIL\n\nFlow: User Question → Supervisor Answer → Council Debate (Advocate + Critic + Analyst) → Synthesized Final Answer\n\nCustomize: Add tools, knowledge bases, or change models for each agent."
+                },
+                "outputAnchors": [
+                    {
+                        "id": "stickyNoteAgentflow_0-output-stickyNoteAgentflow",
+                        "label": "Sticky Note",
+                        "name": "stickyNoteAgentflow"
+                    }
+                ],
+                "outputs": {},
+                "selected": false
+            },
+            "type": "stickyNote",
+            "width": 250,
+            "height": 120,
+            "selected": false,
+            "positionAbsolute": {
+                "x": -400,
+                "y": 50
+            },
+            "dragging": false
+        },
+        {
+            "id": "stickyNoteAgentflow_1",
+            "position": {
+                "x": 60,
+                "y": -60
+            },
+            "data": {
+                "id": "stickyNoteAgentflow_1",
+                "label": "Sticky Note",
+                "version": 1,
+                "name": "stickyNoteAgentflow",
+                "type": "StickyNote",
+                "color": "#b8f3b8",
+                "baseClasses": ["StickyNote"],
+                "category": "Agent Flows",
+                "description": "Add notes to the agent flow",
+                "inputParams": [
+                    {
+                        "label": "",
+                        "name": "note",
+                        "type": "string",
+                        "rows": 1,
+                        "placeholder": "Type something here",
+                        "optional": true,
+                        "id": "stickyNoteAgentflow_1-input-note-string",
+                        "display": true
+                    }
+                ],
+                "inputAnchors": [],
+                "inputs": {
+                    "note": "COUNCIL MEMBERS\n(Run in parallel)\n\nAdvocate: Supports answer\nCritic: Challenges answer\nAnalyst: Balanced evaluation"
+                },
+                "outputAnchors": [
+                    {
+                        "id": "stickyNoteAgentflow_1-output-stickyNoteAgentflow",
+                        "label": "Sticky Note",
+                        "name": "stickyNoteAgentflow"
+                    }
+                ],
+                "outputs": {},
+                "selected": false
+            },
+            "type": "stickyNote",
+            "width": 200,
+            "height": 100,
+            "selected": false,
+            "positionAbsolute": {
+                "x": 60,
+                "y": -60
+            },
+            "dragging": false
+        }
+    ],
+    "edges": [
+        {
+            "source": "startAgentflow_0",
+            "sourceHandle": "startAgentflow_0-output-startAgentflow",
+            "target": "agentAgentflow_supervisor",
+            "targetHandle": "agentAgentflow_supervisor",
+            "data": {
+                "sourceColor": "#7EE787",
+                "targetColor": "#9C27B0",
+                "isHumanInput": false
+            },
+            "type": "agentFlow",
+            "id": "startAgentflow_0-startAgentflow_0-output-startAgentflow-agentAgentflow_supervisor-agentAgentflow_supervisor"
+        },
+        {
+            "source": "agentAgentflow_supervisor",
+            "sourceHandle": "agentAgentflow_supervisor-output-agentAgentflow",
+            "target": "agentAgentflow_advocate",
+            "targetHandle": "agentAgentflow_advocate",
+            "data": {
+                "sourceColor": "#9C27B0",
+                "targetColor": "#4CAF50",
+                "isHumanInput": false
+            },
+            "type": "agentFlow",
+            "id": "agentAgentflow_supervisor-agentAgentflow_supervisor-output-agentAgentflow-agentAgentflow_advocate-agentAgentflow_advocate"
+        },
+        {
+            "source": "agentAgentflow_supervisor",
+            "sourceHandle": "agentAgentflow_supervisor-output-agentAgentflow",
+            "target": "agentAgentflow_critic",
+            "targetHandle": "agentAgentflow_critic",
+            "data": {
+                "sourceColor": "#9C27B0",
+                "targetColor": "#F44336",
+                "isHumanInput": false
+            },
+            "type": "agentFlow",
+            "id": "agentAgentflow_supervisor-agentAgentflow_supervisor-output-agentAgentflow-agentAgentflow_critic-agentAgentflow_critic"
+        },
+        {
+            "source": "agentAgentflow_supervisor",
+            "sourceHandle": "agentAgentflow_supervisor-output-agentAgentflow",
+            "target": "agentAgentflow_analyst",
+            "targetHandle": "agentAgentflow_analyst",
+            "data": {
+                "sourceColor": "#9C27B0",
+                "targetColor": "#2196F3",
+                "isHumanInput": false
+            },
+            "type": "agentFlow",
+            "id": "agentAgentflow_supervisor-agentAgentflow_supervisor-output-agentAgentflow-agentAgentflow_analyst-agentAgentflow_analyst"
+        },
+        {
+            "source": "agentAgentflow_advocate",
+            "sourceHandle": "agentAgentflow_advocate-output-agentAgentflow",
+            "target": "agentAgentflow_synthesizer",
+            "targetHandle": "agentAgentflow_synthesizer",
+            "data": {
+                "sourceColor": "#4CAF50",
+                "targetColor": "#FF9800",
+                "isHumanInput": false
+            },
+            "type": "agentFlow",
+            "id": "agentAgentflow_advocate-agentAgentflow_advocate-output-agentAgentflow-agentAgentflow_synthesizer-agentAgentflow_synthesizer"
+        },
+        {
+            "source": "agentAgentflow_critic",
+            "sourceHandle": "agentAgentflow_critic-output-agentAgentflow",
+            "target": "agentAgentflow_synthesizer",
+            "targetHandle": "agentAgentflow_synthesizer",
+            "data": {
+                "sourceColor": "#F44336",
+                "targetColor": "#FF9800",
+                "isHumanInput": false
+            },
+            "type": "agentFlow",
+            "id": "agentAgentflow_critic-agentAgentflow_critic-output-agentAgentflow-agentAgentflow_synthesizer-agentAgentflow_synthesizer"
+        },
+        {
+            "source": "agentAgentflow_analyst",
+            "sourceHandle": "agentAgentflow_analyst-output-agentAgentflow",
+            "target": "agentAgentflow_synthesizer",
+            "targetHandle": "agentAgentflow_synthesizer",
+            "data": {
+                "sourceColor": "#2196F3",
+                "targetColor": "#FF9800",
+                "isHumanInput": false
+            },
+            "type": "agentFlow",
+            "id": "agentAgentflow_analyst-agentAgentflow_analyst-output-agentAgentflow-agentAgentflow_synthesizer-agentAgentflow_synthesizer"
+        }
+    ]
+}
