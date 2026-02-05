@@ -33,6 +33,7 @@
     "license": "SEE LICENSE IN LICENSE.md",
     "dependencies": {
         "@aws-sdk/client-secrets-manager": "^3.699.0",
+        "@azure/identity": "^4.5.0",
         "@bull-board/api": "^6.11.0",
         "@bull-board/express": "^6.11.0",
         "@google-cloud/logging-winston": "^6.0.0",

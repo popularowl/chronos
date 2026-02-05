@@ -9,6 +9,7 @@ import { mysqlMigrations } from './database/migrations/mysql'
 import { mariadbMigrations } from './database/migrations/mariadb'
 import { postgresMigrations } from './database/migrations/postgres'
 import logger from './utils/logger'
+import { createAzurePasswordCallback } from './utils/azureAuth'
 
 let appDataSource: DataSource
 
@@ -63,12 +64,22 @@ export const init = async (): Promise<void> => {
             })
             break
         case 'postgres':
+            // Determine authentication method: Azure managed identity or password
+            const useAzureManagedIdentity = process.env.DATABASE_AUTH_TYPE === 'azure-managed-identity'
+            const passwordConfig = useAzureManagedIdentity
+                ? createAzurePasswordCallback(process.env.AZURE_MANAGED_IDENTITY_CLIENT_ID)
+                : process.env.DATABASE_PASSWORD
+
+            if (useAzureManagedIdentity) {
+                logger.info('Using Azure Managed Identity for PostgreSQL authentication')
+            }
+
             appDataSource = new DataSource({
                 type: 'postgres',
                 host: process.env.DATABASE_HOST,
                 port: parseInt(process.env.DATABASE_PORT || '5432'),
                 username: process.env.DATABASE_USER,
-                password: process.env.DATABASE_PASSWORD,
+                password: passwordConfig,
                 database: process.env.DATABASE_NAME,
                 ssl: getDatabaseSSLFromEnv(),
                 synchronize: false,
