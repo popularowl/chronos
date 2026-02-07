@@ -1,16 +1,18 @@
 # Chronos - Visual AI agent builder
 
-<div align=center style="padding-bottom: 25px">
+<div align=center style="padding-bottom: 35px;">
 <img src="./resources/chronos_main_page.gif" width="600"/>
 </div>
 
 [Chronos](https://github.com/popularowl/chronos) project is a fork of [Flowise](https://github.com/FlowiseAI/Flowise) - with the goal to maintain a lean visual AI agent builder tool, focused on the local and self hosted deployments. It provides:
 
-- Visual drag-and-drop workflow builder for creating AI agent pipelines.
+
+- Self-hosting focused visual AI agent and workflow builder.
 - Multiple deployment modes, including simple, worker queues and integrations with local LLM models.
 - Horizontal scalability through Redis-based job queues and workers.
 - 100+ of prebuilt LLM model integrations.
 - Collection of prebuilt AI agent templates.
+
 
 We do [provide professional services](https://www.popularowl.com/about/) to deploy, customise and run Chronos visual AI agent builder within your organization enviroenments.
 
