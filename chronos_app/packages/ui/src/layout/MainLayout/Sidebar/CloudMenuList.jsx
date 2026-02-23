@@ -66,7 +66,7 @@ const CloudMenuList = () => {
                 <Box>
                     <Divider sx={{ height: '1px', borderColor: theme.palette.grey[900] + 25, my: 0 }} />
                     <List sx={{ p: '16px', py: 2, display: 'flex', flexDirection: 'column', gap: 1 }}>
-                        <a href='https://docs.flowiseai.com' target='_blank' rel='noreferrer' style={{ textDecoration: 'none' }}>
+                        <a href='https://intelligex.com' target='_blank' rel='noreferrer' style={{ textDecoration: 'none' }}>
                             <ListItemButton
                                 sx={{
                                     borderRadius: `${customization.borderRadius}px`,

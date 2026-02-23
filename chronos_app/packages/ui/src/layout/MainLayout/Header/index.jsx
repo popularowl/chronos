@@ -86,7 +86,7 @@ const GitHubStarButton = ({ starCount, isDark }) => {
     const formattedStarCount = starCount.toLocaleString()
 
     return (
-        <Link href='https://github.com/FlowiseAI/Flowise' target='_blank' underline='none' sx={{ display: 'inline-flex' }}>
+        <Link href='https://github.com/intelligexhq/chronos' target='_blank' underline='none' sx={{ display: 'inline-flex' }}>
             <Box
                 sx={{
                     display: 'flex',
@@ -199,7 +199,7 @@ const Header = ({ handleLeftDrawerToggle }) => {
         if (isCloud || isOpenSource) {
             const fetchStarCount = async () => {
                 try {
-                    const response = await fetch('https://api.github.com/repos/FlowiseAI/Flowise')
+                    const response = await fetch('https://api.github.com/repos/intelligexhq/chronos')
                     const data = await response.json()
                     if (data.stargazers_count) {
                         _setStarCount(data.stargazers_count)
