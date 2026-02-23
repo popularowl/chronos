@@ -12,8 +12,6 @@ import { BrowserView, MobileView } from 'react-device-detect'
 // project imports
 import MenuList from './MenuList'
 import LogoSection from '../LogoSection'
-import CloudMenuList from '@/layout/MainLayout/Sidebar/CloudMenuList'
-
 // store
 import { drawerWidth, headerHeight } from '@/store/constant'
 
@@ -46,13 +44,11 @@ const Sidebar = ({ drawerOpen, drawerToggle, window }) => {
                     }}
                 >
                     <MenuList />
-                    <CloudMenuList />
                 </PerfectScrollbar>
             </BrowserView>
             <MobileView>
                 <Box sx={{ px: 2 }}>
                     <MenuList />
-                    <CloudMenuList />
                 </Box>
             </MobileView>
         </>

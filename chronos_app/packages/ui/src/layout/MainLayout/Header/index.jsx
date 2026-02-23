@@ -1,7 +1,6 @@
 import PropTypes from 'prop-types'
 import { useSelector, useDispatch } from 'react-redux'
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
 
 // material-ui
 import { Button, Avatar, Box, ButtonBase, Switch, Typography, Link } from '@mui/material'
@@ -11,11 +10,9 @@ import { useTheme, styled, darken } from '@mui/material/styles'
 import LogoSection from '../LogoSection'
 import ProfileSection from './ProfileSection'
 import WorkspaceSwitcher from '@/layout/MainLayout/Header/WorkspaceSwitcher'
-import OrgWorkspaceBreadcrumbs from '@/layout/MainLayout/Header/OrgWorkspaceBreadcrumbs'
-import PricingDialog from '@/ui-component/subscription/PricingDialog'
 
 // assets
-import { IconMenu2, IconX, IconSparkles } from '@tabler/icons-react'
+import { IconMenu2, IconX } from '@tabler/icons-react'
 
 // store
 import { store } from '@/store'
@@ -86,7 +83,7 @@ const GitHubStarButton = ({ starCount, isDark }) => {
     const formattedStarCount = starCount.toLocaleString()
 
     return (
-        <Link href='https://github.com/FlowiseAI/Flowise' target='_blank' underline='none' sx={{ display: 'inline-flex' }}>
+        <Link href='https://github.com/intelligexhq/chronos' target='_blank' underline='none' sx={{ display: 'inline-flex' }}>
             <Box
                 sx={{
                     display: 'flex',
@@ -144,17 +141,14 @@ GitHubStarButton.propTypes = {
 
 const Header = ({ handleLeftDrawerToggle }) => {
     const theme = useTheme()
-    const navigate = useNavigate()
 
     const customization = useSelector((state) => state.customization)
     const logoutApi = useApi(accountApi.logout)
 
     const [isDark, setIsDark] = useState(customization.isDarkMode)
     const dispatch = useDispatch()
-    const { isEnterpriseLicensed, isCloud, isOpenSource } = useConfig()
-    const currentUser = useSelector((state) => state.auth.user)
+    const { isEnterpriseLicensed, isOpenSource } = useConfig()
     const isAuthenticated = useSelector((state) => state.auth.isAuthenticated)
-    const [isPricingOpen, setIsPricingOpen] = useState(false)
     const [_starCount, __setStarCount] = useState(0)
 
     useNotifier()
@@ -196,10 +190,10 @@ const Header = ({ handleLeftDrawerToggle }) => {
     }, [logoutApi.data])
 
     useEffect(() => {
-        if (isCloud || isOpenSource) {
+        if (isOpenSource) {
             const fetchStarCount = async () => {
                 try {
-                    const response = await fetch('https://api.github.com/repos/FlowiseAI/Flowise')
+                    const response = await fetch('https://api.github.com/repos/intelligexhq/chronos')
                     const data = await response.json()
                     if (data.stargazers_count) {
                         _setStarCount(data.stargazers_count)
@@ -211,7 +205,7 @@ const Header = ({ handleLeftDrawerToggle }) => {
 
             fetchStarCount()
         }
-    }, [isCloud, isOpenSource])
+    }, [isOpenSource])
 
     return (
         <>
@@ -250,7 +244,7 @@ const Header = ({ handleLeftDrawerToggle }) => {
                     </ButtonBase>
                 )}
             </Box>
-            {isCloud || isOpenSource ? (
+            {isOpenSource ? (
                 <Box
                     sx={{
                         flexGrow: 1,
@@ -269,46 +263,6 @@ const Header = ({ handleLeftDrawerToggle }) => {
                 <Box sx={{ flexGrow: 1 }} />
             )}
             {isEnterpriseLicensed && isAuthenticated && <WorkspaceSwitcher />}
-            {isCloud && isAuthenticated && <OrgWorkspaceBreadcrumbs />}
-            {isCloud && currentUser?.isOrganizationAdmin && (
-                <Button
-                    variant='contained'
-                    sx={{
-                        mr: 1,
-                        ml: 2,
-                        borderRadius: 15,
-                        background: (theme) =>
-                            `linear-gradient(90deg, ${theme.palette.primary.main} 10%, ${theme.palette.secondary.main} 100%)`,
-                        color: (theme) => theme.palette.secondary.contrastText,
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
-                        transition: 'all 0.3s ease',
-                        '&:hover': {
-                            background: (theme) =>
-                                `linear-gradient(90deg, ${darken(theme.palette.primary.main, 0.1)} 10%, ${darken(
-                                    theme.palette.secondary.main,
-                                    0.1
-                                )} 100%)`,
-                            boxShadow: '0 4px 8px rgba(0,0,0,0.3)'
-                        }
-                    }}
-                    onClick={() => setIsPricingOpen(true)}
-                    startIcon={<IconSparkles size={20} />}
-                >
-                    Upgrade
-                </Button>
-            )}
-            {isPricingOpen && isCloud && (
-                <PricingDialog
-                    open={isPricingOpen}
-                    onClose={(planUpdated) => {
-                        setIsPricingOpen(false)
-                        if (planUpdated) {
-                            navigate('/')
-                            navigate(0)
-                        }
-                    }}
-                />
-            )}
             <MaterialUISwitch checked={isDark} onChange={changeDarkMode} />
             <Box sx={{ ml: 2 }}></Box>
             <ProfileSection handleLogout={signOutClicked} />
