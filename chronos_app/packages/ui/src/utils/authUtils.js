@@ -39,7 +39,8 @@ const extractUser = (payload) => {
         id: payload.id || payload.user?.id,
         email: payload.email || payload.user?.email,
         name: payload.name || payload.user?.name,
-        status: payload.status || payload.user?.status
+        status: payload.status || payload.user?.status,
+        role: payload.role || payload.user?.role || 'user'
     }
     return user
 }

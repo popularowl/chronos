@@ -356,7 +356,7 @@ const AgentExecutions = () => {
                                     <Button variant='outlined' onClick={resetFilters} size='small'>
                                         Reset
                                     </Button>
-                                    <Available permissions={['executions:delete']}>
+                                    <Available permission={'executions:delete'}>
                                         <Tooltip title='Delete selected executions'>
                                             <span>
                                                 <IconButton

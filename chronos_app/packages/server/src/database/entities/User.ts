@@ -6,6 +6,11 @@ export enum UserStatus {
     DELETED = 'deleted'
 }
 
+export enum UserRole {
+    ADMIN = 'admin',
+    USER = 'user'
+}
+
 @Entity('user')
 export class User {
     @PrimaryColumn({ type: 'varchar', length: 36 })
@@ -22,6 +27,9 @@ export class User {
 
     @Column({ type: 'varchar', default: UserStatus.UNVERIFIED })
     status: UserStatus
+
+    @Column({ type: 'varchar', default: UserRole.USER })
+    role: UserRole
 
     @CreateDateColumn()
     createdDate: Date

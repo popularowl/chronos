@@ -3,7 +3,7 @@ import { useAuth } from '@/hooks/useAuth'
 
 export const Available = ({ permission, children }) => {
     const { hasPermission } = useAuth()
-    if (hasPermission(permission)) {
+    if (!permission || hasPermission(permission)) {
         return children
     }
 }

@@ -195,63 +195,22 @@ const dashboard = {
                 }
             ]
         },
-        // {
-        //     id: 'management',
-        //     title: 'User & Workspace Management',
-        //     type: 'group',
-        //     children: [
-        //         {
-        //             id: 'sso',
-        //             title: 'SSO Config',
-        //             type: 'item',
-        //             url: '/sso-config',
-        //             icon: icons.IconShieldLock,
-        //             breadcrumbs: true,
-        //             display: 'feat:sso-config',
-        //             permission: 'sso:manage'
-        //         },
-        //         {
-        //             id: 'roles',
-        //             title: 'Roles',
-        //             type: 'item',
-        //             url: '/roles',
-        //             icon: icons.IconLockCheck,
-        //             breadcrumbs: true,
-        //             display: 'feat:roles',
-        //             permission: 'roles:manage'
-        //         },
-        //         {
-        //             id: 'users',
-        //             title: 'Users',
-        //             type: 'item',
-        //             url: '/users',
-        //             icon: icons.IconUsers,
-        //             breadcrumbs: true,
-        //             display: 'feat:users',
-        //             permission: 'users:manage'
-        //         },
-        //         {
-        //             id: 'workspaces',
-        //             title: 'Workspaces',
-        //             type: 'item',
-        //             url: '/workspaces',
-        //             icon: icons.IconStack2,
-        //             breadcrumbs: true,
-        //             display: 'feat:workspaces',
-        //             permission: 'workspace:view'
-        //         },
-        //         {
-        //             id: 'login-activity',
-        //             title: 'Login Activity',
-        //             type: 'item',
-        //             url: '/login-activity',
-        //             icon: icons.IconClipboardList,
-        //             breadcrumbs: true,
-        //             display: 'feat:login-activity',
-        //             permission: 'loginActivity:view'
-        //         }
-        //     ]
-        // },
+        {
+            id: 'management',
+            title: 'Administration',
+            type: 'group',
+            children: [
+                {
+                    id: 'users',
+                    title: 'Users',
+                    type: 'item',
+                    url: '/users',
+                    icon: icons.IconUsers,
+                    breadcrumbs: true,
+                    permission: 'users:manage'
+                }
+            ]
+        },
         {
             id: 'others',
             title: 'Others',

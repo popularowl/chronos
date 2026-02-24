@@ -59,6 +59,7 @@ import { internalChatMessagesRouteTest } from './routes/v1/internal-chat-message
 import { nvidiaNimRouteTest } from './routes/v1/nvidia-nim.route.test'
 import { oauth2RouteTest } from './routes/v1/oauth2.route.test'
 import { openaiRealtimeRouteTest } from './routes/v1/openai-realtime.route.test'
+import { usersRouteTest } from './routes/v1/users.route.test'
 import { chatflowsServiceTest } from './services/chatflows.service.test'
 import { agentflowv2GeneratorServiceTest } from './services/agentflowv2-generator.service.test'
 import { toolsServiceTest } from './services/tools.service.test'
@@ -70,6 +71,7 @@ import { validationServiceTest } from './services/validation.service.test'
 import { feedbackValidationServiceTest } from './services/feedback-validation.service.test'
 import { chatMessagesServiceTest } from './services/chat-messages.service.test'
 import { marketplacesServiceTest } from './services/marketplaces.service.test'
+import { usersServiceTest } from './services/users.service.test'
 import { apiKeyTest } from './utils/api-key.util.test'
 import { sanitizeUtilTest } from './utils/sanitize.util.test'
 import { domainValidationUtilTest } from './utils/domain-validation.util.test'
@@ -166,6 +168,7 @@ describe('Routes Test', () => {
     nvidiaNimRouteTest()
     oauth2RouteTest()
     openaiRealtimeRouteTest()
+    usersRouteTest()
 })
 
 describe('Services Test', () => {
@@ -180,6 +183,7 @@ describe('Services Test', () => {
     validationServiceTest()
     chatMessagesServiceTest()
     marketplacesServiceTest()
+    usersServiceTest()
 })
 
 describe('Utils Test', () => {

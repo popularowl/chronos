@@ -59,6 +59,7 @@ import textToSpeechRouter from './text-to-speech'
 
 // Simple auth router (Apache 2.0 licensed)
 import authRouter from './auth'
+import usersRouter from './users'
 
 const router = express.Router()
 
@@ -122,5 +123,8 @@ router.use('/files', filesRouter)
 
 // Simple auth routes (signup, login, logout, me)
 router.use('/auth', authRouter)
+
+// Users management routes (admin only)
+router.use('/users', usersRouter)
 
 export default router

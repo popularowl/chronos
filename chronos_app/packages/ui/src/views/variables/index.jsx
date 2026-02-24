@@ -272,10 +272,10 @@ const Variables = () => {
                                                 <StyledTableCell>Type</StyledTableCell>
                                                 <StyledTableCell>Last Updated</StyledTableCell>
                                                 <StyledTableCell>Created</StyledTableCell>
-                                                <Available permissionId={'variables:update'}>
+                                                <Available permission={'variables:update'}>
                                                     <StyledTableCell> </StyledTableCell>
                                                 </Available>
-                                                <Available permissionId={'variables:delete'}>
+                                                <Available permission={'variables:delete'}>
                                                     <StyledTableCell> </StyledTableCell>
                                                 </Available>
                                             </TableRow>

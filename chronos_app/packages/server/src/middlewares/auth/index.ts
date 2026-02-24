@@ -10,6 +10,7 @@ declare global {
         interface Request {
             userId?: string
             userEmail?: string
+            userRole?: string
         }
     }
 }
@@ -33,6 +34,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
 
     req.userId = payload.userId
     req.userEmail = payload.email
+    req.userRole = payload.role
     next()
 }
 
@@ -49,6 +51,7 @@ export const optionalAuthMiddleware = (req: Request, res: Response, next: NextFu
         if (payload) {
             req.userId = payload.userId
             req.userEmail = payload.email
+            req.userRole = payload.role
         }
     }
     next()
@@ -72,5 +75,20 @@ export const verifyToken = (req: Request, res: Response, next: NextFunction) => 
 
     req.userId = payload.userId
     req.userEmail = payload.email
+    req.userRole = payload.role
     next()
+}
+
+/**
+ * Middleware factory that restricts access to users with specific roles.
+ * Must be used after authMiddleware so req.userRole is available.
+ * @param roles - Array of allowed role strings
+ */
+export const requireRole = (...roles: string[]) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        if (!req.userRole || !roles.includes(req.userRole)) {
+            return res.status(403).json({ error: 'Forbidden: insufficient permissions' })
+        }
+        next()
+    }
 }
