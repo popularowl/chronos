@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { useDispatch, useSelector } from 'react-redux'
 import moment from 'moment'
-import * as PropTypes from 'prop-types'
 
 // material-ui
 import {
@@ -17,9 +17,12 @@ import {
     Paper,
     useTheme,
     Chip,
-    Drawer,
     Typography,
-    CircularProgress
+    CircularProgress,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions
 } from '@mui/material'
 
 // project imports
@@ -27,322 +30,193 @@ import MainCard from '@/ui-component/cards/MainCard'
 import ConfirmDialog from '@/ui-component/dialog/ConfirmDialog'
 import ViewHeader from '@/layout/MainLayout/ViewHeader'
 import ErrorBoundary from '@/ErrorBoundary'
-import EditUserDialog from '@/views/users/EditUserDialog'
 import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyles'
-import InviteUsersDialog from '@/ui-component/dialog/InviteUsersDialog'
-import { PermissionIconButton, StyledPermissionButton } from '@/ui-component/button/RBACButtons'
+import { StyledButton } from '@/ui-component/button/StyledButton'
+import { Dropdown } from '@/ui-component/dropdown/Dropdown'
 
 // API
-import userApi from '@/api/user'
+import usersApi from '@/api/users'
 
 // Hooks
-import useApi from '@/hooks/useApi'
 import useConfirm from '@/hooks/useConfirm'
 
 // utils
 import useNotifier from '@/utils/useNotifier'
 
 // Icons
-import { IconTrash, IconEdit, IconX, IconPlus, IconUser, IconEyeOff, IconEye, IconUserStar } from '@tabler/icons-react'
+import { IconTrash, IconEdit, IconX, IconUser, IconShieldCheck } from '@tabler/icons-react'
 import users_emptySVG from '@/assets/images/users_empty.svg'
 
 // store
-import { useError } from '@/store/context/ErrorContext'
-import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction } from '@/store/actions'
+import {
+    enqueueSnackbar as enqueueSnackbarAction,
+    closeSnackbar as closeSnackbarAction,
+    SHOW_CANVAS_DIALOG,
+    HIDE_CANVAS_DIALOG
+} from '@/store/actions'
 
-function ShowUserRow(props) {
-    const customization = useSelector((state) => state.customization)
+/** @type {{label: string, name: string}[]} */
+const roleOptions = [
+    { label: 'Admin', name: 'admin' },
+    { label: 'User', name: 'user' }
+]
 
-    const [open, setOpen] = useState(false)
-    const [userRoles, setUserRoles] = useState([])
+/**
+ * Dialog for changing a user's role
+ */
+const ChangeRoleDialog = ({ show, user, onCancel, onConfirm }) => {
+    const [selectedRole, setSelectedRole] = useState(user?.role || 'user')
+    const [saving, setSaving] = useState(false)
+    const dispatch = useDispatch()
 
-    const theme = useTheme()
+    useEffect(() => {
+        if (user) setSelectedRole(user.role || 'user')
+    }, [user])
 
-    const getWorkspacesByUserId = useApi(userApi.getWorkspacesByOrganizationIdUserId)
+    useEffect(() => {
+        if (show) dispatch({ type: SHOW_CANVAS_DIALOG })
+        else dispatch({ type: HIDE_CANVAS_DIALOG })
+        return () => dispatch({ type: HIDE_CANVAS_DIALOG })
+    }, [show, dispatch])
 
-    const handleViewUserRoles = (userId, organizationId) => {
-        setOpen(!open)
-        getWorkspacesByUserId.request(organizationId, userId)
+    const handleSave = async () => {
+        setSaving(true)
+        try {
+            await usersApi.updateUserRole(user.id, selectedRole)
+            onConfirm()
+        } catch {
+            onCancel()
+        } finally {
+            setSaving(false)
+        }
     }
 
-    useEffect(() => {
-        if (getWorkspacesByUserId.data) {
-            setUserRoles(getWorkspacesByUserId.data)
-        }
-    }, [getWorkspacesByUserId.data])
-
-    useEffect(() => {
-        if (!open) {
-            setOpen(false)
-            setUserRoles([])
-        }
-    }, [open])
-
-    const currentUser = useSelector((state) => state.auth.user)
+    if (!show || !user) return null
 
     return (
-        <React.Fragment>
-            <StyledTableRow hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                <StyledTableCell component='th' scope='row'>
-                    <div
-                        style={{
-                            display: 'flex',
-                            flexDirection: 'row',
-                            alignItems: 'center'
-                        }}
-                    >
-                        <div
-                            style={{
-                                width: 25,
-                                height: 25,
-                                marginRight: 10,
-                                borderRadius: '50%'
-                            }}
-                        >
-                            {props?.row?.isOrgOwner ? (
-                                <IconUserStar
-                                    style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        borderRadius: '50%',
-                                        objectFit: 'contain'
-                                    }}
-                                />
-                            ) : (
-                                <IconUser
-                                    style={{
-                                        width: '100%',
-                                        height: '100%',
-                                        borderRadius: '50%',
-                                        objectFit: 'contain'
-                                    }}
-                                />
-                            )}
-                        </div>
-                    </div>
-                </StyledTableCell>
-                <StyledTableCell>
-                    {props.row.user.name ?? ''}
-                    {props.row.user.email && (
-                        <>
-                            <br />
-                            {props.row.user.email}
-                        </>
-                    )}
-
-                    {props.row.isOrgOwner && (
-                        <>
-                            {' '}
-                            <br />
-                            <Chip size='small' label={'ORGANIZATION OWNER'} />{' '}
-                        </>
-                    )}
-                </StyledTableCell>
-                <StyledTableCell sx={{ textAlign: 'center' }}>
-                    {props.row.roleCount}
-                    <PermissionIconButton
-                        permissionId={'users:manage'}
-                        aria-label='expand row'
-                        size='small'
-                        color='inherit'
-                        onClick={() => handleViewUserRoles(props.row.userId, props.row.organizationId)}
-                    >
-                        {props.row.roleCount > 0 && open ? <IconEyeOff /> : <IconEye />}
-                    </PermissionIconButton>
-                </StyledTableCell>
-                <StyledTableCell>
-                    {'ACTIVE' === props.row.status.toUpperCase() && <Chip color={'success'} label={props.row.status.toUpperCase()} />}
-                    {'INVITED' === props.row.status.toUpperCase() && <Chip color={'warning'} label={props.row.status.toUpperCase()} />}
-                    {'INACTIVE' === props.row.status.toUpperCase() && <Chip color={'error'} label={props.row.status.toUpperCase()} />}
-                </StyledTableCell>
-                <StyledTableCell>{!props.row.lastLogin ? 'Never' : moment(props.row.lastLogin).format('DD/MM/YYYY HH:mm')}</StyledTableCell>
-                <StyledTableCell>
-                    {props.row.status.toUpperCase() === 'INVITED' && (
-                        <PermissionIconButton
-                            permissionId={'workspace:add-user,users:manage'}
-                            title='Edit'
-                            color='primary'
-                            onClick={() => props.onEditClick(props.row)}
-                        >
-                            <IconEdit />
-                        </PermissionIconButton>
-                    )}
-                    {!props.row.isOrgOwner &&
-                        props.row.userId !== currentUser.id &&
-                        (props.deletingUserId === props.row.user.id ? (
-                            <CircularProgress size={24} color='error' />
-                        ) : (
-                            <PermissionIconButton
-                                permissionId={'workspace:unlink-user,users:manage'}
-                                title='Delete'
-                                color='error'
-                                onClick={() => props.onDeleteClick(props.row.user)}
-                            >
-                                <IconTrash />
-                            </PermissionIconButton>
-                        ))}
-                </StyledTableCell>
-            </StyledTableRow>
-            <Drawer anchor='right' open={open} onClose={() => setOpen(false)} sx={{ minWidth: 320 }}>
-                <Box sx={{ p: 4, height: 'auto', width: 650 }}>
-                    <Typography sx={{ textAlign: 'left', mb: 2 }} variant='h2'>
-                        Assigned Roles
+        <Dialog fullWidth maxWidth='xs' open={show} onClose={onCancel}>
+            <DialogTitle sx={{ fontSize: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                    <IconEdit style={{ marginRight: '10px' }} />
+                    Change Role
+                </div>
+            </DialogTitle>
+            <DialogContent>
+                <Box sx={{ pt: 1 }}>
+                    <Typography sx={{ mb: 1 }}>
+                        User: <strong>{user.name || user.email}</strong>
                     </Typography>
-                    <TableContainer
-                        style={{ display: 'flex', flexDirection: 'row' }}
-                        sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }}
-                        component={Paper}
-                    >
-                        <Table aria-label='assigned roles table'>
-                            <TableHead
-                                sx={{
-                                    backgroundColor: customization.isDarkMode ? theme.palette.common.black : theme.palette.grey[100],
-                                    height: 56
-                                }}
-                            >
-                                <TableRow>
-                                    <StyledTableCell sx={{ width: '50%' }}>Role</StyledTableCell>
-                                    <StyledTableCell sx={{ width: '50%' }}>Workspace</StyledTableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {userRoles.map((item, index) => (
-                                    <TableRow key={index}>
-                                        <StyledTableCell>{item.role.name}</StyledTableCell>
-                                        <StyledTableCell>
-                                            {item.workspace.name}
-                                            {/* {assignment.active && <Chip color={'secondary'} label={'Active'} />} */}
-                                        </StyledTableCell>
-                                    </TableRow>
-                                ))}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                    <Typography sx={{ mb: 1 }}>Role</Typography>
+                    <Dropdown
+                        name='role'
+                        options={roleOptions}
+                        onSelect={(newValue) => setSelectedRole(newValue)}
+                        value={selectedRole}
+                        disableClearable
+                    />
                 </Box>
-            </Drawer>
-        </React.Fragment>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button onClick={onCancel}>Cancel</Button>
+                <StyledButton variant='contained' onClick={handleSave} disabled={saving || selectedRole === user.role}>
+                    {saving ? <CircularProgress size={20} /> : 'Save'}
+                </StyledButton>
+            </DialogActions>
+        </Dialog>
     )
 }
 
-ShowUserRow.propTypes = {
-    row: PropTypes.any,
-    onDeleteClick: PropTypes.func,
-    onEditClick: PropTypes.func,
-    open: PropTypes.bool,
-    theme: PropTypes.any,
-    deletingUserId: PropTypes.string
+ChangeRoleDialog.propTypes = {
+    show: PropTypes.bool,
+    user: PropTypes.shape({
+        id: PropTypes.string,
+        name: PropTypes.string,
+        email: PropTypes.string,
+        role: PropTypes.string
+    }),
+    onCancel: PropTypes.func,
+    onConfirm: PropTypes.func
 }
 
-// ==============================|| Users ||============================== //
+// ==============================|| Users Page ||============================== //
 
 const Users = () => {
     const theme = useTheme()
     const customization = useSelector((state) => state.customization)
     const dispatch = useDispatch()
     useNotifier()
-    const { error, setError } = useError()
+
     const currentUser = useSelector((state) => state.auth.user)
 
     const enqueueSnackbar = (...args) => dispatch(enqueueSnackbarAction(...args))
     const closeSnackbar = (...args) => dispatch(closeSnackbarAction(...args))
 
     const [isLoading, setLoading] = useState(true)
-    const [showInviteDialog, setShowInviteDialog] = useState(false)
-    const [showEditDialog, setShowEditDialog] = useState(false)
-    const [inviteDialogProps, setInviteDialogProps] = useState({})
     const [users, setUsers] = useState([])
     const [search, setSearch] = useState('')
     const [deletingUserId, setDeletingUserId] = useState(null)
+    const [error, setError] = useState(null)
+    const [roleDialogUser, setRoleDialogUser] = useState(null)
 
     const { confirm } = useConfirm()
 
-    const getAllUsersByOrganizationIdApi = useApi(userApi.getAllUsersByOrganizationId)
+    /** Fetch all users from the API */
+    const fetchUsers = async () => {
+        setLoading(true)
+        try {
+            const response = await usersApi.getAllUsers()
+            setUsers(response.data || [])
+        } catch (err) {
+            setError(err)
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchUsers()
+    }, [])
 
     const onSearchChange = (event) => {
         setSearch(event.target.value)
     }
 
-    function filterUsers(data) {
-        return (
-            data.user.name?.toLowerCase().indexOf(search.toLowerCase()) > -1 ||
-            data.user.email.toLowerCase().indexOf(search.toLowerCase()) > -1
-        )
+    /** @param {object} user */
+    const filterUsers = (user) => {
+        if (!search) return true
+        const q = search.toLowerCase()
+        return (user.name || '').toLowerCase().includes(q) || user.email.toLowerCase().includes(q)
     }
 
-    const addNew = () => {
-        const dialogProp = {
-            type: 'ADD',
-            cancelButtonName: 'Cancel',
-            confirmButtonName: 'Send Invite',
-            data: null
-        }
-        setInviteDialogProps(dialogProp)
-        setShowInviteDialog(true)
-    }
-
-    const edit = (user) => {
-        if (user.status.toUpperCase() === 'INVITED') {
-            editInvite(user)
-        } else {
-            editUser(user)
-        }
-    }
-
-    const editInvite = (user) => {
-        const dialogProp = {
-            type: 'EDIT',
-            cancelButtonName: 'Cancel',
-            confirmButtonName: 'Update Invite',
-            data: user
-        }
-        setInviteDialogProps(dialogProp)
-        setShowInviteDialog(true)
-    }
-
-    const editUser = (user) => {
-        const dialogProp = {
-            type: 'EDIT',
-            cancelButtonName: 'Cancel',
-            confirmButtonName: 'Save',
-            data: user
-        }
-        setInviteDialogProps(dialogProp)
-        setShowEditDialog(true)
-    }
-
+    /** @param {object} user */
     const deleteUser = async (user) => {
-        const confirmPayload = {
-            title: `Delete`,
-            description: `Remove ${user.name ?? user.email} from organization?`,
-            confirmButtonName: 'Delete',
+        const isConfirmed = await confirm({
+            title: 'Deactivate User',
+            description: `Are you sure you want to deactivate ${user.name || user.email}?`,
+            confirmButtonName: 'Deactivate',
             cancelButtonName: 'Cancel'
-        }
-        const isConfirmed = await confirm(confirmPayload)
+        })
 
         if (isConfirmed) {
             try {
                 setDeletingUserId(user.id)
-                const deleteResp = await userApi.deleteOrganizationUser(currentUser.activeOrganizationId, user.id)
-                if (deleteResp.data) {
-                    enqueueSnackbar({
-                        message: 'User removed from organization successfully',
-                        options: {
-                            key: new Date().getTime() + Math.random(),
-                            variant: 'success',
-                            action: (key) => (
-                                <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
-                                    <IconX />
-                                </Button>
-                            )
-                        }
-                    })
-                    onConfirm()
-                }
-            } catch (error) {
+                await usersApi.deactivateUser(user.id)
                 enqueueSnackbar({
-                    message: `Failed to delete User: ${
-                        typeof error.response.data === 'object' ? error.response.data.message : error.response.data
-                    }`,
+                    message: 'User deactivated successfully',
+                    options: {
+                        key: new Date().getTime() + Math.random(),
+                        variant: 'success',
+                        action: (key) => (
+                            <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                                <IconX />
+                            </Button>
+                        )
+                    }
+                })
+                fetchUsers()
+            } catch (err) {
+                enqueueSnackbar({
+                    message: `Failed to deactivate user: ${err?.response?.data?.error || err.message}`,
                     options: {
                         key: new Date().getTime() + Math.random(),
                         variant: 'error',
@@ -360,38 +234,35 @@ const Users = () => {
         }
     }
 
-    const onConfirm = () => {
-        setShowInviteDialog(false)
-        setShowEditDialog(false)
-        getAllUsersByOrganizationIdApi.request(currentUser.activeOrganizationId)
+    const onRoleChangeConfirm = () => {
+        setRoleDialogUser(null)
+        enqueueSnackbar({
+            message: 'User role updated successfully',
+            options: {
+                key: new Date().getTime() + Math.random(),
+                variant: 'success',
+                action: (key) => (
+                    <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                        <IconX />
+                    </Button>
+                )
+            }
+        })
+        fetchUsers()
     }
 
-    useEffect(() => {
-        getAllUsersByOrganizationIdApi.request(currentUser.activeOrganizationId)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    /** @param {string} role */
+    const getRoleChipColor = (role) => {
+        if (role === 'admin') return 'primary'
+        return 'default'
+    }
 
-    useEffect(() => {
-        setLoading(getAllUsersByOrganizationIdApi.loading)
-    }, [getAllUsersByOrganizationIdApi.loading])
-
-    useEffect(() => {
-        if (getAllUsersByOrganizationIdApi.error) {
-            setError(getAllUsersByOrganizationIdApi.error)
-        }
-    }, [getAllUsersByOrganizationIdApi.error, setError])
-
-    useEffect(() => {
-        if (getAllUsersByOrganizationIdApi.data) {
-            const users = getAllUsersByOrganizationIdApi.data || []
-            const orgAdmin = users.find((user) => user.isOrgOwner === true)
-            if (orgAdmin) {
-                users.splice(users.indexOf(orgAdmin), 1)
-                users.unshift(orgAdmin)
-            }
-            setUsers(users)
-        }
-    }, [getAllUsersByOrganizationIdApi.data])
+    /** @param {string} status */
+    const getStatusChipColor = (status) => {
+        if (status === 'active') return 'success'
+        if (status === 'unverified') return 'warning'
+        return 'error'
+    }
 
     return (
         <>
@@ -400,18 +271,12 @@ const Users = () => {
                     <ErrorBoundary error={error} />
                 ) : (
                     <Stack flexDirection='column' sx={{ gap: 3 }}>
-                        <ViewHeader onSearchChange={onSearchChange} search={true} searchPlaceholder='Search Users' title='User Management'>
-                            <StyledPermissionButton
-                                permissionId={'workspace:add-user,users:manage'}
-                                variant='contained'
-                                sx={{ borderRadius: 2, height: '100%' }}
-                                onClick={addNew}
-                                startIcon={<IconPlus />}
-                                id='btn_createUser'
-                            >
-                                Invite User
-                            </StyledPermissionButton>
-                        </ViewHeader>
+                        <ViewHeader
+                            onSearchChange={onSearchChange}
+                            search={true}
+                            searchPlaceholder='Search Users'
+                            title='User Management'
+                        />
                         {!isLoading && users.length === 0 ? (
                             <Stack sx={{ alignItems: 'center', justifyContent: 'center' }} flexDirection='column'>
                                 <Box sx={{ p: 2, height: 'auto' }}>
@@ -424,113 +289,122 @@ const Users = () => {
                                 <div>No Users Yet</div>
                             </Stack>
                         ) : (
-                            <>
-                                <Stack flexDirection='row'>
-                                    <Box sx={{ py: 2, height: 'auto', width: '100%' }}>
-                                        <TableContainer
-                                            style={{ display: 'flex', flexDirection: 'row' }}
-                                            sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }}
-                                            component={Paper}
-                                        >
-                                            <Table sx={{ minWidth: 650 }} aria-label='users table'>
-                                                <TableHead
-                                                    sx={{
-                                                        backgroundColor: customization.isDarkMode
-                                                            ? theme.palette.common.black
-                                                            : theme.palette.grey[100],
-                                                        height: 56
-                                                    }}
-                                                >
-                                                    <TableRow>
-                                                        <StyledTableCell>&nbsp;</StyledTableCell>
-                                                        <StyledTableCell>Email/Name</StyledTableCell>
-                                                        <StyledTableCell>Assigned Roles</StyledTableCell>
-                                                        <StyledTableCell>Status</StyledTableCell>
-                                                        <StyledTableCell>Last Login</StyledTableCell>
-                                                        <StyledTableCell> </StyledTableCell>
-                                                    </TableRow>
-                                                </TableHead>
-                                                <TableBody>
-                                                    {isLoading ? (
-                                                        <>
-                                                            <StyledTableRow>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
+                            <Stack flexDirection='row'>
+                                <Box sx={{ py: 2, height: 'auto', width: '100%' }}>
+                                    <TableContainer
+                                        style={{ display: 'flex', flexDirection: 'row' }}
+                                        sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }}
+                                        component={Paper}
+                                    >
+                                        <Table sx={{ minWidth: 650 }} aria-label='users table'>
+                                            <TableHead
+                                                sx={{
+                                                    backgroundColor: customization.isDarkMode
+                                                        ? theme.palette.common.black
+                                                        : theme.palette.grey[100],
+                                                    height: 56
+                                                }}
+                                            >
+                                                <TableRow>
+                                                    <StyledTableCell sx={{ width: 50 }}>&nbsp;</StyledTableCell>
+                                                    <StyledTableCell>Name</StyledTableCell>
+                                                    <StyledTableCell>Email</StyledTableCell>
+                                                    <StyledTableCell>Role</StyledTableCell>
+                                                    <StyledTableCell>Status</StyledTableCell>
+                                                    <StyledTableCell>Created</StyledTableCell>
+                                                    <StyledTableCell sx={{ width: 100 }}> </StyledTableCell>
+                                                </TableRow>
+                                            </TableHead>
+                                            <TableBody>
+                                                {isLoading ? (
+                                                    <>
+                                                        {[1, 2, 3].map((i) => (
+                                                            <StyledTableRow key={i}>
+                                                                {[1, 2, 3, 4, 5, 6, 7].map((j) => (
+                                                                    <StyledTableCell key={j}>
+                                                                        <Skeleton variant='text' />
+                                                                    </StyledTableCell>
+                                                                ))}
                                                             </StyledTableRow>
-                                                            <StyledTableRow>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
-                                                                <StyledTableCell>
-                                                                    <Skeleton variant='text' />
-                                                                </StyledTableCell>
-                                                            </StyledTableRow>
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            {users.filter(filterUsers).map((item, index) => (
-                                                                <ShowUserRow
-                                                                    key={index}
-                                                                    row={item}
-                                                                    onDeleteClick={deleteUser}
-                                                                    onEditClick={edit}
-                                                                    deletingUserId={deletingUserId}
+                                                        ))}
+                                                    </>
+                                                ) : (
+                                                    users.filter(filterUsers).map((user) => (
+                                                        <StyledTableRow
+                                                            hover
+                                                            key={user.id}
+                                                            sx={{ '&:last-child td, &:last-child th': { border: 0 } }}
+                                                        >
+                                                            <StyledTableCell>
+                                                                {user.role === 'admin' ? (
+                                                                    <IconShieldCheck size={22} />
+                                                                ) : (
+                                                                    <IconUser size={22} />
+                                                                )}
+                                                            </StyledTableCell>
+                                                            <StyledTableCell>{user.name || '-'}</StyledTableCell>
+                                                            <StyledTableCell>{user.email}</StyledTableCell>
+                                                            <StyledTableCell>
+                                                                <Chip
+                                                                    size='small'
+                                                                    label={user.role?.toUpperCase() || 'USER'}
+                                                                    color={getRoleChipColor(user.role)}
                                                                 />
-                                                            ))}
-                                                        </>
-                                                    )}
-                                                </TableBody>
-                                            </Table>
-                                        </TableContainer>
-                                    </Box>
-                                </Stack>
-                            </>
+                                                            </StyledTableCell>
+                                                            <StyledTableCell>
+                                                                <Chip
+                                                                    size='small'
+                                                                    label={user.status?.toUpperCase()}
+                                                                    color={getStatusChipColor(user.status)}
+                                                                />
+                                                            </StyledTableCell>
+                                                            <StyledTableCell>
+                                                                {user.createdDate
+                                                                    ? moment(user.createdDate).format('DD/MM/YYYY HH:mm')
+                                                                    : '-'}
+                                                            </StyledTableCell>
+                                                            <StyledTableCell>
+                                                                <Stack direction='row' spacing={1}>
+                                                                    {user.id !== currentUser?.id && (
+                                                                        <IconEdit
+                                                                            size={20}
+                                                                            style={{ cursor: 'pointer' }}
+                                                                            color={theme.palette.primary.main}
+                                                                            onClick={() => setRoleDialogUser(user)}
+                                                                        />
+                                                                    )}
+                                                                    {user.id !== currentUser?.id &&
+                                                                        user.status !== 'deleted' &&
+                                                                        (deletingUserId === user.id ? (
+                                                                            <CircularProgress size={20} color='error' />
+                                                                        ) : (
+                                                                            <IconTrash
+                                                                                size={20}
+                                                                                style={{ cursor: 'pointer' }}
+                                                                                color={theme.palette.error.main}
+                                                                                onClick={() => deleteUser(user)}
+                                                                            />
+                                                                        ))}
+                                                                </Stack>
+                                                            </StyledTableCell>
+                                                        </StyledTableRow>
+                                                    ))
+                                                )}
+                                            </TableBody>
+                                        </Table>
+                                    </TableContainer>
+                                </Box>
+                            </Stack>
                         )}
                     </Stack>
                 )}
             </MainCard>
-            {showInviteDialog && (
-                <InviteUsersDialog
-                    show={showInviteDialog}
-                    dialogProps={inviteDialogProps}
-                    onCancel={() => setShowInviteDialog(false)}
-                    onConfirm={onConfirm}
-                ></InviteUsersDialog>
-            )}
-            {showEditDialog && (
-                <EditUserDialog
-                    show={showEditDialog}
-                    dialogProps={inviteDialogProps}
-                    onCancel={() => setShowEditDialog(false)}
-                    onConfirm={onConfirm}
-                    setError={setError}
-                ></EditUserDialog>
-            )}
+            <ChangeRoleDialog
+                show={!!roleDialogUser}
+                user={roleDialogUser}
+                onCancel={() => setRoleDialogUser(null)}
+                onConfirm={onRoleChangeConfirm}
+            />
             <ConfirmDialog />
         </>
     )

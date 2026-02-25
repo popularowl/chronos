@@ -59,6 +59,7 @@ import { internalChatMessagesRouteTest } from './routes/v1/internal-chat-message
 import { nvidiaNimRouteTest } from './routes/v1/nvidia-nim.route.test'
 import { oauth2RouteTest } from './routes/v1/oauth2.route.test'
 import { openaiRealtimeRouteTest } from './routes/v1/openai-realtime.route.test'
+import { usersRouteTest } from './routes/v1/users.route.test'
 import { chatflowsServiceTest } from './services/chatflows.service.test'
 import { agentflowv2GeneratorServiceTest } from './services/agentflowv2-generator.service.test'
 import { toolsServiceTest } from './services/tools.service.test'
@@ -70,6 +71,26 @@ import { validationServiceTest } from './services/validation.service.test'
 import { feedbackValidationServiceTest } from './services/feedback-validation.service.test'
 import { chatMessagesServiceTest } from './services/chat-messages.service.test'
 import { marketplacesServiceTest } from './services/marketplaces.service.test'
+import { usersServiceTest } from './services/users.service.test'
+import { apikeyServiceTest } from './services/apikey.service.test'
+import { variablesServiceTest } from './services/variables.service.test'
+import { leadsServiceTest } from './services/leads.service.test'
+import { flowConfigsServiceTest } from './services/flow-configs.service.test'
+import { settingsServiceTest } from './services/settings.service.test'
+import { promptsListsServiceTest } from './services/prompts-lists.service.test'
+// versions.service.test.ts cannot be included here because Node.js v24 does not allow
+// mocking fs.existsSync at runtime (non-configurable property). It needs its own jest.mock().
+// import { versionsServiceTest } from './services/versions.service.test'
+import { vectorsServiceTest } from './services/vectors.service.test'
+import { statsServiceTest } from './services/stats.service.test'
+import { componentsCredentialsServiceTest } from './services/components-credentials.service.test'
+import { upsertHistoryServiceTest } from './services/upsert-history.service.test'
+import { loadPromptsServiceTest } from './services/load-prompts.service.test'
+import { textToSpeechServiceTest } from './services/text-to-speech.service.test'
+import { datasetServiceTest } from './services/dataset.service.test'
+import { logServiceTest } from './services/log.service.test'
+import { predictionsServiceTest } from './services/predictions.service.test'
+import { evaluatorServiceTest } from './services/evaluator.service.test'
 import { apiKeyTest } from './utils/api-key.util.test'
 import { sanitizeUtilTest } from './utils/sanitize.util.test'
 import { domainValidationUtilTest } from './utils/domain-validation.util.test'
@@ -86,6 +107,15 @@ import { sseStreamerUtilTest } from './utils/SSEStreamer.util.test'
 import { quotaUsageUtilTest } from './utils/quotaUsage.util.test'
 import { hubUtilTest } from './utils/hub.util.test'
 import { fileRepositoryUtilTest } from './utils/fileRepository.util.test'
+import { addChatMessageUtilTest } from './utils/addChatMessage.util.test'
+import { getChatMessageFeedbackUtilTest } from './utils/getChatMessageFeedback.util.test'
+import { updateChatMessageFeedbackUtilTest } from './utils/updateChatMessageFeedback.util.test'
+import { getUploadsConfigUtilTest } from './utils/getUploadsConfig.util.test'
+import { initializeUserUtilTest } from './utils/initializeUser.util.test'
+import { getChatMessageUtilTest } from './utils/getChatMessage.util.test'
+import { addChatflowsCountUtilTest } from './utils/addChatflowsCount.util.test'
+import { validateKeyExtraUtilTest } from './utils/validateKeyExtra.util.test'
+import { addChatMessageFeedbackUtilTest } from './utils/addChatMessageFeedback.util.test'
 import { errorUtilsTest } from './errors/utils.test'
 import { internalChronosErrorTest } from './errors/internalChronosError.test'
 import { cachePoolTest } from './CachePool.test'
@@ -166,6 +196,7 @@ describe('Routes Test', () => {
     nvidiaNimRouteTest()
     oauth2RouteTest()
     openaiRealtimeRouteTest()
+    usersRouteTest()
 })
 
 describe('Services Test', () => {
@@ -180,6 +211,24 @@ describe('Services Test', () => {
     validationServiceTest()
     chatMessagesServiceTest()
     marketplacesServiceTest()
+    usersServiceTest()
+    apikeyServiceTest()
+    variablesServiceTest()
+    leadsServiceTest()
+    flowConfigsServiceTest()
+    settingsServiceTest()
+    promptsListsServiceTest()
+    // versionsServiceTest()
+    vectorsServiceTest()
+    statsServiceTest()
+    componentsCredentialsServiceTest()
+    upsertHistoryServiceTest()
+    loadPromptsServiceTest()
+    textToSpeechServiceTest()
+    datasetServiceTest()
+    logServiceTest()
+    predictionsServiceTest()
+    evaluatorServiceTest()
 })
 
 describe('Utils Test', () => {
@@ -199,6 +248,15 @@ describe('Utils Test', () => {
     quotaUsageUtilTest()
     hubUtilTest()
     fileRepositoryUtilTest()
+    addChatMessageUtilTest()
+    getChatMessageFeedbackUtilTest()
+    updateChatMessageFeedbackUtilTest()
+    getUploadsConfigUtilTest()
+    initializeUserUtilTest()
+    getChatMessageUtilTest()
+    addChatflowsCountUtilTest()
+    validateKeyExtraUtilTest()
+    addChatMessageFeedbackUtilTest()
 })
 
 describe('Errors Test', () => {

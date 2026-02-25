@@ -39,6 +39,7 @@ import { ModifyChatflowType1755066758601 } from './1755066758601-ModifyChatflowT
 import { AddTextToSpeechToChatFlow1759419136055 } from './1759419136055-AddTextToSpeechToChatFlow'
 import { AddChatFlowNameIndex1759424923093 } from './1759424923093-AddChatFlowNameIndex'
 import { AddSimpleUser1760000000000 } from './1760000000000-AddSimpleUser'
+import { AddRoleToUser1770000000000 } from './1770000000000-AddRoleToUser'
 
 export const sqliteMigrations = [
     Init1693835579790,
@@ -81,5 +82,6 @@ export const sqliteMigrations = [
     ModifyChatflowType1755066758601,
     AddTextToSpeechToChatFlow1759419136055,
     AddChatFlowNameIndex1759424923093,
-    AddSimpleUser1760000000000
+    AddSimpleUser1760000000000,
+    AddRoleToUser1770000000000
 ]

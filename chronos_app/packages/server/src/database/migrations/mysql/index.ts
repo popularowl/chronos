@@ -43,6 +43,7 @@ import { AddTextToSpeechToChatFlow1759419216034 } from './1759419216034-AddTextT
 import { AddChatFlowNameIndex1759424828558 } from './1759424828558-AddChatFlowNameIndex'
 import { FixDocumentStoreFileChunkLongText1765000000000 } from './1765000000000-FixDocumentStoreFileChunkLongText'
 import { AddSimpleUser1760000000000 } from './1760000000000-AddSimpleUser'
+import { AddRoleToUser1770000000000 } from './1770000000000-AddRoleToUser'
 
 export const mysqlMigrations = [
     Init1693840429259,
@@ -89,5 +90,6 @@ export const mysqlMigrations = [
     AddTextToSpeechToChatFlow1759419216034,
     AddChatFlowNameIndex1759424828558,
     FixDocumentStoreFileChunkLongText1765000000000,
-    AddSimpleUser1760000000000
+    AddSimpleUser1760000000000,
+    AddRoleToUser1770000000000
 ]

@@ -1,8 +1,7 @@
 import { createPortal } from 'react-dom'
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import { Dialog, DialogContent, DialogTitle, TableContainer, Table, TableHead, TableRow, TableCell, TableBody, Paper } from '@mui/material'
-import moment from 'moment'
+import { Dialog, DialogContent, DialogTitle, TableContainer, Table, TableRow, TableCell, TableBody, Paper } from '@mui/material'
 import axios from 'axios'
 import { baseURL } from '@/store/constant'
 
@@ -19,11 +18,9 @@ const AboutDialog = ({ show, onCancel }) => {
                     headers: { 'Content-type': 'application/json', 'x-request-from': 'internal' }
                 })
                 .then((response) => {
-                    const version = response.data.version
                     setData({
-                        currentVersion: version,
-                        name: version,
-                        published_at: new Date().toISOString()
+                        currentVersion: response.data.version,
+                        releaseDate: response.data.releaseDate
                     })
                 })
                 .catch((error) => {
@@ -49,23 +46,19 @@ const AboutDialog = ({ show, onCancel }) => {
             <DialogContent>
                 {data && (
                     <TableContainer component={Paper}>
-                        <Table aria-label='simple table'>
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Current Version</TableCell>
-                                    <TableCell>Latest Version</TableCell>
-                                    <TableCell>Published At</TableCell>
-                                </TableRow>
-                            </TableHead>
+                        <Table aria-label='version table'>
                             <TableBody>
+                                <TableRow>
+                                    <TableCell component='th' scope='row' sx={{ fontWeight: 600 }}>
+                                        Current Version
+                                    </TableCell>
+                                    <TableCell>{data.currentVersion}</TableCell>
+                                </TableRow>
                                 <TableRow sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                    <TableCell component='th' scope='row'>
-                                        {data.currentVersion}
+                                    <TableCell component='th' scope='row' sx={{ fontWeight: 600 }}>
+                                        Release Date
                                     </TableCell>
-                                    <TableCell component='th' scope='row'>
-                                        {data.name}
-                                    </TableCell>
-                                    <TableCell>{moment(data.published_at).fromNow()}</TableCell>
+                                    <TableCell>{data.releaseDate || '-'}</TableCell>
                                 </TableRow>
                             </TableBody>
                         </Table>

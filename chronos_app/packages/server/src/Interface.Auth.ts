@@ -7,6 +7,7 @@ export interface SimpleUser {
     email: string
     name?: string
     status: string
+    role: string
     // Stub properties for compatibility with enterprise code (always undefined in open source)
     activeOrganizationId?: string
     activeWorkspaceId?: string
@@ -16,6 +17,7 @@ export interface SimpleUser {
 export interface AuthTokenPayload {
     userId: string
     email: string
+    role: string
 }
 
 export interface SignupRequest {

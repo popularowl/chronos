@@ -42,6 +42,7 @@ import { AddTextToSpeechToChatFlow1759419231100 } from './1759419231100-AddTextT
 import { AddChatFlowNameIndex1759424809984 } from './1759424809984-AddChatFlowNameIndex'
 import { FixDocumentStoreFileChunkLongText1765000000000 } from './1765000000000-FixDocumentStoreFileChunkLongText'
 import { AddSimpleUser1760000000000 } from './1760000000000-AddSimpleUser'
+import { AddRoleToUser1770000000000 } from './1770000000000-AddRoleToUser'
 
 export const mariadbMigrations = [
     Init1693840429259,
@@ -87,5 +88,6 @@ export const mariadbMigrations = [
     AddTextToSpeechToChatFlow1759419231100,
     AddChatFlowNameIndex1759424809984,
     FixDocumentStoreFileChunkLongText1765000000000,
-    AddSimpleUser1760000000000
+    AddSimpleUser1760000000000,
+    AddRoleToUser1770000000000
 ]

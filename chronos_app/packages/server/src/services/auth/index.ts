@@ -5,7 +5,7 @@
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { v4 as uuidv4 } from 'uuid'
-import { User, UserStatus } from '../../database/entities/User'
+import { User, UserStatus, UserRole } from '../../database/entities/User'
 import { getDataSource } from '../../DataSource'
 import { SignupRequest, LoginRequest, AuthResponse, SimpleUser } from '../../Interface.Auth'
 
@@ -37,6 +37,10 @@ export class AuthService {
         // Hash password
         const hashedPassword = await bcrypt.hash(password, AuthService.SALT_ROUNDS)
 
+        // Assign admin role if this is the first user, otherwise user role
+        const userCount = await userRepo.count()
+        const assignedRole = userCount === 0 ? UserRole.ADMIN : UserRole.USER
+
         // Create user
         const user = new User()
         user.id = uuidv4()
@@ -44,6 +48,7 @@ export class AuthService {
         user.password = hashedPassword
         user.name = name || ''
         user.status = UserStatus.ACTIVE
+        user.role = assignedRole
 
         await userRepo.save(user)
 
@@ -95,17 +100,17 @@ export class AuthService {
         return user ? this.toSimpleUser(user) : null
     }
 
-    verifyToken(token: string): { userId: string; email: string } | null {
+    verifyToken(token: string): { userId: string; email: string; role: string } | null {
         try {
-            const payload = jwt.verify(token, AuthService.JWT_SECRET) as { userId: string; email: string }
-            return { userId: payload.userId, email: payload.email }
+            const payload = jwt.verify(token, AuthService.JWT_SECRET) as { userId: string; email: string; role: string }
+            return { userId: payload.userId, email: payload.email, role: payload.role }
         } catch {
             return null
         }
     }
 
     private generateToken(user: User): string {
-        return jwt.sign({ userId: user.id, email: user.email }, AuthService.JWT_SECRET, {
+        return jwt.sign({ userId: user.id, email: user.email, role: user.role }, AuthService.JWT_SECRET, {
             expiresIn: AuthService.JWT_EXPIRES_IN
         } as jwt.SignOptions)
     }
@@ -115,7 +120,8 @@ export class AuthService {
             id: user.id,
             email: user.email,
             name: user.name || undefined,
-            status: user.status
+            status: user.status,
+            role: user.role
         }
     }
 }

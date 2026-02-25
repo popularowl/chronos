@@ -104,7 +104,7 @@ export async function initializeInitialUser(): Promise<void> {
         return
     }
 
-    // Create the initial user
+    // Create the initial user (will automatically get admin role as the first user)
     try {
         const authService = new AuthService()
         await authService.signup({
@@ -113,7 +113,7 @@ export async function initializeInitialUser(): Promise<void> {
             name: config.name
         })
 
-        logger.info(`✅ [server]: Initial user created successfully: ${config.email}`)
+        logger.info(`✅ [server]: Initial admin user created successfully: ${config.email}`)
     } catch (error) {
         logger.error(`❌ [server]: Failed to create initial user: ${error}`)
     }
