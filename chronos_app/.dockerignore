@@ -1,40 +1,140 @@
-# Dependencies (will be installed fresh in container)
+# =============================================================================
+# Dependencies — rebuilt inside the container
+# =============================================================================
 node_modules
 **/node_modules
+.pnpm-store
 
-# Build outputs (will be built fresh in container)
-dist
-build
+# =============================================================================
+# Build outputs — rebuilt inside the container
+# =============================================================================
 **/dist
 **/build
+**/.turbo
+.turbo
 
-# Environment files (should not be baked into image)
-.env
-.env.*
-packages/server/.env
-packages/ui/.env
+# =============================================================================
+# Test files — not needed for production image
+# =============================================================================
+**/test
+**/tests
+**/__tests__
+**/__mocks__
+**/coverage
+**/*.test.ts
+**/*.test.js
+**/*.spec.ts
+**/*.spec.js
+**/jest.config.*
+**/vitest.config.*
+artillery-load-test.yml
 
-# Git
-.git
-.gitignore
-
-# IDE
-.vscode
-.idea
-*.swp
-*.swo
-
-# Docker files
+# =============================================================================
+# Docker / compose files — avoid recursive copy of Docker configs
+# =============================================================================
+docker/
 Dockerfile*
 docker-compose*
-docker/
+**/.dockerignore
 
-# Documentation (not needed for build)
-*.md
+# =============================================================================
+# Git
+# =============================================================================
+.git
+.gitignore
+.github
+
+# =============================================================================
+# IDE / editor
+# =============================================================================
+.vscode
+.idea
+**/*.swp
+**/*.swo
+*~
+
+# =============================================================================
+# Environment files — must not be baked into image
+# =============================================================================
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+
+# =============================================================================
+# Documentation — not needed at runtime
+# =============================================================================
+**/*.md
 LICENSE*
+CLAUDE.md
+AGENTS.md
+GEMINI.md
+CONTRIBUTING.md
 images/
-assets/
+docs/
+
+# =============================================================================
+# Metrics / observability configs — not part of the app
+# =============================================================================
 metrics/
 
-# Turbo cache
-.turbo
+# =============================================================================
+# Volume-mounted data directories — large, runtime-only
+# =============================================================================
+.chronos
+.ollama_data
+.postgres_data
+.redis_data
+.qdrant_data
+.loki
+.grafana
+.alloy
+
+# =============================================================================
+# Secrets / keys — must never be in image
+# =============================================================================
+**/*.key
+**/*.keys
+**/*.priv
+**/*.rsa
+**/*.pem
+**/*.crt
+**/*.csr
+**/*.ca
+**/*.p12
+**/*.kdb
+**/*.der
+**/api.json
+
+# =============================================================================
+# OS artifacts
+# =============================================================================
+**/.DS_Store
+**/Thumbs.db
+
+# =============================================================================
+# Logs
+# =============================================================================
+**/logs
+**/*.log
+**/npm-debug.log*
+**/pnpm-debug.log*
+
+# =============================================================================
+# Uploads — runtime user data, not part of image
+# =============================================================================
+**/uploads
+
+# =============================================================================
+# Misc non-essential files
+# =============================================================================
+**/*.tgz
+**/*.vsix
+**/*.map
+.nvmrc
+.eslintrc*
+.eslintignore
+.prettierrc*
+.prettierignore
+.editorconfig

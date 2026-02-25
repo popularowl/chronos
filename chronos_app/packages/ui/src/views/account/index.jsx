@@ -229,6 +229,18 @@ const AccountSettings = () => {
                                 }}
                             >
                                 <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                    <Typography variant='body1'>Role</Typography>
+                                    <OutlinedInput
+                                        id='role'
+                                        type='string'
+                                        fullWidth
+                                        disabled
+                                        value={
+                                            currentUser?.role ? currentUser.role.charAt(0).toUpperCase() + currentUser.role.slice(1) : ''
+                                        }
+                                    />
+                                </Box>
+                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                     <Typography variant='body1'>Name</Typography>
                                     <OutlinedInput
                                         id='name'

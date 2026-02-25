@@ -14,12 +14,14 @@ const getVersion = async () => {
                 path.join(__dirname, '..', '..', '..', '..', 'package.json'),
                 path.join(__dirname, '..', '..', '..', '..', '..', 'package.json')
             ]
+            // Return the topmost (root) package.json found
+            let found = ''
             for (const checkPath of checkPaths) {
                 if (fs.existsSync(checkPath)) {
-                    return checkPath
+                    found = checkPath
                 }
             }
-            return ''
+            return found
         }
         const packagejsonPath = getPackageJsonPath()
         if (!packagejsonPath) {
@@ -29,7 +31,8 @@ const getVersion = async () => {
             const content = await fs.promises.readFile(packagejsonPath, 'utf8')
             const parsedContent = JSON.parse(content)
             return {
-                version: parsedContent.version
+                version: parsedContent.version,
+                releaseDate: parsedContent.releaseDate || null
             }
         } catch (error) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `Version not found- ${getErrorMessage(error)}`)

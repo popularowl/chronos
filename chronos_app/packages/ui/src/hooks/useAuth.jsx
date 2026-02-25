@@ -8,7 +8,15 @@ import { useSelector } from 'react-redux'
  * Permissions that require the admin role.
  * All other permissions are accessible to any authenticated user.
  */
-const ADMIN_PERMISSIONS = new Set(['users:manage', 'roles:manage', 'sso:manage', 'loginActivity:view'])
+const ADMIN_PERMISSIONS = new Set([
+    'users:manage',
+    'roles:manage',
+    'sso:manage',
+    'loginActivity:view',
+    'datasets:view',
+    'evaluators:view',
+    'evaluations:view'
+])
 
 export const useAuth = () => {
     const currentUser = useSelector((state) => state.auth.user)
