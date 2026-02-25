@@ -1,53 +1,46 @@
-import { createMockRepository } from '../mocks/appServer.mock'
+const getRunningExpressAppExports = require('../../src/utils/getRunningExpressApp')
+const chatflowsServiceExports = require('../../src/services/chatflows')
+const utilsExports = require('../../src/utils')
 
-/**
- * Mock setup for flow-configs service tests
- */
-const mockRepository = createMockRepository()
-
-const mockNodesPool = {
-    componentCredentials: {
-        'openai-credential': { name: 'OpenAI API Key' }
-    }
-}
-
-const mockAppServer = {
-    AppDataSource: {
-        getRepository: jest.fn().mockReturnValue(mockRepository)
-    },
-    nodesPool: mockNodesPool
-}
-
-jest.mock('../../src/utils/getRunningExpressApp', () => ({
-    getRunningExpressApp: jest.fn(() => mockAppServer)
-}))
-
-// Mock chatflowsService
-const mockGetChatflowById = jest.fn()
-jest.mock('../../src/services/chatflows', () => ({
-    default: {
-        getChatflowById: mockGetChatflowById
-    }
-}))
-
-// Mock findAvailableConfigs utility
-const mockFindAvailableConfigs = jest.fn()
-jest.mock('../../src/utils', () => ({
-    findAvailableConfigs: mockFindAvailableConfigs
-}))
-
-// Import the service after mocking
-import flowConfigsService from '../../src/services/flow-configs'
-
-/**
- * Test suite for Flow Configs service
- * Tests chatflow configuration retrieval
- */
 export function flowConfigsServiceTest() {
     describe('Flow Configs Service', () => {
+        const mockNodesPool = {
+            componentCredentials: {
+                'openai-credential': { name: 'OpenAI API Key' }
+            }
+        }
+
+        const mockAppServer = {
+            AppDataSource: { getRepository: jest.fn() },
+            nodesPool: mockNodesPool
+        }
+
+        const origGetRunningExpressApp = getRunningExpressAppExports.getRunningExpressApp
+        const origGetChatflowById = chatflowsServiceExports.default?.getChatflowById
+        const origFindAvailableConfigs = utilsExports.findAvailableConfigs
+
+        let mockGetChatflowById: jest.Mock
+        let mockFindAvailableConfigs: jest.Mock
+
         beforeEach(() => {
-            jest.clearAllMocks()
+            mockGetChatflowById = jest.fn()
+            mockFindAvailableConfigs = jest.fn()
+            getRunningExpressAppExports.getRunningExpressApp = jest.fn().mockReturnValue(mockAppServer)
+            if (chatflowsServiceExports.default) {
+                chatflowsServiceExports.default.getChatflowById = mockGetChatflowById
+            }
+            utilsExports.findAvailableConfigs = mockFindAvailableConfigs
         })
+
+        afterEach(() => {
+            getRunningExpressAppExports.getRunningExpressApp = origGetRunningExpressApp
+            if (chatflowsServiceExports.default) {
+                chatflowsServiceExports.default.getChatflowById = origGetChatflowById
+            }
+            utilsExports.findAvailableConfigs = origFindAvailableConfigs
+        })
+
+        const flowConfigsService = require('../../src/services/flow-configs').default
 
         describe('getSingleFlowConfig', () => {
             it('should return available configs for a chatflow', async () => {
@@ -58,7 +51,6 @@ export function flowConfigsServiceTest() {
                     })
                 }
                 const mockConfigs = [{ nodeId: 'node-1', label: 'Model', name: 'model' }]
-
                 mockGetChatflowById.mockResolvedValue(mockChatflow)
                 mockFindAvailableConfigs.mockReturnValue(mockConfigs)
 
@@ -71,13 +63,11 @@ export function flowConfigsServiceTest() {
 
             it('should throw error when chatflow not found', async () => {
                 mockGetChatflowById.mockResolvedValue(null)
-
                 await expect(flowConfigsService.getSingleFlowConfig('non-existent')).rejects.toThrow('Chatflow non-existent not found')
             })
 
             it('should throw InternalChronosError on general error', async () => {
                 mockGetChatflowById.mockRejectedValue(new Error('Database error'))
-
                 await expect(flowConfigsService.getSingleFlowConfig('flow-1')).rejects.toThrow(
                     'Error: flowConfigService.getSingleFlowConfig'
                 )
@@ -88,11 +78,7 @@ export function flowConfigsServiceTest() {
                     { id: 'node-1', data: { name: 'LLM' } },
                     { id: 'node-2', data: { name: 'Memory' } }
                 ]
-                const mockChatflow = {
-                    id: 'flow-1',
-                    flowData: JSON.stringify({ nodes })
-                }
-
+                const mockChatflow = { id: 'flow-1', flowData: JSON.stringify({ nodes }) }
                 mockGetChatflowById.mockResolvedValue(mockChatflow)
                 mockFindAvailableConfigs.mockReturnValue([])
 

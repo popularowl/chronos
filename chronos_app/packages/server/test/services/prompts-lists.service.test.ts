@@ -1,23 +1,18 @@
 import axios from 'axios'
 
-/**
- * Mock axios for prompts-lists service tests
- */
-jest.mock('axios')
-const mockedAxios = axios as jest.Mocked<typeof axios>
-
-// Import the service after mocking
-import promptsListsService from '../../src/services/prompts-lists'
-
-/**
- * Test suite for Prompts Lists service
- * Tests LangChain Hub API integration
- */
 export function promptsListsServiceTest() {
     describe('Prompts Lists Service', () => {
+        const origAxiosGet = axios.get
+
         beforeEach(() => {
-            jest.clearAllMocks()
+            axios.get = jest.fn() as any
         })
+
+        afterEach(() => {
+            axios.get = origAxiosGet
+        })
+
+        const promptsListsService = require('../../src/services/prompts-lists').default
 
         describe('createPromptsList', () => {
             it('should return repos from LangChain Hub API', async () => {
@@ -25,38 +20,37 @@ export function promptsListsServiceTest() {
                     { id: 'repo-1', name: 'prompt-template-1' },
                     { id: 'repo-2', name: 'prompt-template-2' }
                 ]
-                mockedAxios.get.mockResolvedValue({ data: { repos: mockRepos } })
+                ;(axios.get as jest.Mock).mockResolvedValue({ data: { repos: mockRepos } })
 
                 const result = await promptsListsService.createPromptsList({})
 
                 expect(result).toEqual({ status: 'OK', repos: mockRepos })
-                expect(mockedAxios.get).toHaveBeenCalledWith(expect.stringContaining('https://api.hub.langchain.com/repos/'))
+                expect(axios.get).toHaveBeenCalledWith(expect.stringContaining('https://api.hub.langchain.com/repos/'))
             })
 
             it('should include tags parameter when provided', async () => {
                 const mockRepos = [{ id: 'repo-1', name: 'tagged-prompt' }]
-                mockedAxios.get.mockResolvedValue({ data: { repos: mockRepos } })
+                ;(axios.get as jest.Mock).mockResolvedValue({ data: { repos: mockRepos } })
 
                 const result = await promptsListsService.createPromptsList({ tags: 'qa,chat' })
 
                 expect(result).toEqual({ status: 'OK', repos: mockRepos })
-                expect(mockedAxios.get).toHaveBeenCalledWith(expect.stringContaining('tags=qa,chat'))
+                expect(axios.get).toHaveBeenCalledWith(expect.stringContaining('tags=qa,chat'))
             })
 
             it('should return ERROR status when API call fails', async () => {
-                mockedAxios.get.mockRejectedValue(new Error('Network error'))
+                ;(axios.get as jest.Mock).mockRejectedValue(new Error('Network error'))
 
                 const result = await promptsListsService.createPromptsList({})
 
                 expect(result).toEqual({ status: 'ERROR', repos: [] })
             })
 
-            it('should return ERROR status when response has no repos', async () => {
-                mockedAxios.get.mockResolvedValue({ data: {} })
+            it('should return undefined when response has no repos', async () => {
+                ;(axios.get as jest.Mock).mockResolvedValue({ data: {} })
 
                 const result = await promptsListsService.createPromptsList({})
 
-                // When repos is undefined, it returns undefined (falsy), so no return in try block
                 expect(result).toBeUndefined()
             })
         })

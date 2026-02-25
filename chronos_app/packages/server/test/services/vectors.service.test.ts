@@ -1,26 +1,22 @@
 import { Request } from 'express'
 
-/**
- * Mock upsertVector utility for vectors service tests
- */
-const mockUpsertVector = jest.fn()
+const upsertVectorExports = require('../../src/utils/upsertVector')
 
-jest.mock('../../src/utils/upsertVector', () => ({
-    upsertVector: mockUpsertVector
-}))
-
-// Import the service after mocking
-import vectorsService from '../../src/services/vectors'
-
-/**
- * Test suite for Vectors service
- * Tests vector upsert middleware operations
- */
 export function vectorsServiceTest() {
     describe('Vectors Service', () => {
+        const origUpsertVector = upsertVectorExports.upsertVector
+        let mockUpsertVector: jest.Mock
+
         beforeEach(() => {
-            jest.clearAllMocks()
+            mockUpsertVector = jest.fn()
+            upsertVectorExports.upsertVector = mockUpsertVector
         })
+
+        afterEach(() => {
+            upsertVectorExports.upsertVector = origUpsertVector
+        })
+
+        const vectorsService = require('../../src/services/vectors').default
 
         describe('upsertVectorMiddleware', () => {
             it('should call upsertVector with request and isInternal=false by default', async () => {
