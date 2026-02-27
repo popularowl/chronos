@@ -11,14 +11,14 @@
 <div style="page-break-after: always;">&nbsp;</div>
 
 
-[Chronos](https://github.com/intelligexhq/chronos) project is a fork of [Flowise](https://github.com/FlowiseAI/Flowise) - with the goal to maintain a lean visual AI agent builder tool, focused on the local and self hosted deployments. It provides:
+[Chronos](https://intelligex.com/chronos) is a fork of [Flowise](https://github.com/FlowiseAI/Flowise) project - with the goal to maintain a lean visual AI agent builder, focused on self hosted enviroenments, observability and interaction with self hosted data models. It provides:
 
-- Self-hosting focused visual AI agent and workflow builder.
-- Significant focus on advanced logging and observability.
-- Multiple deployment modes and integrations with localy hosted LLM models.
-- Horizontal scalability through Redis-based job queues and workers.
-- 100+ of prebuilt LLM model integrations.
-- Collection of prebuilt AI agent templates.
+- Self-hosting focused visual AI agent workflow builder.
+- 100+ of prebuilt LLM model integrations and templates.
+- Significant focus on observability, logging and local datastores.
+- Optimised container images, for local development and hosting.
+- Number of [Docker compose examples](./chronos_app/docker/) to get you started.
+- Set of [tutorials and how to guides](https://intelligex.com/).
 
 ## Quick Start
 
@@ -34,8 +34,6 @@ docker run -d --name chronos -p 3001:3000 chronos:local
 docker stop chronos
 ```
 
-More in depth [tutorials for hosting and using Chronos](https://intelligex.com).
-
 ## Env Variables
 
 Chronos allows configuration via set of supported environment variables. See example [env variables](chronos_app/docker/.env.example).
@@ -46,4 +44,4 @@ Source code in this repository is made available under the [Apache License Versi
 
 ## Need Assistance?
 
-We do [provide professional services](https://intelligex.com/chronos) to deploy, customise and run Chronos visual AI agent builder within your organization enviroenments.
+We do [provide professional services](https://intelligex.com/about) to deploy, customise and run Chronos visual AI agent builder within your organization enviroenments.
