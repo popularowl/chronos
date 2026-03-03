@@ -51,7 +51,6 @@ import vectorRouter from './vectors'
 import verifyRouter from './verify'
 import versionRouter from './versions'
 import pricingRouter from './pricing'
-import nvidiaNimRouter from './nvidia-nim'
 import executionsRouter from './executions'
 import validationRouter from './validation'
 import agentflowv2GeneratorRouter from './agentflowv2-generator'
@@ -113,7 +112,6 @@ router.use('/version', versionRouter)
 router.use('/upsert-history', upsertHistoryRouter)
 router.use('/settings', settingsRouter)
 router.use('/pricing', pricingRouter)
-router.use('/nvidia-nim', nvidiaNimRouter)
 router.use('/executions', executionsRouter)
 router.use('/validation', validationRouter)
 router.use('/agentflowv2-generator', agentflowv2GeneratorRouter)

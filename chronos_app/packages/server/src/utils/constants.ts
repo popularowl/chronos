@@ -19,7 +19,6 @@ export const WHITELIST_URLS = [
     '/api/v1/version',
     '/api/v1/attachments',
     '/api/v1/metrics',
-    '/api/v1/nvidia-nim',
     '/api/v1/settings',
     '/api/v1/pricing',
     '/api/v1/oauth2-credential/callback',

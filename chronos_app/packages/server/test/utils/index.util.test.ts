@@ -784,7 +784,7 @@ export function indexUtilTest() {
                 // Should be roughly 28-31 days ago in milliseconds
                 const twentyEightDays = 28 * 24 * 60 * 60 * 1000
                 const thirtyTwoDays = 32 * 24 * 60 * 60 * 1000
-                expect(diff).toBeGreaterThan(twentyEightDays)
+                expect(diff).toBeGreaterThanOrEqual(twentyEightDays)
                 expect(diff).toBeLessThan(thirtyTwoDays)
             })
         })

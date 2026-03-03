@@ -23,47 +23,25 @@ chore: commits that represent modifying .gitignore, etc.
 
 ## Running Tests
 
-All tests must pass before submitting a pull request.
-
-### Run All Tests
+All tests must pass before submitting a pull request. This will be checked in PR pipeline. See test examples
 
 ```bash
 cd chronos_app
 pnpm install
-pnpm test
-```
+pnpm build # pnpm build --force
+pnpm test # pnpm test --force
 
-### Run Component Tests
-
-```bash
 pnpm test:components
-```
-
-### Run Server Tests
-
-```bash
 pnpm test:server
-```
-
-### Run Server Tests with Coverage
-
-```bash
 pnpm test:server -- --coverage
 ```
 
 ## Code Quality
 
-### Linting
-
 Run the linter to check for code style issues:
 
 ```bash
 pnpm lint
-```
-
-Fix auto-fixable issues:
-
-```bash
 pnpm lint-fix
 ```
 

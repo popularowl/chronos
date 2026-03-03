@@ -1,3 +1,9 @@
+jest.mock('langchainhub', () => ({
+    Client: jest.fn().mockImplementation(() => ({
+        pull: jest.fn().mockRejectedValue(new Error('Hub pull failed'))
+    }))
+}))
+
 import * as Server from '../src'
 import { getRunningExpressApp } from '../src/utils/getRunningExpressApp'
 import { authRouteTest } from './routes/v1/auth.route.test'
@@ -56,7 +62,6 @@ import { openaiAssistantsFilesRouteTest } from './routes/v1/openai-assistants-fi
 import { textToSpeechRouteTest } from './routes/v1/text-to-speech.route.test'
 import { chatflowsRouteTest } from './routes/v1/chatflows.route.test'
 import { internalChatMessagesRouteTest } from './routes/v1/internal-chat-messages.route.test'
-import { nvidiaNimRouteTest } from './routes/v1/nvidia-nim.route.test'
 import { oauth2RouteTest } from './routes/v1/oauth2.route.test'
 import { openaiRealtimeRouteTest } from './routes/v1/openai-realtime.route.test'
 import { usersRouteTest } from './routes/v1/users.route.test'
@@ -194,7 +199,6 @@ describe('Routes Test', () => {
     textToSpeechRouteTest()
     chatflowsRouteTest()
     internalChatMessagesRouteTest()
-    nvidiaNimRouteTest()
     oauth2RouteTest()
     openaiRealtimeRouteTest()
     usersRouteTest()
