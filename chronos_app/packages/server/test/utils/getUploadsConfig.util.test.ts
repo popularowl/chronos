@@ -134,7 +134,7 @@ export function getUploadsConfigUtilTest() {
             expect(result.imgUploadSizeAndTypes).toHaveLength(1)
         })
 
-        it('should detect image upload for allowed chain nodes with chat models', async () => {
+        it('should not detect image upload for deprecated chain nodes', async () => {
             const nodes = [
                 {
                     id: 'chain-1',
@@ -164,7 +164,7 @@ export function getUploadsConfigUtilTest() {
 
             const result = await utilGetUploadsConfig('flow-1')
 
-            expect(result.isImageUploadAllowed).toBe(true)
+            expect(result.isImageUploadAllowed).toBe(false)
         })
     })
 }

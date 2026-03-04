@@ -1,6 +1,5 @@
 import { BaseMessage } from '@langchain/core/messages'
-import { BufferMemory, BufferWindowMemory, ConversationSummaryMemory, ConversationSummaryBufferMemory } from 'langchain/memory'
-import { Moderation } from '../nodes/moderation/Moderation'
+import { BufferMemory } from 'langchain/memory'
 
 /**
  * Types
@@ -184,61 +183,6 @@ export interface IUsedTool {
     error?: string
 }
 
-export interface IMultiAgentNode {
-    node: any
-    name: string
-    label: string
-    type: 'supervisor' | 'worker'
-    llm?: any
-    parentSupervisorName?: string
-    workers?: string[]
-    workerPrompt?: string
-    workerInputVariables?: string[]
-    recursionLimit?: number
-    moderations?: Moderation[]
-    multiModalMessageContent?: MessageContentImageUrl[]
-    checkpointMemory?: any
-}
-
-type SeqAgentType = 'agent' | 'condition' | 'end' | 'start' | 'tool' | 'state' | 'llm' | 'utilities'
-export type ConversationHistorySelection = 'user_question' | 'last_message' | 'all_messages' | 'empty'
-
-export interface ISeqAgentNode {
-    id: string
-    node: any
-    name: string
-    label: string
-    type: SeqAgentType
-    output: string
-    llm?: any
-    startLLM?: any
-    predecessorAgents?: ISeqAgentNode[]
-    recursionLimit?: number
-    moderations?: Moderation[]
-    multiModalMessageContent?: MessageContentImageUrl[]
-    checkpointMemory?: any
-    agentInterruptToolNode?: any
-    agentInterruptToolFunc?: any
-}
-
-export interface ITeamState {
-    messages: {
-        value: (x: BaseMessage[], y: BaseMessage[]) => BaseMessage[]
-        default: () => BaseMessage[]
-    }
-    team_members: string[]
-    next: string
-    instructions: string
-    summarization?: string
-}
-
-export interface ISeqAgentsState {
-    messages: {
-        value: (x: BaseMessage[], y: BaseMessage[]) => BaseMessage[]
-        default: () => BaseMessage[]
-    }
-}
-
 export interface IAgentReasoning {
     agentName: string
     messages: string[]
@@ -358,36 +302,6 @@ export interface MemoryMethods {
 }
 
 export abstract class FlowiseMemory extends BufferMemory implements MemoryMethods {
-    abstract getChatMessages(
-        overrideSessionId?: string,
-        returnBaseMessages?: boolean,
-        prependMessages?: IMessage[]
-    ): Promise<IMessage[] | BaseMessage[]>
-    abstract addChatMessages(msgArray: { text: string; type: MessageType }[], overrideSessionId?: string): Promise<void>
-    abstract clearChatMessages(overrideSessionId?: string): Promise<void>
-}
-
-export abstract class FlowiseWindowMemory extends BufferWindowMemory implements MemoryMethods {
-    abstract getChatMessages(
-        overrideSessionId?: string,
-        returnBaseMessages?: boolean,
-        prependMessages?: IMessage[]
-    ): Promise<IMessage[] | BaseMessage[]>
-    abstract addChatMessages(msgArray: { text: string; type: MessageType }[], overrideSessionId?: string): Promise<void>
-    abstract clearChatMessages(overrideSessionId?: string): Promise<void>
-}
-
-export abstract class FlowiseSummaryMemory extends ConversationSummaryMemory implements MemoryMethods {
-    abstract getChatMessages(
-        overrideSessionId?: string,
-        returnBaseMessages?: boolean,
-        prependMessages?: IMessage[]
-    ): Promise<IMessage[] | BaseMessage[]>
-    abstract addChatMessages(msgArray: { text: string; type: MessageType }[], overrideSessionId?: string): Promise<void>
-    abstract clearChatMessages(overrideSessionId?: string): Promise<void>
-}
-
-export abstract class FlowiseSummaryBufferMemory extends ConversationSummaryBufferMemory implements MemoryMethods {
     abstract getChatMessages(
         overrideSessionId?: string,
         returnBaseMessages?: boolean,

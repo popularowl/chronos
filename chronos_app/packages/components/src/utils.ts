@@ -14,7 +14,6 @@ import { AIMessage, HumanMessage, BaseMessage } from '@langchain/core/messages'
 import { Document } from '@langchain/core/documents'
 import { getFileFromStorage } from './storageUtils'
 import { GetSecretValueCommand, SecretsManagerClient, SecretsManagerClientConfig } from '@aws-sdk/client-secrets-manager'
-import { customGet } from '../nodes/sequentialagents/commonUtils'
 import { TextSplitter } from 'langchain/text_splitter'
 import { DocumentLoader } from 'langchain/document_loaders/base'
 import { NodeVM } from '@flowiseai/nodevm'
@@ -1231,6 +1230,44 @@ export const extractOutputFromArray = (output: any): string => {
         else return JSON.stringify(output)
     }
     return output
+}
+
+/**
+ * Get a value from an object by path, supporting negative array indices (e.g. [-1])
+ */
+export const customGet = (obj: any, path: string) => {
+    if (path.includes('[-1]')) {
+        const parts = path.split('.')
+        let result = obj
+
+        for (let part of parts) {
+            if (part.includes('[') && part.includes(']')) {
+                const [name, indexPart] = part.split('[')
+                const index = parseInt(indexPart.replace(']', ''))
+
+                result = result[name]
+                if (Array.isArray(result)) {
+                    if (index < 0) {
+                        result = result[result.length + index]
+                    } else {
+                        result = result[index]
+                    }
+                } else {
+                    return undefined
+                }
+            } else {
+                result = get(result, part)
+            }
+
+            if (result === undefined) {
+                return undefined
+            }
+        }
+
+        return result
+    } else {
+        return get(obj, path)
+    }
 }
 
 /**

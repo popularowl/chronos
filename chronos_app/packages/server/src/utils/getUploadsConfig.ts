@@ -83,15 +83,7 @@ export const utilGetUploadsConfig = async (chatflowid: string): Promise<IUploadC
      * 2.) one of the imgUploadLLMNodes exists + allowImageUploads is ON
      */
     const imgUploadSizeAndTypes: IUploadFileSizeAndTypes[] = []
-    const imgUploadAllowedNodes = [
-        'llmChain',
-        'conversationChain',
-        'reactAgentChat',
-        'conversationalAgent',
-        'toolAgent',
-        'supervisor',
-        'seqStart'
-    ]
+    const imgUploadAllowedNodes: string[] = []
 
     const isAgentflow = nodes.some((node) => node.data.category === 'Agent Flows')
 

@@ -4,7 +4,7 @@ import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { MODE } from '../../Interface'
 import chatflowService from '../../services/chatflows'
-import { utilBuildChatflow } from '../../utils/buildChatflow'
+import { utilBuildChatflow } from '../../utils/buildAgentflow'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 
 // Send input message and get prediction result (Internal)

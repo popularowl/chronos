@@ -323,17 +323,8 @@ export const getEndingNodes = (
         const isEndingNode = endingNodeData?.outputs?.output === 'EndingNode'
 
         if (!isEndingNode) {
-            if (
-                endingNodeData &&
-                endingNodeData.category !== 'Chains' &&
-                endingNodeData.category !== 'Agents' &&
-                endingNodeData.category !== 'Engine' &&
-                endingNodeData.category !== 'Multi Agents' &&
-                endingNodeData.category !== 'Sequential Agents'
-            ) {
-                error = new InternalChronosError(StatusCodes.INTERNAL_SERVER_ERROR, `Ending node must be either a Chain or Agent or Engine`)
-                continue
-            }
+            error = new InternalChronosError(StatusCodes.INTERNAL_SERVER_ERROR, `Ending node must be an Agent Flow ending node`)
+            continue
         }
         verifiedEndingNodes.push(endingNode)
     }
@@ -1462,92 +1453,6 @@ export const findAvailableConfigs = (reactFlowNodes: IReactFlowNode[], component
 }
 
 /**
- * Check to see if flow valid for stream
- * TODO: perform check from component level. i.e: set streaming on component, and check here
- * @param {IReactFlowNode[]} reactFlowNodes
- * @param {INodeData} endingNodeData
- * @returns {boolean}
- */
-export const isFlowValidForStream = (reactFlowNodes: IReactFlowNode[], endingNodeData: INodeData) => {
-    /** Deprecated, add streaming input param to the component instead **/
-    const streamAvailableLLMs = {
-        'Chat Models': [
-            'azureChatOpenAI',
-            'chatOpenAI',
-            'chatOpenAI_LlamaIndex',
-            'chatOpenAICustom',
-            'chatAnthropic',
-            'chatAnthropic_LlamaIndex',
-            'chatOllama',
-            'chatOllama_LlamaIndex',
-            'awsChatBedrock',
-            'chatMistralAI',
-            'chatMistral_LlamaIndex',
-            'chatAlibabaTongyi',
-            'groqChat',
-            'chatGroq_LlamaIndex',
-            'chatCohere',
-            'chatGoogleGenerativeAI',
-            'chatTogetherAI',
-            'chatTogetherAI_LlamaIndex',
-            'chatFireworks',
-            'ChatSambanova',
-            'chatBaiduWenxin',
-            'chatCometAPI'
-        ],
-        LLMs: ['azureOpenAI', 'openAI', 'ollama']
-    }
-
-    let isChatOrLLMsExist = false
-    for (const flowNode of reactFlowNodes) {
-        const data = flowNode.data
-        if (data.category === 'Chat Models' || data.category === 'LLMs') {
-            if (data.inputs?.streaming === false || data.inputs?.streaming === 'false') {
-                return false
-            }
-            if (data.inputs?.streaming === true || data.inputs?.streaming === 'true') {
-                isChatOrLLMsExist = true // passed, proceed to next check
-            }
-            /** Deprecated, add streaming input param to the component instead **/
-            if (!Object.prototype.hasOwnProperty.call(data.inputs, 'streaming') && !data.inputs?.streaming) {
-                isChatOrLLMsExist = true
-                const validLLMs = streamAvailableLLMs[data.category]
-                if (!validLLMs.includes(data.name)) return false
-            }
-        }
-    }
-
-    let isValidChainOrAgent = false
-    if (endingNodeData.category === 'Chains') {
-        // Chains that are not available to stream
-        const blacklistChains = ['openApiChain', 'vectaraQAChain']
-        isValidChainOrAgent = !blacklistChains.includes(endingNodeData.name)
-    } else if (endingNodeData.category === 'Agents') {
-        // Agent that are available to stream
-        const whitelistAgents = ['csvAgent', 'airtableAgent', 'toolAgent', 'conversationalRetrievalToolAgent', 'openAIToolAgentLlamaIndex']
-        isValidChainOrAgent = whitelistAgents.includes(endingNodeData.name)
-
-        // If agent is openAIAssistant, streaming is enabled
-        if (endingNodeData.name === 'openAIAssistant') return true
-    } else if (endingNodeData.category === 'Engine') {
-        // Engines that are available to stream
-        const whitelistEngine = ['contextChatEngine', 'simpleChatEngine', 'queryEngine', 'subQuestionQueryEngine']
-        isValidChainOrAgent = whitelistEngine.includes(endingNodeData.name)
-    }
-
-    // If no output parser, flow is available to stream
-    let isOutputParserExist = false
-    for (const flowNode of reactFlowNodes) {
-        const data = flowNode.data
-        if (data.category.includes('Output Parser')) {
-            isOutputParserExist = true
-        }
-    }
-
-    return isChatOrLLMsExist && isValidChainOrAgent && !isOutputParserExist
-}
-
-/**
  * Returns the encryption key
  * @returns {Promise<string>}
  */
@@ -1747,63 +1652,19 @@ export const getMemorySessionId = (
     isInternal: boolean
 ): string => {
     if (!isInternal) {
-        // Provided in API body - incomingInput.overrideConfig: { sessionId: 'abc' }
         if (incomingInput.overrideConfig?.sessionId) {
             return incomingInput.overrideConfig?.sessionId
         }
-        // Provided in API body - incomingInput.chatId
         if (incomingInput.chatId) {
             return incomingInput.chatId
         }
     }
 
-    // Hard-coded sessionId in UI
     if (memoryNode && memoryNode.data.inputs?.sessionId) {
         return memoryNode.data.inputs.sessionId
     }
 
-    // Default chatId
     return chatId
-}
-
-/**
- * Get chat messages from sessionId
- * @param {IReactFlowNode} memoryNode
- * @param {string} sessionId
- * @param {IReactFlowNode} memoryNode
- * @param {IComponentNodes} componentNodes
- * @param {DataSource} appDataSource
- * @param {IDatabaseEntity} databaseEntities
- * @param {any} logger
- * @returns {IMessage[]}
- */
-export const getSessionChatHistory = async (
-    chatflowid: string,
-    sessionId: string,
-    memoryNode: IReactFlowNode,
-    componentNodes: IComponentNodes,
-    appDataSource: DataSource,
-    databaseEntities: IDatabaseEntity,
-    logger: any,
-    prependMessages?: IMessage[]
-): Promise<IMessage[]> => {
-    const nodeInstanceFilePath = componentNodes[memoryNode.data.name].filePath as string
-    const nodeModule = await import(nodeInstanceFilePath)
-    const newNodeInstance = new nodeModule.nodeClass()
-
-    // Replace memory's sessionId/chatId
-    if (memoryNode.data.inputs) {
-        memoryNode.data.inputs.sessionId = sessionId
-    }
-
-    const initializedInstance: FlowiseMemory = await newNodeInstance.init(memoryNode.data, '', {
-        chatflowid,
-        appDataSource,
-        databaseEntities,
-        logger
-    })
-
-    return (await initializedInstance.getChatMessages(sessionId, undefined, prependMessages)) as IMessage[]
 }
 
 /**

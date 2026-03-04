@@ -13,7 +13,6 @@ pnpm run
 # chronos is accessible on localhost:3000
 ```
 
-
 *Build and run a local Docker container image:*
 
 ```bash
@@ -49,8 +48,6 @@ docker compose -f docker-compose-workers.yml up --scale chronos-worker=3
 # run with Qdrant vector database and Ollama container for local embeddings
 docker compose -f docker-compose-vectordb.yml up
 # use ollama container and pull the embedding model after startup
-docker compose -f docker-compose-vectordb.yml exec ollama ollama pull nomic-embed-text
-# after startup, pull the embedding model:
 docker compose -f docker-compose-vectordb.yml exec ollama ollama pull nomic-embed-text
 
 # chronos is now accessible on http://localhost:3001

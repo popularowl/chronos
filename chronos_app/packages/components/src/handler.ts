@@ -28,7 +28,6 @@ import { LunaryHandler } from '@langchain/community/callbacks/handlers/lunary'
 import { getCredentialData, getCredentialParam, getEnvironmentVariable } from './utils'
 import logger from './logger'
 import { EvaluationRunTracer } from '../evaluation/EvaluationRunTracer'
-import { EvaluationRunTracerLlama } from '../evaluation/EvaluationRunTracerLlama'
 import { ICommonObject, IDatabaseEntity, INodeData, IServerSideEventStreamer } from './Interface'
 import { LangWatch, LangWatchSpan, LangWatchTrace, autoconvertTypedValues } from 'langwatch'
 import { DataSource } from 'typeorm'
@@ -436,7 +435,6 @@ export class CustomChainHandler extends BaseCallbackHandler {
     }
 }
 
-/*TODO - Add llamaIndex tracer to non evaluation runs*/
 class ExtendedLunaryHandler extends LunaryHandler {
     chatId: string
     appDataSource: DataSource
@@ -592,12 +590,8 @@ export const additionalCallbacks = async (nodeData: INodeData, options: ICommonO
 
                     callbacks.push(handler)
                 } else if (provider === 'evaluation') {
-                    if (options.llamaIndex) {
-                        new EvaluationRunTracerLlama(options.evaluationRunId)
-                    } else {
-                        const evaluationHandler = new EvaluationRunTracer(options.evaluationRunId)
-                        callbacks.push(evaluationHandler)
-                    }
+                    const evaluationHandler = new EvaluationRunTracer(options.evaluationRunId)
+                    callbacks.push(evaluationHandler)
                 } else if (provider === 'langWatch') {
                     const langWatchApiKey = getCredentialParam('langWatchApiKey', credentialData, nodeData)
                     const langWatchEndpoint = getCredentialParam('langWatchEndpoint', credentialData, nodeData)

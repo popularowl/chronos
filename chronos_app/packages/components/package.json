@@ -1,6 +1,6 @@
 {
     "name": "chronos-components",
-    "version": "1.0.1",
+    "version": "1.1.0",
     "description": "Chronos Components",
     "main": "dist/src/index",
     "types": "dist/src/index.d.ts",
@@ -14,7 +14,7 @@
         "test:coverage": "jest --coverage --testPathIgnorePatterns='handler.test.ts'"
     },
     "keywords": [],
-    "homepage": "https://popularowl.com/chronos",
+    "homepage": "https://intelligex.com/chronos",
     "author": {
         "name": "Saulius",
         "email": "saul@popularowl.com"
@@ -132,7 +132,6 @@
         "langsmith": "0.1.6",
         "langwatch": "^0.1.1",
         "linkifyjs": "^4.3.2",
-        "llamaindex": "^0.3.13",
         "lodash": "^4.17.21",
         "lunary": "^0.7.12",
         "mammoth": "^1.5.1",

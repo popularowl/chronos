@@ -9,7 +9,7 @@ import { UpsertHistory } from '../../database/entities/UpsertHistory'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import documentStoreService from '../../services/documentstore'
-import { constructGraphs, getAppVersion, getEndingNodes, getTelemetryFlowObj, isFlowValidForStream } from '../../utils'
+import { getAppVersion, getTelemetryFlowObj } from '../../utils'
 import { containsBase64File, updateFlowDataWithFilePaths } from '../../utils/fileRepository'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 import { utilGetUploadsConfig } from '../../utils/getUploadsConfig'
@@ -28,7 +28,6 @@ export function validateChatflowType(type: ChatflowType | undefined) {
 const checkIfChatflowIsValidForStreaming = async (chatflowId: string): Promise<any> => {
     try {
         const appServer = getRunningExpressApp()
-        //**
         const chatflow = await appServer.AppDataSource.getRepository(ChatFlow).findOneBy({
             id: chatflowId
         })
@@ -45,37 +44,13 @@ const checkIfChatflowIsValidForStreaming = async (chatflowId: string): Promise<a
             }
         }
 
+        // Only Agentflow V2 is supported; always enable streaming
         if (chatflow.type === 'AGENTFLOW') {
             return { isStreaming: true }
         }
 
-        /*** Get Ending Node with Directed Graph  ***/
-        const flowData = chatflow.flowData
-        const parsedFlowData: IReactFlowObject = JSON.parse(flowData)
-        const nodes = parsedFlowData.nodes
-        const edges = parsedFlowData.edges
-        const { graph, nodeDependencies } = constructGraphs(nodes, edges)
-
-        const endingNodes = getEndingNodes(nodeDependencies, graph, nodes)
-
-        let isStreaming = false
-        for (const endingNode of endingNodes) {
-            const endingNodeData = endingNode.data
-            const isEndingNode = endingNodeData?.outputs?.output === 'EndingNode'
-            // Once custom function ending node exists, flow is always unavailable to stream
-            if (isEndingNode) {
-                return { isStreaming: false }
-            }
-            isStreaming = isFlowValidForStream(nodes, endingNodeData)
-        }
-
-        // If it is a Multi/Sequential Agents, always enable streaming
-        if (endingNodes.filter((node) => node.data.category === 'Multi Agents' || node.data.category === 'Sequential Agents').length > 0) {
-            return { isStreaming: true }
-        }
-
-        const dbResponse = { isStreaming: isStreaming }
-        return dbResponse
+        // Deprecated flow types are not streamable
+        return { isStreaming: false }
     } catch (error) {
         throw new InternalChronosError(
             StatusCodes.INTERNAL_SERVER_ERROR,

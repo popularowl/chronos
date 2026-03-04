@@ -28,7 +28,6 @@ import {
     replaceInputsWithConfig,
     isStartNodeDependOnInput,
     findAvailableConfigs,
-    isFlowValidForStream,
     redactCredentialWithPasswordType,
     REDACTED_CREDENTIAL_VALUE
 } from '../../src/utils'
@@ -273,8 +272,8 @@ export function indexUtilTest() {
                     ...n,
                     data: {
                         ...n.data,
-                        category: i === 3 ? 'Chains' : 'Other', // node4 is a Chain (valid ending)
-                        outputs: {}
+                        category: 'Other',
+                        outputs: i === 3 ? { output: 'EndingNode' } : {} // node4 is a valid ending node
                     }
                 })) as IReactFlowNode[]
 
@@ -307,7 +306,7 @@ export function indexUtilTest() {
                 expect(endingNodes.map((n) => n.id)).toContain('node4')
             })
 
-            it('should accept Agents category as valid ending', () => {
+            it('should reject deprecated Agents category as ending', () => {
                 const { graph, nodeDependencies } = constructGraphs(sampleNodes, sampleEdges)
                 const agentNodes = sampleNodes.map((n, i) => ({
                     ...n,
@@ -318,11 +317,10 @@ export function indexUtilTest() {
                     }
                 })) as IReactFlowNode[]
 
-                const endingNodes = getEndingNodes(nodeDependencies, graph, agentNodes)
-                expect(endingNodes.map((n) => n.id)).toContain('node4')
+                expect(() => getEndingNodes(nodeDependencies, graph, agentNodes)).toThrow()
             })
 
-            it('should accept Multi Agents category as valid ending', () => {
+            it('should reject deprecated Multi Agents category as ending', () => {
                 const { graph, nodeDependencies } = constructGraphs(sampleNodes, sampleEdges)
                 const multiAgentNodes = sampleNodes.map((n, i) => ({
                     ...n,
@@ -333,11 +331,10 @@ export function indexUtilTest() {
                     }
                 })) as IReactFlowNode[]
 
-                const endingNodes = getEndingNodes(nodeDependencies, graph, multiAgentNodes)
-                expect(endingNodes.map((n) => n.id)).toContain('node4')
+                expect(() => getEndingNodes(nodeDependencies, graph, multiAgentNodes)).toThrow()
             })
 
-            it('should accept Sequential Agents category as valid ending', () => {
+            it('should reject deprecated Sequential Agents category as ending', () => {
                 const { graph, nodeDependencies } = constructGraphs(sampleNodes, sampleEdges)
                 const seqAgentNodes = sampleNodes.map((n, i) => ({
                     ...n,
@@ -348,11 +345,10 @@ export function indexUtilTest() {
                     }
                 })) as IReactFlowNode[]
 
-                const endingNodes = getEndingNodes(nodeDependencies, graph, seqAgentNodes)
-                expect(endingNodes.map((n) => n.id)).toContain('node4')
+                expect(() => getEndingNodes(nodeDependencies, graph, seqAgentNodes)).toThrow()
             })
 
-            it('should accept Engine category as valid ending', () => {
+            it('should reject deprecated Engine category as ending', () => {
                 const { graph, nodeDependencies } = constructGraphs(sampleNodes, sampleEdges)
                 const engineNodes = sampleNodes.map((n, i) => ({
                     ...n,
@@ -363,8 +359,7 @@ export function indexUtilTest() {
                     }
                 })) as IReactFlowNode[]
 
-                const endingNodes = getEndingNodes(nodeDependencies, graph, engineNodes)
-                expect(endingNodes.map((n) => n.id)).toContain('node4')
+                expect(() => getEndingNodes(nodeDependencies, graph, engineNodes)).toThrow()
             })
 
             it('should throw when no ending nodes found', () => {
@@ -1564,154 +1559,6 @@ export function indexUtilTest() {
                 const result = findAvailableConfigs(nodes, {})
                 // No obj created because array property is undefined (not an array)
                 expect(result).toEqual([])
-            })
-        })
-
-        describe('isFlowValidForStream', () => {
-            const createStreamNode = (id: string, category: string, name: string, inputs: Record<string, any> = {}) =>
-                createMockNode(id, { category, name, inputs } as any)
-
-            const createEndingNodeData = (category: string, name: string) => ({ category, name } as any)
-
-            it('should return true for valid streaming flow with Chat Model and Chain ending', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                const endingData = createEndingNodeData('Chains', 'conversationalRetrievalQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(true)
-            })
-
-            it('should return false when streaming is explicitly disabled (boolean false)', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: false })]
-                const endingData = createEndingNodeData('Chains', 'conversationalRetrievalQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should return false when streaming is explicitly disabled (string false)', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: 'false' })]
-                const endingData = createEndingNodeData('Chains', 'conversationalRetrievalQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should return true when streaming is enabled via string true', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: 'true' })]
-                const endingData = createEndingNodeData('Chains', 'conversationalRetrievalQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(true)
-            })
-
-            it('should return false for blacklisted chain (openApiChain)', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                const endingData = createEndingNodeData('Chains', 'openApiChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should return false for blacklisted chain (vectaraQAChain)', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                const endingData = createEndingNodeData('Chains', 'vectaraQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should return true for whitelisted agent (toolAgent)', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                const endingData = createEndingNodeData('Agents', 'toolAgent')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(true)
-            })
-
-            it('should return false for non-whitelisted agent', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                const endingData = createEndingNodeData('Agents', 'unknownAgent')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should return true for openAIAssistant agent regardless of other conditions', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                const endingData = createEndingNodeData('Agents', 'openAIAssistant')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(true)
-            })
-
-            it('should return true for whitelisted engine (contextChatEngine)', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                const endingData = createEndingNodeData('Engine', 'contextChatEngine')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(true)
-            })
-
-            it('should return true for whitelisted engine (simpleChatEngine)', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                const endingData = createEndingNodeData('Engine', 'simpleChatEngine')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(true)
-            })
-
-            it('should return false for non-whitelisted engine', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                const endingData = createEndingNodeData('Engine', 'unknownEngine')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should return false when Output Parser exists', () => {
-                const nodes = [
-                    createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true }),
-                    createStreamNode('parser1', 'Output Parser', 'structuredOutputParser', {})
-                ]
-                const endingData = createEndingNodeData('Chains', 'conversationalRetrievalQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should return false when no Chat Model or LLM exists', () => {
-                const nodes = [createStreamNode('tool1', 'Tools', 'calculator', {})]
-                const endingData = createEndingNodeData('Chains', 'conversationalRetrievalQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should handle deprecated LLM category with valid LLM name', () => {
-                const nodes = [createStreamNode('llm1', 'LLMs', 'openAI', {})]
-                const endingData = createEndingNodeData('Chains', 'conversationalRetrievalQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(true)
-            })
-
-            it('should return false for deprecated LLM category with invalid LLM name', () => {
-                const nodes = [createStreamNode('llm1', 'LLMs', 'unknownLLM', {})]
-                const endingData = createEndingNodeData('Chains', 'conversationalRetrievalQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should handle deprecated Chat Models category with valid model name', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatAnthropic', {})]
-                const endingData = createEndingNodeData('Chains', 'conversationalRetrievalQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(true)
-            })
-
-            it('should return false for deprecated Chat Models category with invalid model name', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'unknownModel', {})]
-                const endingData = createEndingNodeData('Chains', 'conversationalRetrievalQAChain')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should return false for unknown ending category', () => {
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                const endingData = createEndingNodeData('Unknown', 'someNode')
-                expect(isFlowValidForStream(nodes, endingData)).toBe(false)
-            })
-
-            it('should return true for all whitelisted agents', () => {
-                const whitelistAgents = [
-                    'csvAgent',
-                    'airtableAgent',
-                    'toolAgent',
-                    'conversationalRetrievalToolAgent',
-                    'openAIToolAgentLlamaIndex'
-                ]
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                for (const agent of whitelistAgents) {
-                    const endingData = createEndingNodeData('Agents', agent)
-                    expect(isFlowValidForStream(nodes, endingData)).toBe(true)
-                }
-            })
-
-            it('should return true for all whitelisted engines', () => {
-                const whitelistEngines = ['contextChatEngine', 'simpleChatEngine', 'queryEngine', 'subQuestionQueryEngine']
-                const nodes = [createStreamNode('llm1', 'Chat Models', 'chatOpenAI', { streaming: true })]
-                for (const engine of whitelistEngines) {
-                    const endingData = createEndingNodeData('Engine', engine)
-                    expect(isFlowValidForStream(nodes, endingData)).toBe(true)
-                }
             })
         })
 

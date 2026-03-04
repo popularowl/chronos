@@ -10,7 +10,16 @@ async function getAuthToken(): Promise<string> {
         email: `export-import-test-${uniqueId}@test.com`,
         password: 'test1234'
     }
-    const response = await supertest(getRunningExpressApp().app).post('/api/v1/auth/signup').send(testUser)
+    let response = await supertest(getRunningExpressApp().app).post('/api/v1/auth/signup').send(testUser)
+
+    // Fall back to login if signup fails (e.g. user already exists)
+    if (response.status !== 200 || !response.body.token) {
+        response = await supertest(getRunningExpressApp().app).post('/api/v1/auth/login').send(testUser)
+    }
+
+    if (!response.body.token) {
+        throw new Error(`Failed to get auth token. Status: ${response.status}, Body: ${JSON.stringify(response.body)}`)
+    }
     return response.body.token
 }
 
