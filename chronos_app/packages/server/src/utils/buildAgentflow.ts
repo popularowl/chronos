@@ -2605,7 +2605,7 @@ export const utilBuildChatflow = async (req: Request, isInternal: boolean = fals
         chatflow.analytic = JSON.stringify(newEval)
     }
 
-    let organizationId = ''
+    let _organizationId = ''
 
     try {
         // Validate API Key if its external API request
@@ -2619,7 +2619,7 @@ export const utilBuildChatflow = async (req: Request, isInternal: boolean = fals
         // Open source: No workspace/organization needed
         const workspaceId = ''
         const orgId = ''
-        organizationId = orgId
+        _organizationId = orgId
         const subscriptionId = ''
 
         const executeData: IExecuteFlowParams = {
