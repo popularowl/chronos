@@ -102,16 +102,6 @@ export function exportImportRouteTest() {
                 expect([200, 400, 404, 500]).toContain(response.status)
             })
 
-            it('should handle export with assistants option', async () => {
-                const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/export-import/export')
-                    .send({ assistants: true })
-                    .set('Authorization', `Bearer ${authToken}`)
-                    .set('x-request-from', 'internal')
-
-                expect([200, 400, 404, 500]).toContain(response.status)
-            })
-
             it('should handle export with all options', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/export-import/export')
@@ -119,8 +109,7 @@ export function exportImportRouteTest() {
                         chatflows: true,
                         agentflows: true,
                         tools: true,
-                        variables: true,
-                        assistants: true
+                        variables: true
                     })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
@@ -202,8 +191,7 @@ export function exportImportRouteTest() {
                         Chatflows: [],
                         Agentflows: [],
                         Tools: [],
-                        Variables: [],
-                        Assistants: []
+                        Variables: []
                     })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
@@ -394,48 +382,12 @@ export function exportImportRouteTest() {
                 expect(response.body.ChatMessageFeedback).toBeDefined()
             })
 
-            it('should export assistants (custom)', async () => {
-                const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/export-import/export')
-                    .send({ assistantCustom: true })
-                    .set('Authorization', `Bearer ${authToken}`)
-                    .set('x-request-from', 'internal')
-
-                expect([200]).toContain(response.status)
-                expect(response.body.AssistantCustom).toBeDefined()
-            })
-
-            it('should export assistants (OpenAI)', async () => {
-                const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/export-import/export')
-                    .send({ assistantOpenAI: true })
-                    .set('Authorization', `Bearer ${authToken}`)
-                    .set('x-request-from', 'internal')
-
-                expect([200]).toContain(response.status)
-                expect(response.body.AssistantOpenAI).toBeDefined()
-            })
-
-            it('should export assistants (Azure)', async () => {
-                const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/export-import/export')
-                    .send({ assistantAzure: true })
-                    .set('Authorization', `Bearer ${authToken}`)
-                    .set('x-request-from', 'internal')
-
-                expect([200]).toContain(response.status)
-                expect(response.body.AssistantAzure).toBeDefined()
-            })
-
             it('should export everything at once', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/export-import/export')
                     .send({
                         agentflow: true,
                         agentflowv2: true,
-                        assistantCustom: true,
-                        assistantOpenAI: true,
-                        assistantAzure: true,
                         chatflow: true,
                         chat_message: true,
                         chat_feedback: true,

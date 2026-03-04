@@ -43,7 +43,6 @@ import useApi from '@/hooks/useApi'
 import datasetsApi from '@/api/dataset'
 import evaluatorsApi from '@/api/evaluators'
 import nodesApi from '@/api/nodes'
-import assistantsApi from '@/api/assistants'
 
 // utils
 import useNotifier from '@/utils/useNotifier'
@@ -65,8 +64,6 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const getAllEvaluatorsApi = useApi(evaluatorsApi.getAllEvaluators)
     const getNodesByCategoryApi = useApi(nodesApi.getNodesByCategory)
     const getModelsApi = useApi(nodesApi.executeNodeLoadMethod)
-    const getAssistantsApi = useApi(assistantsApi.getAllAssistants)
-
     const [chatflow, setChatflow] = useState([])
     const [dataset, setDataset] = useState('')
     const [datasetAsOneConversation, setDatasetAsOneConversation] = useState(false)
@@ -227,7 +224,6 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
         getNodesByCategoryApi.request('Chat Models')
         if (flows.length === 0) {
             getAllChatflowsApi.request()
-            getAssistantsApi.request('CUSTOM')
             getAllAgentflowsApi.request('AGENTFLOW')
         }
         if (datasets.length === 0) {
@@ -238,18 +234,17 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     }, [])
 
     useEffect(() => {
-        if (getAllAgentflowsApi.data && getAllChatflowsApi.data && getAssistantsApi.data) {
+        if (getAllAgentflowsApi.data && getAllChatflowsApi.data) {
             try {
                 const agentFlows = populateFlowNames(getAllAgentflowsApi.data, 'Agentflow v2')
                 const chatFlows = populateFlowNames(getAllChatflowsApi.data, 'Chatflow')
-                const assistants = populateAssistants(getAssistantsApi.data)
-                setFlows([...agentFlows, ...chatFlows, ...assistants])
-                setFlowTypes(['Agentflow v2', 'Chatflow', 'Custom Assistant'])
+                setFlows([...agentFlows, ...chatFlows])
+                setFlowTypes(['Agentflow v2', 'Chatflow'])
             } catch (e) {
                 console.error(e)
             }
         }
-    }, [getAllAgentflowsApi.data, getAllChatflowsApi.data, getAssistantsApi.data])
+    }, [getAllAgentflowsApi.data, getAllChatflowsApi.data])
 
     useEffect(() => {
         if (getNodesByCategoryApi.data) {
@@ -367,20 +362,6 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             })
         }
         return flowNames
-    }
-
-    const populateAssistants = (assistants) => {
-        let assistantNames = []
-        for (let i = 0; i < assistants.length; i += 1) {
-            const assistant = assistants[i]
-            assistantNames.push({
-                label: JSON.parse(assistant.details).name || '',
-                name: assistant.id,
-                type: 'Custom Assistant',
-                description: 'Custom Assistant'
-            })
-        }
-        return assistantNames
     }
 
     const component = show ? (
@@ -545,14 +526,6 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                             onChange={onChangeFlowType}
                                         />{' '}
                                         Agentflows (v2)
-                                        <Checkbox
-                                            defaultChecked
-                                            size='small'
-                                            label='All'
-                                            value='Custom Assistant'
-                                            onChange={onChangeFlowType}
-                                        />{' '}
-                                        Custom Assistants
                                     </Typography>
                                 </div>
                                 <MultiDropdown

@@ -32,6 +32,7 @@ import {
     updateFlowState
 } from '../utils'
 import { convertMultiOptionsToStringArray, processTemplateVariables, configureStructuredOutput } from '../../../src/utils'
+import logger from '../../../src/logger'
 
 interface ITool {
     agentSelectedTool: string
@@ -665,40 +666,52 @@ class Agent_Agentflow implements INode {
                 throw new Error('Model is required')
             }
 
-            // Extract tools
+            // Extract and initialize tools
             const tools = nodeData.inputs?.agentTools as ITool[]
+            logger.debug(`[Agent Node] Initializing ${tools.length} tool(s)`)
 
             const toolsInstance: Tool[] = []
             for (const tool of tools) {
-                const toolConfig = tool.agentSelectedToolConfig
-                const nodeInstanceFilePath = options.componentNodes[tool.agentSelectedTool].filePath as string
-                const nodeModule = await import(nodeInstanceFilePath)
-                const newToolNodeInstance = new nodeModule.nodeClass()
-                const newNodeData = {
-                    ...nodeData,
-                    credential: toolConfig['CHRONOS_CREDENTIAL_ID'],
-                    inputs: {
-                        ...nodeData.inputs,
-                        ...toolConfig
-                    }
-                }
-                const toolInstance = await newToolNodeInstance.init(newNodeData, '', options)
-
-                // toolInstance might returns a list of tools like MCP tools
-                if (Array.isArray(toolInstance)) {
-                    for (const subTool of toolInstance) {
-                        const subToolInstance = subTool as Tool
-                        ;(subToolInstance as any).agentSelectedTool = tool.agentSelectedTool
-                        if (tool.agentSelectedToolRequiresHumanInput) {
-                            ;(subToolInstance as any).requiresHumanInput = true
+                try {
+                    logger.debug(`[Agent Node] Initializing tool: ${tool.agentSelectedTool}`)
+                    const toolConfig = tool.agentSelectedToolConfig
+                    const nodeInstanceFilePath = options.componentNodes[tool.agentSelectedTool].filePath as string
+                    const nodeModule = await import(nodeInstanceFilePath)
+                    const newToolNodeInstance = new nodeModule.nodeClass()
+                    const newNodeData = {
+                        ...nodeData,
+                        credential: toolConfig['CHRONOS_CREDENTIAL_ID'],
+                        inputs: {
+                            ...nodeData.inputs,
+                            ...toolConfig
                         }
-                        toolsInstance.push(subToolInstance)
                     }
-                } else {
-                    if (tool.agentSelectedToolRequiresHumanInput) {
-                        toolInstance.requiresHumanInput = true
+                    const toolInstance = await newToolNodeInstance.init(newNodeData, '', options)
+
+                    // toolInstance might returns a list of tools like MCP tools
+                    if (Array.isArray(toolInstance)) {
+                        for (const subTool of toolInstance) {
+                            const subToolInstance = subTool as Tool
+                            ;(subToolInstance as any).agentSelectedTool = tool.agentSelectedTool
+                            if (tool.agentSelectedToolRequiresHumanInput) {
+                                ;(subToolInstance as any).requiresHumanInput = true
+                            }
+                            toolsInstance.push(subToolInstance)
+                        }
+                    } else {
+                        if (tool.agentSelectedToolRequiresHumanInput) {
+                            toolInstance.requiresHumanInput = true
+                        }
+                        toolsInstance.push(toolInstance as Tool)
                     }
-                    toolsInstance.push(toolInstance as Tool)
+                    logger.debug(`[Agent Node] Tool initialized successfully: ${tool.agentSelectedTool}`)
+                } catch (error) {
+                    logger.error(
+                        `[Agent Node] Failed to initialize tool "${tool.agentSelectedTool}": ${
+                            error instanceof Error ? error.message : String(error)
+                        }`
+                    )
+                    throw error
                 }
             }
 
@@ -726,149 +739,176 @@ class Agent_Agentflow implements INode {
                 }
             })
 
-            // Extract knowledge
+            // Extract and initialize document store knowledge bases
             const knowledgeBases = nodeData.inputs?.agentKnowledgeDocumentStores as IKnowledgeBase[]
             if (knowledgeBases && knowledgeBases.length > 0) {
+                logger.debug(`[Agent Node] Initializing ${knowledgeBases.length} document store knowledge base(s)`)
                 for (const knowledgeBase of knowledgeBases) {
-                    const nodeInstanceFilePath = options.componentNodes['retrieverTool'].filePath as string
-                    const nodeModule = await import(nodeInstanceFilePath)
-                    const newRetrieverToolNodeInstance = new nodeModule.nodeClass()
                     const [storeId, storeName] = knowledgeBase.documentStore.split(':')
+                    try {
+                        logger.debug(`[Agent Node] Connecting to document store: ${storeName} (${storeId})`)
+                        const nodeInstanceFilePath = options.componentNodes['retrieverTool'].filePath as string
+                        const nodeModule = await import(nodeInstanceFilePath)
+                        const newRetrieverToolNodeInstance = new nodeModule.nodeClass()
 
-                    const docStoreVectorInstanceFilePath = options.componentNodes['documentStoreVS'].filePath as string
-                    const docStoreVectorModule = await import(docStoreVectorInstanceFilePath)
-                    const newDocStoreVectorInstance = new docStoreVectorModule.nodeClass()
-                    const docStoreVectorInstance = await newDocStoreVectorInstance.init(
-                        {
+                        const docStoreVectorInstanceFilePath = options.componentNodes['documentStoreVS'].filePath as string
+                        const docStoreVectorModule = await import(docStoreVectorInstanceFilePath)
+                        const newDocStoreVectorInstance = new docStoreVectorModule.nodeClass()
+                        const docStoreVectorInstance = await newDocStoreVectorInstance.init(
+                            {
+                                ...nodeData,
+                                inputs: {
+                                    ...nodeData.inputs,
+                                    selectedStore: storeId
+                                },
+                                outputs: {
+                                    output: 'retriever'
+                                }
+                            },
+                            '',
+                            options
+                        )
+
+                        const newRetrieverToolNodeData = {
                             ...nodeData,
                             inputs: {
                                 ...nodeData.inputs,
-                                selectedStore: storeId
-                            },
-                            outputs: {
-                                output: 'retriever'
+                                name: storeName
+                                    .toLowerCase()
+                                    .replace(/ /g, '_')
+                                    .replace(/[^a-z0-9_-]/g, ''),
+                                description: knowledgeBase.docStoreDescription,
+                                retriever: docStoreVectorInstance,
+                                returnSourceDocuments: knowledgeBase.returnSourceDocuments
                             }
-                        },
-                        '',
-                        options
-                    )
+                        }
+                        const retrieverToolInstance = await newRetrieverToolNodeInstance.init(newRetrieverToolNodeData, '', options)
 
-                    const newRetrieverToolNodeData = {
-                        ...nodeData,
-                        inputs: {
-                            ...nodeData.inputs,
+                        toolsInstance.push(retrieverToolInstance as Tool)
+
+                        const jsonSchema = zodToJsonSchema(retrieverToolInstance.schema)
+                        if (jsonSchema.$schema) {
+                            delete jsonSchema.$schema
+                        }
+                        const componentNode = options.componentNodes['retrieverTool']
+
+                        availableTools.push({
                             name: storeName
                                 .toLowerCase()
                                 .replace(/ /g, '_')
                                 .replace(/[^a-z0-9_-]/g, ''),
                             description: knowledgeBase.docStoreDescription,
-                            retriever: docStoreVectorInstance,
-                            returnSourceDocuments: knowledgeBase.returnSourceDocuments
-                        }
+                            schema: jsonSchema,
+                            toolNode: {
+                                label: componentNode?.label || retrieverToolInstance.name,
+                                name: componentNode?.name || retrieverToolInstance.name
+                            }
+                        })
+                        logger.debug(`[Agent Node] Document store initialized successfully: ${storeName}`)
+                    } catch (error) {
+                        logger.error(
+                            `[Agent Node] Failed to initialize document store "${storeName}" (${storeId}): ${
+                                error instanceof Error ? error.message : String(error)
+                            }`
+                        )
+                        throw error
                     }
-                    const retrieverToolInstance = await newRetrieverToolNodeInstance.init(newRetrieverToolNodeData, '', options)
-
-                    toolsInstance.push(retrieverToolInstance as Tool)
-
-                    const jsonSchema = zodToJsonSchema(retrieverToolInstance.schema)
-                    if (jsonSchema.$schema) {
-                        delete jsonSchema.$schema
-                    }
-                    const componentNode = options.componentNodes['retrieverTool']
-
-                    availableTools.push({
-                        name: storeName
-                            .toLowerCase()
-                            .replace(/ /g, '_')
-                            .replace(/[^a-z0-9_-]/g, ''),
-                        description: knowledgeBase.docStoreDescription,
-                        schema: jsonSchema,
-                        toolNode: {
-                            label: componentNode?.label || retrieverToolInstance.name,
-                            name: componentNode?.name || retrieverToolInstance.name
-                        }
-                    })
                 }
             }
 
             const knowledgeBasesForVSEmbeddings = nodeData.inputs?.agentKnowledgeVSEmbeddings as IKnowledgeBaseVSEmbeddings[]
             if (knowledgeBasesForVSEmbeddings && knowledgeBasesForVSEmbeddings.length > 0) {
+                logger.debug(`[Agent Node] Initializing ${knowledgeBasesForVSEmbeddings.length} vector store knowledge base(s)`)
                 for (const knowledgeBase of knowledgeBasesForVSEmbeddings) {
-                    const nodeInstanceFilePath = options.componentNodes['retrieverTool'].filePath as string
-                    const nodeModule = await import(nodeInstanceFilePath)
-                    const newRetrieverToolNodeInstance = new nodeModule.nodeClass()
+                    const vsKnowledgeName = knowledgeBase.knowledgeName || knowledgeBase.vectorStore
+                    try {
+                        logger.debug(
+                            `[Agent Node] Initializing vector store knowledge base: ${vsKnowledgeName} (embedding: ${knowledgeBase.embeddingModel}, store: ${knowledgeBase.vectorStore})`
+                        )
+                        const nodeInstanceFilePath = options.componentNodes['retrieverTool'].filePath as string
+                        const nodeModule = await import(nodeInstanceFilePath)
+                        const newRetrieverToolNodeInstance = new nodeModule.nodeClass()
 
-                    const selectedEmbeddingModel = knowledgeBase.embeddingModel
-                    const selectedEmbeddingModelConfig = knowledgeBase.embeddingModelConfig
-                    const embeddingInstanceFilePath = options.componentNodes[selectedEmbeddingModel].filePath as string
-                    const embeddingModule = await import(embeddingInstanceFilePath)
-                    const newEmbeddingInstance = new embeddingModule.nodeClass()
-                    const newEmbeddingNodeData = {
-                        ...nodeData,
-                        credential: selectedEmbeddingModelConfig['CHRONOS_CREDENTIAL_ID'],
-                        inputs: {
-                            ...nodeData.inputs,
-                            ...selectedEmbeddingModelConfig
+                        const selectedEmbeddingModel = knowledgeBase.embeddingModel
+                        const selectedEmbeddingModelConfig = knowledgeBase.embeddingModelConfig
+                        const embeddingInstanceFilePath = options.componentNodes[selectedEmbeddingModel].filePath as string
+                        const embeddingModule = await import(embeddingInstanceFilePath)
+                        const newEmbeddingInstance = new embeddingModule.nodeClass()
+                        const newEmbeddingNodeData = {
+                            ...nodeData,
+                            credential: selectedEmbeddingModelConfig['CHRONOS_CREDENTIAL_ID'],
+                            inputs: {
+                                ...nodeData.inputs,
+                                ...selectedEmbeddingModelConfig
+                            }
                         }
-                    }
-                    const embeddingInstance = await newEmbeddingInstance.init(newEmbeddingNodeData, '', options)
+                        const embeddingInstance = await newEmbeddingInstance.init(newEmbeddingNodeData, '', options)
 
-                    const selectedVectorStore = knowledgeBase.vectorStore
-                    const selectedVectorStoreConfig = knowledgeBase.vectorStoreConfig
-                    const vectorStoreInstanceFilePath = options.componentNodes[selectedVectorStore].filePath as string
-                    const vectorStoreModule = await import(vectorStoreInstanceFilePath)
-                    const newVectorStoreInstance = new vectorStoreModule.nodeClass()
-                    const newVSNodeData = {
-                        ...nodeData,
-                        credential: selectedVectorStoreConfig['CHRONOS_CREDENTIAL_ID'],
-                        inputs: {
-                            ...nodeData.inputs,
-                            ...selectedVectorStoreConfig,
-                            embeddings: embeddingInstance
-                        },
-                        outputs: {
-                            output: 'retriever'
+                        const selectedVectorStore = knowledgeBase.vectorStore
+                        const selectedVectorStoreConfig = knowledgeBase.vectorStoreConfig
+                        const vectorStoreInstanceFilePath = options.componentNodes[selectedVectorStore].filePath as string
+                        const vectorStoreModule = await import(vectorStoreInstanceFilePath)
+                        const newVectorStoreInstance = new vectorStoreModule.nodeClass()
+                        const newVSNodeData = {
+                            ...nodeData,
+                            credential: selectedVectorStoreConfig['CHRONOS_CREDENTIAL_ID'],
+                            inputs: {
+                                ...nodeData.inputs,
+                                ...selectedVectorStoreConfig,
+                                embeddings: embeddingInstance
+                            },
+                            outputs: {
+                                output: 'retriever'
+                            }
                         }
-                    }
-                    const vectorStoreInstance = await newVectorStoreInstance.init(newVSNodeData, '', options)
+                        const vectorStoreInstance = await newVectorStoreInstance.init(newVSNodeData, '', options)
 
-                    const knowledgeName = knowledgeBase.knowledgeName || ''
+                        const knowledgeName = knowledgeBase.knowledgeName || ''
 
-                    const newRetrieverToolNodeData = {
-                        ...nodeData,
-                        inputs: {
-                            ...nodeData.inputs,
+                        const newRetrieverToolNodeData = {
+                            ...nodeData,
+                            inputs: {
+                                ...nodeData.inputs,
+                                name: knowledgeName
+                                    .toLowerCase()
+                                    .replace(/ /g, '_')
+                                    .replace(/[^a-z0-9_-]/g, ''),
+                                description: knowledgeBase.knowledgeDescription,
+                                retriever: vectorStoreInstance,
+                                returnSourceDocuments: knowledgeBase.returnSourceDocuments
+                            }
+                        }
+                        const retrieverToolInstance = await newRetrieverToolNodeInstance.init(newRetrieverToolNodeData, '', options)
+
+                        toolsInstance.push(retrieverToolInstance as Tool)
+
+                        const jsonSchema = zodToJsonSchema(retrieverToolInstance.schema)
+                        if (jsonSchema.$schema) {
+                            delete jsonSchema.$schema
+                        }
+                        const componentNode = options.componentNodes['retrieverTool']
+
+                        availableTools.push({
                             name: knowledgeName
                                 .toLowerCase()
                                 .replace(/ /g, '_')
                                 .replace(/[^a-z0-9_-]/g, ''),
                             description: knowledgeBase.knowledgeDescription,
-                            retriever: vectorStoreInstance,
-                            returnSourceDocuments: knowledgeBase.returnSourceDocuments
-                        }
+                            schema: jsonSchema,
+                            toolNode: {
+                                label: componentNode?.label || retrieverToolInstance.name,
+                                name: componentNode?.name || retrieverToolInstance.name
+                            }
+                        })
+                        logger.debug(`[Agent Node] Vector store knowledge base initialized successfully: ${vsKnowledgeName}`)
+                    } catch (error) {
+                        logger.error(
+                            `[Agent Node] Failed to initialize vector store knowledge base "${vsKnowledgeName}" (vectorStore: ${
+                                knowledgeBase.vectorStore
+                            }, embedding: ${knowledgeBase.embeddingModel}): ${error instanceof Error ? error.message : String(error)}`
+                        )
+                        throw error
                     }
-                    const retrieverToolInstance = await newRetrieverToolNodeInstance.init(newRetrieverToolNodeData, '', options)
-
-                    toolsInstance.push(retrieverToolInstance as Tool)
-
-                    const jsonSchema = zodToJsonSchema(retrieverToolInstance.schema)
-                    if (jsonSchema.$schema) {
-                        delete jsonSchema.$schema
-                    }
-                    const componentNode = options.componentNodes['retrieverTool']
-
-                    availableTools.push({
-                        name: knowledgeName
-                            .toLowerCase()
-                            .replace(/ /g, '_')
-                            .replace(/[^a-z0-9_-]/g, ''),
-                        description: knowledgeBase.knowledgeDescription,
-                        schema: jsonSchema,
-                        toolNode: {
-                            label: componentNode?.label || retrieverToolInstance.name,
-                            name: componentNode?.name || retrieverToolInstance.name
-                        }
-                    })
                 }
             }
 
@@ -888,6 +928,7 @@ class Agent_Agentflow implements INode {
             const chatId = options.chatId as string
 
             // Initialize the LLM model instance
+            logger.debug(`[Agent Node] Initializing LLM model: ${model}`)
             const nodeInstanceFilePath = options.componentNodes[model].filePath as string
             const nodeModule = await import(nodeInstanceFilePath)
             const newLLMNodeInstance = new nodeModule.nodeClass()
@@ -902,6 +943,7 @@ class Agent_Agentflow implements INode {
 
             const llmWithoutToolsBind = (await newLLMNodeInstance.init(newNodeData, '', options)) as BaseChatModel
             let llmNodeInstance = llmWithoutToolsBind
+            logger.debug(`[Agent Node] LLM model initialized successfully: ${model}`)
 
             const isStructuredOutput = _agentStructuredOutput && Array.isArray(_agentStructuredOutput) && _agentStructuredOutput.length > 0
 
@@ -984,6 +1026,7 @@ class Agent_Agentflow implements INode {
                     throw new Error(`Agent needs to have a function calling capable models.`)
                 }
 
+                logger.debug(`[Agent Node] Binding ${toolsInstance.length} tool(s) to LLM`)
                 // @ts-ignore
                 llmNodeInstance = llmNodeInstance.bindTools(toolsInstance)
             }
@@ -1147,6 +1190,7 @@ class Agent_Agentflow implements INode {
                     }
                 }
             } else {
+                logger.debug(`[Agent Node] Invoking LLM (streaming: ${!!isStreamable})`)
                 if (isStreamable) {
                     response = await this.handleStreamingResponse(
                         sseStreamer,
@@ -1159,6 +1203,7 @@ class Agent_Agentflow implements INode {
                 } else {
                     response = await llmNodeInstance.invoke(messages, { signal: abortController?.signal })
                 }
+                logger.debug(`[Agent Node] LLM invocation completed`)
             }
 
             // Address built in tools (after artifacts are processed)
@@ -1481,7 +1526,7 @@ class Agent_Agentflow implements INode {
             if (error instanceof Error && error.message === 'Aborted') {
                 throw error
             }
-            throw new Error(`Error in Agent node: ${error instanceof Error ? error.message : String(error)}`)
+            throw new Error(`Error in Agent node: ${error instanceof Error ? error.message : String(error)}`, { cause: error })
         }
     }
 
@@ -1834,7 +1879,7 @@ class Agent_Agentflow implements INode {
                 response = response.concat(messageChunk)
             }
         } catch (error) {
-            console.error('Error during streaming:', error)
+            logger.error(`[Agent Node] LLM streaming failed: ${error instanceof Error ? error.message : String(error)}`)
             throw error
         }
 
@@ -2098,7 +2143,9 @@ class Agent_Agentflow implements INode {
                             parsedDocs = JSON.parse(docs)
                             sourceDocuments.push(parsedDocs)
                         } catch (e) {
-                            console.error('Error parsing source documents from tool:', e)
+                            logger.error(
+                                `[Agent Node] Failed to parse source documents from tool: ${e instanceof Error ? e.message : String(e)}`
+                            )
                         }
                     }
 
@@ -2110,7 +2157,7 @@ class Agent_Agentflow implements INode {
                             parsedArtifacts = JSON.parse(artifact)
                             artifacts.push(parsedArtifacts)
                         } catch (e) {
-                            console.error('Error parsing artifacts from tool:', e)
+                            logger.error(`[Agent Node] Failed to parse artifacts from tool: ${e instanceof Error ? e.message : String(e)}`)
                         }
                     }
 
@@ -2121,7 +2168,7 @@ class Agent_Agentflow implements INode {
                         try {
                             toolInput = JSON.parse(args)
                         } catch (e) {
-                            console.error('Error parsing tool input from tool:', e)
+                            logger.error(`[Agent Node] Failed to parse tool input args: ${e instanceof Error ? e.message : String(e)}`)
                         }
                     }
 
@@ -2148,7 +2195,7 @@ class Agent_Agentflow implements INode {
                         await options.analyticHandlers.onToolEnd(toolIds, e)
                     }
 
-                    console.error('Error invoking tool:', e)
+                    logger.error(`[Agent Node] Failed to invoke tool "${toolCall.name}": ${e instanceof Error ? e.message : String(e)}`)
                     const errMsg = getErrorMessage(e)
                     let toolInput = toolCall.args
                     if (typeof errMsg === 'string' && errMsg.includes(TOOL_ARGS_PREFIX)) {
@@ -2156,7 +2203,7 @@ class Agent_Agentflow implements INode {
                         try {
                             toolInput = JSON.parse(args)
                         } catch (e) {
-                            console.error('Error parsing tool input from tool:', e)
+                            logger.error(`[Agent Node] Failed to parse tool input args: ${e instanceof Error ? e.message : String(e)}`)
                         }
                     }
 
@@ -2424,7 +2471,9 @@ class Agent_Agentflow implements INode {
                                 parsedDocs = JSON.parse(docs)
                                 sourceDocuments.push(parsedDocs)
                             } catch (e) {
-                                console.error('Error parsing source documents from tool:', e)
+                                logger.error(
+                                    `[Agent Node] Failed to parse source documents from tool: ${e instanceof Error ? e.message : String(e)}`
+                                )
                             }
                         }
 
@@ -2436,7 +2485,9 @@ class Agent_Agentflow implements INode {
                                 parsedArtifacts = JSON.parse(artifact)
                                 artifacts.push(parsedArtifacts)
                             } catch (e) {
-                                console.error('Error parsing artifacts from tool:', e)
+                                logger.error(
+                                    `[Agent Node] Failed to parse artifacts from tool: ${e instanceof Error ? e.message : String(e)}`
+                                )
                             }
                         }
 
@@ -2447,7 +2498,7 @@ class Agent_Agentflow implements INode {
                             try {
                                 toolInput = JSON.parse(args)
                             } catch (e) {
-                                console.error('Error parsing tool input from tool:', e)
+                                logger.error(`[Agent Node] Failed to parse tool input args: ${e instanceof Error ? e.message : String(e)}`)
                             }
                         }
 
@@ -2474,7 +2525,7 @@ class Agent_Agentflow implements INode {
                             await options.analyticHandlers.onToolEnd(toolIds, e)
                         }
 
-                        console.error('Error invoking tool:', e)
+                        logger.error(`[Agent Node] Failed to invoke tool "${toolCall.name}": ${e instanceof Error ? e.message : String(e)}`)
                         const errMsg = getErrorMessage(e)
                         let toolInput = toolCall.args
                         if (typeof errMsg === 'string' && errMsg.includes(TOOL_ARGS_PREFIX)) {
@@ -2482,7 +2533,7 @@ class Agent_Agentflow implements INode {
                             try {
                                 toolInput = JSON.parse(args)
                             } catch (e) {
-                                console.error('Error parsing tool input from tool:', e)
+                                logger.error(`[Agent Node] Failed to parse tool input args: ${e instanceof Error ? e.message : String(e)}`)
                             }
                         }
 
@@ -2625,7 +2676,9 @@ class Agent_Agentflow implements INode {
 
                 processedResponse = processedResponse.replace(fullMatch, newLink)
             } catch (error) {
-                console.error('Error processing sandbox link:', error)
+                logger.error(
+                    `[Agent Node] Failed to process sandbox link "${filePath}": ${error instanceof Error ? error.message : String(error)}`
+                )
                 // If there's an error, remove the sandbox link as fallback
                 processedResponse = processedResponse.replace(fullMatch, linkText)
             }

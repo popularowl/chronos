@@ -1,6 +1,5 @@
 import express from 'express'
 import apikeyRouter from './apikey'
-import assistantsRouter from './assistants'
 import attachmentsRouter from './attachments'
 import chatMessageRouter from './chat-messages'
 import chatflowsRouter from './chatflows'
@@ -32,9 +31,6 @@ import nodeIconRouter from './node-icons'
 import nodeLoadMethodRouter from './node-load-methods'
 import nodesRouter from './nodes'
 import oauth2Router from './oauth2'
-import openaiAssistantsRouter from './openai-assistants'
-import openaiAssistantsFileRouter from './openai-assistants-files'
-import openaiAssistantsVectorStoreRouter from './openai-assistants-vector-store'
 import openaiRealtimeRouter from './openai-realtime'
 import pingRouter from './ping'
 import predictionRouter from './predictions'
@@ -50,7 +46,6 @@ import variablesRouter from './variables'
 import vectorRouter from './vectors'
 import verifyRouter from './verify'
 import versionRouter from './versions'
-import pricingRouter from './pricing'
 import executionsRouter from './executions'
 import validationRouter from './validation'
 import agentflowv2GeneratorRouter from './agentflowv2-generator'
@@ -64,7 +59,6 @@ const router = express.Router()
 
 router.use('/ping', pingRouter)
 router.use('/apikey', apikeyRouter)
-router.use('/assistants', assistantsRouter)
 router.use('/attachments', attachmentsRouter)
 router.use('/chatflows', chatflowsRouter)
 router.use('/chatflows-streaming', chatflowsStreamingRouter)
@@ -94,9 +88,6 @@ router.use('/node-icon', nodeIconRouter)
 router.use('/node-load-method', nodeLoadMethodRouter)
 router.use('/nodes', nodesRouter)
 router.use('/oauth2-credential', oauth2Router)
-router.use('/openai-assistants', openaiAssistantsRouter)
-router.use('/openai-assistants-file', openaiAssistantsFileRouter)
-router.use('/openai-assistants-vector-store', openaiAssistantsVectorStoreRouter)
 router.use('/openai-realtime', openaiRealtimeRouter)
 router.use('/prediction', predictionRouter)
 router.use('/prompts-list', promptListsRouter)
@@ -111,7 +102,6 @@ router.use('/verify', verifyRouter)
 router.use('/version', versionRouter)
 router.use('/upsert-history', upsertHistoryRouter)
 router.use('/settings', settingsRouter)
-router.use('/pricing', pricingRouter)
 router.use('/executions', executionsRouter)
 router.use('/validation', validationRouter)
 router.use('/agentflowv2-generator', agentflowv2GeneratorRouter)

@@ -917,7 +917,6 @@ export class AnalyticHandler {
                 langfuseTraceClient = langfuse.trace({
                     name,
                     sessionId: this.options.chatId,
-                    metadata: { tags: ['openai-assistant'] },
                     ...this.nodeData?.inputs?.analytics?.langFuse
                 })
             } else {
@@ -966,7 +965,7 @@ export class AnalyticHandler {
                 const langwatch: LangWatch = this.handlers['langWatch'].client
                 langwatchTrace = langwatch.getTrace({
                     name,
-                    metadata: { tags: ['openai-assistant'], threadId: this.options.chatId },
+                    metadata: { threadId: this.options.chatId },
                     ...this.nodeData?.inputs?.analytics?.langWatch
                 })
             } else {

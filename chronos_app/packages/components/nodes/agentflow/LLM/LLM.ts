@@ -3,6 +3,7 @@ import { ICommonObject, IMessage, INode, INodeData, INodeOptionsValue, INodePara
 import { AIMessageChunk, BaseMessageLike, MessageContentText } from '@langchain/core/messages'
 import { DEFAULT_SUMMARIZER_TEMPLATE } from '../prompt'
 import { AnalyticHandler } from '../../../src/handler'
+import logger from '../../../src/logger'
 import { ILLMMessage } from '../Interface.Agentflow'
 import {
     addImageArtifactsToMessages,
@@ -859,7 +860,7 @@ class LLM_Agentflow implements INode {
                 response = response.concat(messageChunk)
             }
         } catch (error) {
-            console.error('Error during streaming:', error)
+            logger.error(`[LLM Node] Error during streaming: ${error instanceof Error ? error.message : String(error)}`)
             throw error
         }
         if (Array.isArray(response.content) && response.content.length > 0) {

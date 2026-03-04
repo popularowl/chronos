@@ -4,7 +4,7 @@ import { useDispatch } from 'react-redux'
 import PropTypes from 'prop-types'
 import { OutlinedInput, DialogActions, Button, Dialog, DialogContent, DialogTitle } from '@mui/material'
 import { StyledButton } from '@/ui-component/button/StyledButton'
-import assistantsApi from '@/api/assistants'
+import nodesApi from '@/api/nodes'
 import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction } from '@/store/actions'
 import { IconX, IconWand, IconArrowLeft, IconNotebook, IconLanguage, IconMail, IconCode, IconReport, IconWorld } from '@tabler/icons-react'
 import useNotifier from '@/utils/useNotifier'
@@ -56,7 +56,7 @@ const AssistantPromptGenerator = ({ show, dialogProps, onCancel, onConfirm }) =>
                 name: dialogProps.data.selectedChatModel.name,
                 inputs: dialogProps.data.selectedChatModel.inputs
             }
-            const resp = await assistantsApi.generateAssistantInstruction({
+            const resp = await nodesApi.generateInstruction({
                 selectedChatModel: selectedChatModelObj,
                 task: customAssistantInstruction
             })

@@ -18,8 +18,6 @@ export type MessageType = 'apiMessage' | 'userMessage'
 
 export type ChatflowType = 'CHATFLOW' | 'MULTIAGENT' | 'ASSISTANT' | 'AGENTFLOW'
 
-export type AssistantType = 'CUSTOM' | 'OPENAI' | 'AZURE'
-
 export type ExecutionState = 'INPROGRESS' | 'FINISHED' | 'ERROR' | 'TERMINATED' | 'TIMEOUT' | 'STOPPED'
 
 export enum MODE {

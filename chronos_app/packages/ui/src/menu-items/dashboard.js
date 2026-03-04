@@ -93,15 +93,6 @@ const dashboard = {
                     breadcrumbs: true,
                     permission: 'executions:view'
                 },
-                // {
-                //     id: 'assistants',
-                //     title: 'Assistants',
-                //     type: 'item',
-                //     url: '/assistants',
-                //     icon: icons.IconRobot,
-                //     breadcrumbs: true,
-                //     permission: 'assistants:view'
-                // },
                 {
                     id: 'marketplaces',
                     title: 'Marketplaces',

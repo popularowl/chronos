@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux'
 import { useState, useEffect, forwardRef } from 'react'
 import PropTypes from 'prop-types'
 import moment from 'moment'
-import axios from 'axios'
 import { cloneDeep } from 'lodash'
 
 // material-ui
@@ -39,7 +38,7 @@ import userPNG from '@/assets/images/account.png'
 import msgEmptySVG from '@/assets/images/message_empty.svg'
 import multiagent_supervisorPNG from '@/assets/images/multiagent_supervisor.png'
 import multiagent_workerPNG from '@/assets/images/multiagent_worker.png'
-import { IconTool, IconDeviceSdCard, IconFileExport, IconEraser, IconX, IconDownload, IconPaperclip, IconBulb } from '@tabler/icons-react'
+import { IconTool, IconDeviceSdCard, IconFileExport, IconEraser, IconX, IconPaperclip, IconBulb } from '@tabler/icons-react'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 
 // Project import
@@ -650,26 +649,6 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
 
     const onURLClick = (data) => {
         window.open(data, '_blank')
-    }
-
-    const downloadFile = async (fileAnnotation) => {
-        try {
-            const response = await axios.post(
-                `${baseURL}/api/v1/openai-assistants-file/download`,
-                { fileName: fileAnnotation.fileName, chatflowId: dialogProps.chatflow.id, chatId: selectedChatId },
-                { responseType: 'blob' }
-            )
-            const blob = new Blob([response.data], { type: response.headers['content-type'] })
-            const downloadUrl = window.URL.createObjectURL(blob)
-            const link = document.createElement('a')
-            link.href = downloadUrl
-            link.download = fileAnnotation.fileName
-            document.body.appendChild(link)
-            link.click()
-            link.remove()
-        } catch (error) {
-            console.error('Download failed:', error)
-        }
     }
 
     const onSourceDialogClick = (data, title) => {
@@ -1545,30 +1524,6 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
                                                                         {message.message}
                                                                     </MemoizedReactMarkdown>
                                                                 </div>
-                                                                {message.fileAnnotations && (
-                                                                    <div style={{ display: 'block', flexDirection: 'row', width: '100%' }}>
-                                                                        {message.fileAnnotations.map((fileAnnotation, index) => {
-                                                                            return (
-                                                                                <Button
-                                                                                    sx={{
-                                                                                        fontSize: '0.85rem',
-                                                                                        textTransform: 'none',
-                                                                                        mb: 1,
-                                                                                        mr: 1
-                                                                                    }}
-                                                                                    key={index}
-                                                                                    variant='outlined'
-                                                                                    onClick={() => downloadFile(fileAnnotation)}
-                                                                                    endIcon={
-                                                                                        <IconDownload color={theme.palette.primary.main} />
-                                                                                    }
-                                                                                >
-                                                                                    {fileAnnotation.fileName}
-                                                                                </Button>
-                                                                            )
-                                                                        })}
-                                                                    </div>
-                                                                )}
                                                                 {message.sourceDocuments && (
                                                                     <div style={{ display: 'block', flexDirection: 'row', width: '100%' }}>
                                                                         {removeDuplicateURL(message).map((source, index) => {

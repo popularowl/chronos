@@ -26,30 +26,10 @@ const getCategories = (fileDataObj: ITemplate) => {
 // Get all templates for marketplaces
 const getAllTemplates = async () => {
     try {
-        let marketplaceDir = path.join(__dirname, '..', '..', '..', 'marketplaces', 'chatflows')
-        let jsonsInDir = fs.readdirSync(marketplaceDir).filter((file) => path.extname(file) === '.json')
         let templates: any[] = []
-        jsonsInDir.forEach((file) => {
-            const filePath = path.join(__dirname, '..', '..', '..', 'marketplaces', 'chatflows', file)
-            const fileData = fs.readFileSync(filePath)
-            const fileDataObj = JSON.parse(fileData.toString()) as ITemplate
 
-            const template = {
-                id: uuidv4(),
-                templateName: file.split('.json')[0],
-                flowData: fileData.toString(),
-                badge: fileDataObj?.badge,
-                framework: fileDataObj?.framework,
-                usecases: fileDataObj?.usecases,
-                categories: getCategories(fileDataObj),
-                type: 'Chatflow',
-                description: fileDataObj?.description || ''
-            }
-            templates.push(template)
-        })
-
-        marketplaceDir = path.join(__dirname, '..', '..', '..', 'marketplaces', 'tools')
-        jsonsInDir = fs.readdirSync(marketplaceDir).filter((file) => path.extname(file) === '.json')
+        let marketplaceDir = path.join(__dirname, '..', '..', '..', 'marketplaces', 'tools')
+        let jsonsInDir = fs.readdirSync(marketplaceDir).filter((file) => path.extname(file) === '.json')
         jsonsInDir.forEach((file) => {
             const filePath = path.join(__dirname, '..', '..', '..', 'marketplaces', 'tools', file)
             const fileData = fs.readFileSync(filePath)

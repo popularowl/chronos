@@ -1,8 +1,6 @@
 import { useState } from 'react'
 import { useSelector } from 'react-redux'
 import PropTypes from 'prop-types'
-import axios from 'axios'
-
 // MUI
 import {
     Typography,
@@ -25,7 +23,7 @@ import {
 } from '@mui/material'
 import { useTheme, darken } from '@mui/material/styles'
 import { useSnackbar } from 'notistack'
-import { IconCoins, IconClock, IconChevronDown, IconDownload, IconTool } from '@tabler/icons-react'
+import { IconCoins, IconClock, IconChevronDown, IconTool } from '@tabler/icons-react'
 import toolSVG from '@/assets/images/tool.svg'
 
 // Project imports
@@ -174,26 +172,6 @@ export const NodeExecutionDetails = ({ data, label, status, metadata, isPublic, 
         setOpenFeedbackDialog(false)
         setFeedback('')
         setFeedbackType('')
-    }
-
-    const downloadFile = async (fileAnnotation) => {
-        try {
-            const response = await axios.post(
-                `${baseURL}/api/v1/openai-assistants-file/download`,
-                { fileName: fileAnnotation.fileName, chatflowId: metadata?.agentflowId, chatId: metadata?.sessionId },
-                { responseType: 'blob' }
-            )
-            const blob = new Blob([response.data], { type: response.headers['content-type'] })
-            const downloadUrl = window.URL.createObjectURL(blob)
-            const link = document.createElement('a')
-            link.href = downloadUrl
-            link.download = fileAnnotation.fileName
-            document.body.appendChild(link)
-            link.click()
-            link.remove()
-        } catch (error) {
-            console.error('Download failed:', error)
-        }
     }
 
     const renderFullfilledConditions = (conditions) => {
@@ -855,36 +833,6 @@ export const NodeExecutionDetails = ({ data, label, status, metadata, isPublic, 
                                         return <MemoizedReactMarkdown>{`*No data*`}</MemoizedReactMarkdown>
                                     }
                                 })()}
-                                {message.additional_kwargs?.fileAnnotations && message.additional_kwargs.fileAnnotations.length > 0 && (
-                                    <div
-                                        style={{
-                                            display: 'block',
-                                            flexDirection: 'row',
-                                            width: '100%',
-                                            marginTop: '16px',
-                                            marginBottom: '8px'
-                                        }}
-                                    >
-                                        {message.additional_kwargs.fileAnnotations.map((fileAnnotation, index) => {
-                                            return (
-                                                <Button
-                                                    sx={{
-                                                        fontSize: '0.85rem',
-                                                        textTransform: 'none',
-                                                        mb: 1,
-                                                        mr: 1
-                                                    }}
-                                                    key={index}
-                                                    variant='outlined'
-                                                    onClick={() => downloadFile(fileAnnotation)}
-                                                    endIcon={<IconDownload color={theme.palette.primary.main} />}
-                                                >
-                                                    {fileAnnotation.fileName}
-                                                </Button>
-                                            )
-                                        })}
-                                    </div>
-                                )}
                             </Box>
                         ))
                     ) : data?.input?.form || data?.input?.http || data?.input?.conditions ? (
@@ -1070,36 +1018,6 @@ export const NodeExecutionDetails = ({ data, label, status, metadata, isPublic, 
                                     return <MemoizedReactMarkdown>{`*No data*`}</MemoizedReactMarkdown>
                                 }
                             })()}
-                            {data.output?.fileAnnotations && data.output.fileAnnotations.length > 0 && (
-                                <div
-                                    style={{
-                                        display: 'block',
-                                        flexDirection: 'row',
-                                        width: '100%',
-                                        marginTop: '16px',
-                                        marginBottom: '8px'
-                                    }}
-                                >
-                                    {data.output.fileAnnotations.map((fileAnnotation, index) => {
-                                        return (
-                                            <Button
-                                                sx={{
-                                                    fontSize: '0.85rem',
-                                                    textTransform: 'none',
-                                                    mb: 1,
-                                                    mr: 1
-                                                }}
-                                                key={index}
-                                                variant='outlined'
-                                                onClick={() => downloadFile(fileAnnotation)}
-                                                endIcon={<IconDownload color={theme.palette.primary.main} />}
-                                            >
-                                                {fileAnnotation.fileName}
-                                            </Button>
-                                        )
-                                    })}
-                                </div>
-                            )}
                         </Box>
                     )}
                     {data.error && (

@@ -10,8 +10,7 @@
 </div>
 <div style="page-break-after: always;">&nbsp;</div>
 
-
-[Chronos](https://intelligex.com/chronos) is a fork of [Flowise](https://github.com/FlowiseAI/Flowise) project - with the goal to maintain a lean visual AI agent builder, focused on self hosted enviroenments, observability and interaction with self hosted data models. It provides:
+[Chronos](https://intelligex.com/chronos) is a lean visual AI agent workflow builder, focused on the self-hosted enviroenments, observability and local datastores. It started as a fork of [Flowise](https://github.com/FlowiseAI/Flowise) project - with the focus on significant optimisation for self-hosting.
 
 - Self-hosting focused visual AI agent workflow builder.
 - 100+ of prebuilt LLM model integrations and templates.
@@ -20,13 +19,15 @@
 - Number of [Docker compose examples](./chronos_app/docker/) to get you started.
 - Set of [tutorials and how to guides](https://intelligex.com/).
 
+
 ## Quick Start
 
-Chronos is tailored for the deployments on local and self hosted enviroenments. Most convinient way to get started quickly is to run container image (see steps below). For the more complex hosting examples see the [docker compose files](./chronos_app/docker/).
+Chronos is tailored for the deployments on local and self hosted enviroenments. Simpliest way to get started quickly is to run all in one Chronos container image (see steps below). For the more complex hosting examples see the [docker compose files](./chronos_app/docker/).
 
 *Build and run a local Docker container image:*
 
 ```bash
+git clone git@github.com:intelligexhq/chronos.git
 cd chronos_app/docker
 docker build -f Dockerfile.local -t chronos:local ..
 docker run -d --name chronos -p 3001:3000 chronos:local

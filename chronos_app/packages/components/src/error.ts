@@ -20,6 +20,13 @@ const toErrorWithMessage = (maybeError: unknown): ErrorWithMessage => {
     }
 }
 
-export const getErrorMessage = (error: unknown) => {
-    return toErrorWithMessage(error).message
+export const getErrorMessage = (error: unknown): string => {
+    const message = toErrorWithMessage(error).message
+    if (typeof error === 'object' && error !== null && 'cause' in error && error.cause) {
+        const causeMsg = getErrorMessage(error.cause)
+        if (causeMsg && causeMsg !== message) {
+            return `${message} [Cause: ${causeMsg}]`
+        }
+    }
+    return message
 }

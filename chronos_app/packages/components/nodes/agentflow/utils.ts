@@ -5,6 +5,7 @@ import { ICommonObject, IFileUpload, INodeData } from '../../src/Interface'
 import { BaseMessageLike } from '@langchain/core/messages'
 import { IFlowState } from './Interface.Agentflow'
 import { getCredentialData, getCredentialParam, handleEscapeCharacters, mapMimeTypeToInputField } from '../../src/utils'
+import logger from '../../src/logger'
 import fetch from 'node-fetch'
 
 export const addImagesToMessages = async (
@@ -107,7 +108,9 @@ export const processMessagesWithImages = async (
                             }
                         })
                     } catch (error) {
-                        console.error(`Failed to load image ${item.name}:`, error)
+                        logger.error(
+                            `[Agentflow Utils] Failed to load image ${item.name}: ${error instanceof Error ? error.message : String(error)}`
+                        )
                     }
                 }
             }
@@ -538,7 +541,7 @@ export const saveBase64Image = async (
 
         return { filePath: path, fileName, totalSize }
     } catch (error) {
-        console.error('Error saving base64 image:', error)
+        logger.error(`[Agentflow Utils] Error saving base64 image: ${error instanceof Error ? error.message : String(error)}`)
         return null
     }
 }
@@ -586,7 +589,7 @@ export const saveGeminiInlineImage = async (
 
         return { filePath: path, fileName, totalSize }
     } catch (error) {
-        console.error('Error saving Gemini inline image:', error)
+        logger.error(`[Agentflow Utils] Error saving Gemini inline image: ${error instanceof Error ? error.message : String(error)}`)
         return null
     }
 }
@@ -606,7 +609,7 @@ export const downloadContainerFile = async (
         const openAIApiKey = getCredentialParam('openAIApiKey', credentialData, modelNodeData)
 
         if (!openAIApiKey) {
-            console.warn('No OpenAI API key available for downloading container file')
+            logger.warn('[Agentflow Utils] No OpenAI API key available for downloading container file')
             return null
         }
 
@@ -620,8 +623,8 @@ export const downloadContainerFile = async (
         })
 
         if (!response.ok) {
-            console.warn(
-                `Failed to download container file ${fileId} from container ${containerId}: ${response.status} ${response.statusText}`
+            logger.warn(
+                `[Agentflow Utils] Failed to download container file ${fileId} from container ${containerId}: ${response.status} ${response.statusText}`
             )
             return null
         }
@@ -643,7 +646,7 @@ export const downloadContainerFile = async (
 
         return { filePath: path, totalSize }
     } catch (error) {
-        console.error('Error downloading container file:', error)
+        logger.error(`[Agentflow Utils] Error downloading container file: ${error instanceof Error ? error.message : String(error)}`)
         return null
     }
 }
@@ -726,7 +729,11 @@ export const extractArtifactsFromResponse = async (
                         })
                     }
                 } catch (error) {
-                    console.error('Error processing Gemini inline image artifact:', error)
+                    logger.error(
+                        `[Agentflow Utils] Error processing Gemini inline image artifact: ${
+                            error instanceof Error ? error.message : String(error)
+                        }`
+                    )
                 }
             }
         }
@@ -771,7 +778,11 @@ export const extractArtifactsFromResponse = async (
                                     }
                                 }
                             } catch (error) {
-                                console.error('Error processing annotation:', error)
+                                logger.error(
+                                    `[Agentflow Utils] Error processing container file annotation: ${
+                                        error instanceof Error ? error.message : String(error)
+                                    }`
+                                )
                             }
                         }
                     }
@@ -795,7 +806,11 @@ export const extractArtifactsFromResponse = async (
                     })
                 }
             } catch (error) {
-                console.error('Error processing image generation artifact:', error)
+                logger.error(
+                    `[Agentflow Utils] Error processing image generation artifact: ${
+                        error instanceof Error ? error.message : String(error)
+                    }`
+                )
             }
         }
     }

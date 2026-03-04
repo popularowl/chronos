@@ -15,12 +15,11 @@ import MainCard from '@/ui-component/cards/MainCard'
 import Transitions from '@/ui-component/extended/Transitions'
 import settings from '@/menu-items/settings'
 import agentsettings from '@/menu-items/agentsettings'
-import customAssistantSettings from '@/menu-items/customassistant'
 import { useAuth } from '@/hooks/useAuth'
 
 // ==============================|| SETTINGS ||============================== //
 
-const Settings = ({ chatflow, isSettingsOpen, isCustomAssistant, anchorEl, isAgentCanvas, onSettingsItemClick, onUploadFile, onClose }) => {
+const Settings = ({ chatflow, isSettingsOpen, anchorEl, isAgentCanvas, onSettingsItemClick, onUploadFile, onClose }) => {
     const theme = useTheme()
     const [settingsMenu, setSettingsMenu] = useState([])
     const customization = useSelector((state) => state.customization)
@@ -50,15 +49,10 @@ const Settings = ({ chatflow, isSettingsOpen, isCustomAssistant, anchorEl, isAge
             const settingsMenu = menus.children.filter((menu) => menu.id === 'loadChatflow')
             setSettingsMenu(settingsMenu)
         } else if (chatflow && chatflow.id) {
-            if (isCustomAssistant) {
-                const menus = customAssistantSettings
-                setSettingsMenu(menus.children)
-            } else {
-                const menus = isAgentCanvas ? agentsettings : settings
-                setSettingsMenu(menus.children)
-            }
+            const menus = isAgentCanvas ? agentsettings : settings
+            setSettingsMenu(menus.children)
         }
-    }, [chatflow, isAgentCanvas, isCustomAssistant])
+    }, [chatflow, isAgentCanvas])
 
     useEffect(() => {
         setOpen(isSettingsOpen)
@@ -157,7 +151,6 @@ const Settings = ({ chatflow, isSettingsOpen, isCustomAssistant, anchorEl, isAge
 Settings.propTypes = {
     chatflow: PropTypes.object,
     isSettingsOpen: PropTypes.bool,
-    isCustomAssistant: PropTypes.bool,
     anchorEl: PropTypes.any,
     onSettingsItemClick: PropTypes.func,
     onUploadFile: PropTypes.func,

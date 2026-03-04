@@ -1,7 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { EntityManager, In, QueryRunner } from 'typeorm'
 import { v4 as uuidv4 } from 'uuid'
-import { Assistant } from '../../database/entities/Assistant'
 import { ChatFlow } from '../../database/entities/ChatFlow'
 import { ChatMessage } from '../../database/entities/ChatMessage'
 import { ChatMessageFeedback } from '../../database/entities/ChatMessageFeedback'
@@ -14,12 +13,10 @@ import { Variable } from '../../database/entities/Variable'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { Platform } from '../../Interface'
-import assistantsService from '../../services/assistants'
 import chatflowsService from '../../services/chatflows'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 import { checkUsageLimit } from '../../utils/quotaUsage'
 import { sanitizeNullBytes } from '../../utils/sanitize.util'
-import assistantService from '../assistants'
 import chatMessagesService from '../chat-messages'
 import chatflowService from '../chatflows'
 import documenStoreService from '../documentstore'
@@ -31,9 +28,6 @@ import variableService from '../variables'
 type ExportInput = {
     agentflow: boolean
     agentflowv2: boolean
-    assistantCustom: boolean
-    assistantOpenAI: boolean
-    assistantAzure: boolean
     chatflow: boolean
     chat_message: boolean
     chat_feedback: boolean
@@ -47,10 +41,6 @@ type ExportInput = {
 type ExportData = {
     AgentFlow: ChatFlow[]
     AgentFlowV2: ChatFlow[]
-    AssistantCustom: Assistant[]
-    AssistantFlow: ChatFlow[]
-    AssistantOpenAI: Assistant[]
-    AssistantAzure: Assistant[]
     ChatFlow: ChatFlow[]
     ChatMessage: ChatMessage[]
     ChatMessageFeedback: ChatMessageFeedback[]
@@ -67,7 +57,6 @@ const convertExportInput = (body: any): ExportInput => {
         if (!body || typeof body !== 'object') throw new Error('Invalid ExportInput object in request body')
         if (body.agentflow && typeof body.agentflow !== 'boolean') throw new Error('Invalid agentflow property in ExportInput object')
         if (body.agentflowv2 && typeof body.agentflowv2 !== 'boolean') throw new Error('Invalid agentflowv2 property in ExportInput object')
-        if (body.assistant && typeof body.assistant !== 'boolean') throw new Error('Invalid assistant property in ExportInput object')
         if (body.chatflow && typeof body.chatflow !== 'boolean') throw new Error('Invalid chatflow property in ExportInput object')
         if (body.chat_message && typeof body.chat_message !== 'boolean')
             throw new Error('Invalid chat_message property in ExportInput object')
@@ -99,16 +88,6 @@ const exportData = async (exportInput: ExportInput, activeWorkspaceId: string): 
         let AgentFlowV2: ChatFlow[] | { data: ChatFlow[]; total: number } =
             exportInput.agentflowv2 === true ? await chatflowService.getAllChatflows('AGENTFLOW') : []
         AgentFlowV2 = 'data' in AgentFlowV2 ? AgentFlowV2.data : AgentFlowV2
-
-        let AssistantCustom: Assistant[] = exportInput.assistantCustom === true ? await assistantService.getAllAssistants('CUSTOM') : []
-
-        let AssistantFlow: ChatFlow[] | { data: ChatFlow[]; total: number } =
-            exportInput.assistantCustom === true ? await chatflowService.getAllChatflows('ASSISTANT') : []
-        AssistantFlow = 'data' in AssistantFlow ? AssistantFlow.data : AssistantFlow
-
-        let AssistantOpenAI: Assistant[] = exportInput.assistantOpenAI === true ? await assistantService.getAllAssistants('OPENAI') : []
-
-        let AssistantAzure: Assistant[] = exportInput.assistantAzure === true ? await assistantService.getAllAssistants('AZURE') : []
 
         let ChatFlow: ChatFlow[] | { data: ChatFlow[]; total: number } =
             exportInput.chatflow === true ? await chatflowService.getAllChatflows('CHATFLOW') : []
@@ -154,10 +133,6 @@ const exportData = async (exportInput: ExportInput, activeWorkspaceId: string): 
             FileDefaultName,
             AgentFlow,
             AgentFlowV2,
-            AssistantCustom,
-            AssistantFlow,
-            AssistantOpenAI,
-            AssistantAzure,
             ChatFlow,
             ChatMessage,
             ChatMessageFeedback,
@@ -197,27 +172,6 @@ async function replaceDuplicateIdsForChatFlow(queryRunner: QueryRunner, original
     }
 }
 
-async function replaceDuplicateIdsForAssistant(queryRunner: QueryRunner, originalData: ExportData, assistants: Assistant[]) {
-    try {
-        const ids = assistants.map((assistant) => assistant.id)
-        const records = await queryRunner.manager.find(Assistant, {
-            where: { id: In(ids) }
-        })
-        if (records.length < 0) return originalData
-        for (let record of records) {
-            const oldId = record.id
-            const newId = uuidv4()
-            originalData = JSON.parse(JSON.stringify(originalData).replaceAll(oldId, newId))
-        }
-        return originalData
-    } catch (error) {
-        throw new InternalChronosError(
-            StatusCodes.INTERNAL_SERVER_ERROR,
-            `Error: exportImportService.replaceDuplicateIdsForAssistant - ${getErrorMessage(error)}`
-        )
-    }
-}
-
 async function replaceDuplicateIdsForChatMessage(
     queryRunner: QueryRunner,
     originalData: ExportData,
@@ -229,7 +183,6 @@ async function replaceDuplicateIdsForChatMessage(
             return { id: chatMessage.chatflowid, qty: 0 }
         })
         const originalDataChatflowIds = [
-            ...originalData.AssistantFlow.map((assistantFlow) => assistantFlow.id),
             ...originalData.AgentFlow.map((agentFlow) => agentFlow.id),
             ...originalData.AgentFlowV2.map((agentFlowV2) => agentFlowV2.id),
             ...originalData.ChatFlow.map((chatFlow) => chatFlow.id)
@@ -357,7 +310,6 @@ async function replaceDuplicateIdsForChatMessageFeedback(
             return { id: feedback.chatflowid, qty: 0 }
         })
         const originalDataChatflowIds = [
-            ...originalData.AssistantFlow.map((assistantFlow) => assistantFlow.id),
             ...originalData.AgentFlow.map((agentFlow) => agentFlow.id),
             ...originalData.AgentFlowV2.map((agentFlowV2) => agentFlowV2.id),
             ...originalData.ChatFlow.map((chatFlow) => chatFlow.id)
@@ -613,10 +565,6 @@ const importData = async (importData: ExportData, orgId: string, activeWorkspace
     // Initialize missing properties with empty arrays to avoid "undefined" errors
     importData.AgentFlow = importData.AgentFlow || []
     importData.AgentFlowV2 = importData.AgentFlowV2 || []
-    importData.AssistantCustom = importData.AssistantCustom || []
-    importData.AssistantFlow = importData.AssistantFlow || []
-    importData.AssistantOpenAI = importData.AssistantOpenAI || []
-    importData.AssistantAzure = importData.AssistantAzure || []
     importData.ChatFlow = importData.ChatFlow || []
     importData.ChatMessage = importData.ChatMessage || []
     importData.ChatMessageFeedback = importData.ChatMessageFeedback || []
@@ -658,55 +606,6 @@ const importData = async (importData: ExportData, orgId: string, activeWorkspace
                     existingChatflowCount + newChatflowCount
                 )
                 importData = await replaceDuplicateIdsForChatFlow(queryRunner, importData, importData.AgentFlowV2)
-            }
-            if (importData.AssistantCustom.length > 0) {
-                importData.AssistantCustom = insertWorkspaceId(importData.AssistantCustom, activeWorkspaceId)
-                const existingAssistantCount = await assistantsService.getAssistantsCountByOrganization('CUSTOM', orgId)
-                const newAssistantCount = importData.AssistantCustom.length
-                await checkUsageLimit(
-                    'flows',
-                    subscriptionId,
-                    getRunningExpressApp().usageCacheManager,
-                    existingAssistantCount + newAssistantCount
-                )
-                importData = await replaceDuplicateIdsForAssistant(queryRunner, importData, importData.AssistantCustom)
-            }
-            if (importData.AssistantFlow.length > 0) {
-                importData.AssistantFlow = reduceSpaceForChatflowFlowData(importData.AssistantFlow)
-                importData.AssistantFlow = insertWorkspaceId(importData.AssistantFlow, activeWorkspaceId)
-                const existingChatflowCount = await chatflowsService.getAllChatflowsCountByOrganization('ASSISTANT', orgId)
-                const newChatflowCount = importData.AssistantFlow.length
-                await checkUsageLimit(
-                    'flows',
-                    subscriptionId,
-                    getRunningExpressApp().usageCacheManager,
-                    existingChatflowCount + newChatflowCount
-                )
-                importData = await replaceDuplicateIdsForChatFlow(queryRunner, importData, importData.AssistantFlow)
-            }
-            if (importData.AssistantOpenAI.length > 0) {
-                importData.AssistantOpenAI = insertWorkspaceId(importData.AssistantOpenAI, activeWorkspaceId)
-                const existingAssistantCount = await assistantsService.getAssistantsCountByOrganization('OPENAI', orgId)
-                const newAssistantCount = importData.AssistantOpenAI.length
-                await checkUsageLimit(
-                    'flows',
-                    subscriptionId,
-                    getRunningExpressApp().usageCacheManager,
-                    existingAssistantCount + newAssistantCount
-                )
-                importData = await replaceDuplicateIdsForAssistant(queryRunner, importData, importData.AssistantOpenAI)
-            }
-            if (importData.AssistantAzure.length > 0) {
-                importData.AssistantAzure = insertWorkspaceId(importData.AssistantAzure, activeWorkspaceId)
-                const existingAssistantCount = await assistantsService.getAssistantsCountByOrganization('AZURE', orgId)
-                const newAssistantCount = importData.AssistantAzure.length
-                await checkUsageLimit(
-                    'flows',
-                    subscriptionId,
-                    getRunningExpressApp().usageCacheManager,
-                    existingAssistantCount + newAssistantCount
-                )
-                importData = await replaceDuplicateIdsForAssistant(queryRunner, importData, importData.AssistantAzure)
             }
             if (importData.ChatFlow.length > 0) {
                 importData.ChatFlow = reduceSpaceForChatflowFlowData(importData.ChatFlow)
@@ -761,10 +660,6 @@ const importData = async (importData: ExportData, orgId: string, activeWorkspace
 
             if (importData.AgentFlow.length > 0) await queryRunner.manager.save(ChatFlow, importData.AgentFlow)
             if (importData.AgentFlowV2.length > 0) await queryRunner.manager.save(ChatFlow, importData.AgentFlowV2)
-            if (importData.AssistantFlow.length > 0) await queryRunner.manager.save(ChatFlow, importData.AssistantFlow)
-            if (importData.AssistantCustom.length > 0) await queryRunner.manager.save(Assistant, importData.AssistantCustom)
-            if (importData.AssistantOpenAI.length > 0) await queryRunner.manager.save(Assistant, importData.AssistantOpenAI)
-            if (importData.AssistantAzure.length > 0) await queryRunner.manager.save(Assistant, importData.AssistantAzure)
             if (importData.ChatFlow.length > 0) await queryRunner.manager.save(ChatFlow, importData.ChatFlow)
             if (importData.ChatMessage.length > 0) await saveBatch(queryRunner.manager, ChatMessage, importData.ChatMessage)
             if (importData.ChatMessageFeedback.length > 0)
