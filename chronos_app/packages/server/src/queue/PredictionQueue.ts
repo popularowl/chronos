@@ -1,5 +1,5 @@
 import { DataSource } from 'typeorm'
-import { executeFlow } from '../utils/buildChatflow'
+import { executeFlow } from '../utils/buildAgentflow'
 import { IComponentNodes, IExecuteFlowParams } from '../Interface'
 import { Telemetry } from '../utils/telemetry'
 import { CachePool } from '../CachePool'

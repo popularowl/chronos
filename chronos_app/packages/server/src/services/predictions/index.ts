@@ -1,6 +1,6 @@
 import { Request } from 'express'
 import { StatusCodes } from 'http-status-codes'
-import { utilBuildChatflow } from '../../utils/buildChatflow'
+import { utilBuildChatflow } from '../../utils/buildAgentflow'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 

@@ -1,4 +1,4 @@
-const buildChatflowExports = require('../../src/utils/buildChatflow')
+const buildChatflowExports = require('../../src/utils/buildAgentflow')
 
 export function predictionsServiceTest() {
     describe('Predictions Service', () => {

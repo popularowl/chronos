@@ -33,7 +33,7 @@ pnpm test # pnpm test --force
 
 pnpm test:components
 pnpm test:server
-pnpm test:server -- --coverage
+pnpm test:server -- --coverage # provides coverage scores for server package
 ```
 
 ## Code Quality
