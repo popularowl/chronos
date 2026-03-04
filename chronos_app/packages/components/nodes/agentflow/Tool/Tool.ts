@@ -4,6 +4,7 @@ import { processTemplateVariables } from '../../../src/utils'
 import { Tool } from '@langchain/core/tools'
 import { ARTIFACTS_PREFIX, TOOL_ARGS_PREFIX } from '../../../src/agents'
 import zodToJsonSchema from 'zod-to-json-schema'
+import logger from '../../../src/logger'
 
 interface IToolInputArgs {
     inputArgName: string
@@ -306,7 +307,7 @@ class Tool_Agentflow implements INode {
                 try {
                     parsedArtifacts = JSON.parse(artifact)
                 } catch (e) {
-                    console.error('Error parsing artifacts from tool:', e)
+                    logger.error(`[Tool Node] Failed to parse artifacts from tool: ${e instanceof Error ? e.message : String(e)}`)
                 }
             }
 
@@ -317,7 +318,7 @@ class Tool_Agentflow implements INode {
                 try {
                     toolInput = JSON.parse(args)
                 } catch (e) {
-                    console.error('Error parsing tool input from tool:', e)
+                    logger.error(`[Tool Node] Failed to parse tool input args: ${e instanceof Error ? e.message : String(e)}`)
                 }
             }
 

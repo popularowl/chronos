@@ -12,6 +12,7 @@ import { getCredentialData, getCredentialParam, processTemplateVariables, parseJ
 import { DataSource } from 'typeorm'
 import { BaseMessageLike } from '@langchain/core/messages'
 import { updateFlowState } from '../utils'
+import logger from '../../../src/logger'
 
 class ExecuteFlow_Agentflow implements INode {
     label: string
@@ -259,7 +260,7 @@ class ExecuteFlow_Agentflow implements INode {
 
             return returnOutput
         } catch (error) {
-            console.error('ExecuteFlow Error:', error)
+            logger.error(`[ExecuteFlow Node] Execution failed: ${error instanceof Error ? error.message : String(error)}`)
 
             // Format error response
             const errorResponse: any = {
