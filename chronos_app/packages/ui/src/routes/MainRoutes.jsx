@@ -22,12 +22,6 @@ const APIKey = Loadable(lazy(() => import('@/views/apikey')))
 // tools routing
 const Tools = Loadable(lazy(() => import('@/views/tools')))
 
-// assistants routing
-const Assistants = Loadable(lazy(() => import('@/views/assistants')))
-const OpenAIAssistantLayout = Loadable(lazy(() => import('@/views/assistants/openai/OpenAIAssistantLayout')))
-const CustomAssistantLayout = Loadable(lazy(() => import('@/views/assistants/custom/CustomAssistantLayout')))
-const CustomAssistantConfigurePreview = Loadable(lazy(() => import('@/views/assistants/custom/CustomAssistantConfigurePreview')))
-
 // credentials routing
 const Credentials = Loadable(lazy(() => import('@/views/credentials')))
 
@@ -125,38 +119,6 @@ const MainRoutes = {
             element: (
                 <RequireAuth permission={'tools:view'}>
                     <Tools />
-                </RequireAuth>
-            )
-        },
-        {
-            path: '/assistants',
-            element: (
-                <RequireAuth permission={'assistants:view'}>
-                    <Assistants />
-                </RequireAuth>
-            )
-        },
-        {
-            path: '/assistants/custom',
-            element: (
-                <RequireAuth permission={'assistants:view'}>
-                    <CustomAssistantLayout />
-                </RequireAuth>
-            )
-        },
-        {
-            path: '/assistants/custom/:id',
-            element: (
-                <RequireAuth permission={'assistants:view'}>
-                    <CustomAssistantConfigurePreview />
-                </RequireAuth>
-            )
-        },
-        {
-            path: '/assistants/openai',
-            element: (
-                <RequireAuth permission={'assistants:view'}>
-                    <OpenAIAssistantLayout />
                 </RequireAuth>
             )
         },

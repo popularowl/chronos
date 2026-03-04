@@ -27,7 +27,7 @@ All tests must pass before submitting a pull request. This will be checked in PR
 
 ```bash
 cd chronos_app
-pnpm install
+pnpm install # pnpm nuke && pnpm install --frozen-lockfile
 pnpm build # pnpm build --force
 pnpm test # pnpm test --force
 

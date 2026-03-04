@@ -26,7 +26,6 @@ import { documentstoreRouteTest } from './routes/v1/documentstore.route.test'
 import { upsertHistoryRouteTest } from './routes/v1/upsert-history.route.test'
 import { marketplacesRouteTest } from './routes/v1/marketplaces.route.test'
 import { chatflowsExtendedRouteTest } from './routes/v1/chatflows-extended.route.test'
-import { assistantsRouteTest } from './routes/v1/assistants.route.test'
 import { flowConfigRouteTest } from './routes/v1/flow-config.route.test'
 import { internalPredictionsRouteTest } from './routes/v1/internal-predictions.route.test'
 import { datasetRouteTest } from './routes/v1/dataset.route.test'
@@ -42,8 +41,6 @@ import { vectorsRouteTest } from './routes/v1/vectors.route.test'
 import { nodeConfigsRouteTest } from './routes/v1/node-configs.route.test'
 import { evaluationsRouteTest } from './routes/v1/evaluations.route.test'
 import { fetchLinksRouteTest } from './routes/v1/fetch-links.route.test'
-import { openaiAssistantsRouteTest } from './routes/v1/openai-assistants.route.test'
-import { pricingRouteTest } from './routes/v1/pricing.route.test'
 import { componentsCredentialsRouteTest } from './routes/v1/components-credentials.route.test'
 import { getUploadFileRouteTest } from './routes/v1/get-upload-file.route.test'
 import { nodeIconsRouteTest } from './routes/v1/node-icons.route.test'
@@ -57,8 +54,6 @@ import { getUploadPathRouteTest } from './routes/v1/get-upload-path.route.test'
 import { componentsCredentialsIconRouteTest } from './routes/v1/components-credentials-icon.route.test'
 import { filesRouteTest } from './routes/v1/files.route.test'
 import { validationRouteTest } from './routes/v1/validation.route.test'
-import { openaiAssistantsVectorStoreRouteTest } from './routes/v1/openai-assistants-vector-store.route.test'
-import { openaiAssistantsFilesRouteTest } from './routes/v1/openai-assistants-files.route.test'
 import { textToSpeechRouteTest } from './routes/v1/text-to-speech.route.test'
 import { chatflowsRouteTest } from './routes/v1/chatflows.route.test'
 import { internalChatMessagesRouteTest } from './routes/v1/internal-chat-messages.route.test'
@@ -164,7 +159,6 @@ describe('Routes Test', () => {
     upsertHistoryRouteTest()
     marketplacesRouteTest()
     chatflowsExtendedRouteTest()
-    assistantsRouteTest()
     flowConfigRouteTest()
     internalPredictionsRouteTest()
     datasetRouteTest()
@@ -180,8 +174,6 @@ describe('Routes Test', () => {
     nodeConfigsRouteTest()
     evaluationsRouteTest()
     fetchLinksRouteTest()
-    openaiAssistantsRouteTest()
-    pricingRouteTest()
     componentsCredentialsRouteTest()
     getUploadFileRouteTest()
     nodeIconsRouteTest()
@@ -195,8 +187,6 @@ describe('Routes Test', () => {
     componentsCredentialsIconRouteTest()
     filesRouteTest()
     validationRouteTest()
-    openaiAssistantsVectorStoreRouteTest()
-    openaiAssistantsFilesRouteTest()
     textToSpeechRouteTest()
     chatflowsRouteTest()
     internalChatMessagesRouteTest()

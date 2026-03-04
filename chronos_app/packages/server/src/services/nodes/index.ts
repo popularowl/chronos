@@ -2,13 +2,14 @@ import { cloneDeep, omit } from 'lodash'
 import { StatusCodes } from 'http-status-codes'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 import { INodeData, MODE } from '../../Interface'
-import { INodeOptionsValue } from 'chronos-components'
+import { ICommonObject, INodeOptionsValue } from 'chronos-components'
 import { databaseEntities } from '../../utils'
 import logger from '../../utils/logger'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
-import { OMIT_QUEUE_JOB_DATA } from '../../utils/constants'
+import { INPUT_PARAMS_TYPE, OMIT_QUEUE_JOB_DATA } from '../../utils/constants'
 import { executeCustomNodeFunction } from '../../utils/executeCustomNodeFunction'
+import { ASSISTANT_PROMPT_GENERATOR } from '../../utils/prompt'
 
 // Get all component nodes
 const getAllNodes = async () => {
@@ -152,11 +153,83 @@ const executeCustomFunction = async (requestBody: any, workspaceId?: string, org
     }
 }
 
+// Get all chat model nodes
+const getChatModels = async (): Promise<any> => {
+    try {
+        const dbResponse = await getAllNodesForCategory('Chat Models')
+        return dbResponse
+    } catch (error) {
+        throw new InternalChronosError(StatusCodes.INTERNAL_SERVER_ERROR, `Error: nodesService.getChatModels - ${getErrorMessage(error)}`)
+    }
+}
+
+// Get all compatible tool nodes
+const getTools = async (): Promise<any> => {
+    try {
+        const tools = await getAllNodesForCategory('Tools')
+        const mcpTools = await getAllNodesForCategory('Tools (MCP)')
+
+        const filteredTools = [...tools, ...mcpTools].filter((tool) => {
+            const inputs = tool.inputs || []
+            return inputs.every((input) => INPUT_PARAMS_TYPE.includes(input.type))
+        })
+        return filteredTools
+    } catch (error) {
+        throw new InternalChronosError(StatusCodes.INTERNAL_SERVER_ERROR, `Error: nodesService.getTools - ${getErrorMessage(error)}`)
+    }
+}
+
+// Generate instruction using an LLM
+const generateInstruction = async (task: string, selectedChatModel: ICommonObject): Promise<ICommonObject> => {
+    try {
+        const appServer = getRunningExpressApp()
+
+        if (selectedChatModel && Object.keys(selectedChatModel).length > 0) {
+            const nodeInstanceFilePath = appServer.nodesPool.componentNodes[selectedChatModel.name].filePath as string
+            const nodeModule = await import(nodeInstanceFilePath)
+            const newNodeInstance = new nodeModule.nodeClass()
+            const nodeData = {
+                credential: selectedChatModel.credential || selectedChatModel.inputs['CHRONOS_CREDENTIAL_ID'] || undefined,
+                inputs: selectedChatModel.inputs,
+                id: `${selectedChatModel.name}_0`
+            }
+            const options: ICommonObject = {
+                appDataSource: appServer.AppDataSource,
+                databaseEntities,
+                logger
+            }
+            const llmNodeInstance = await newNodeInstance.init(nodeData, '', options)
+            const response = await llmNodeInstance.invoke([
+                {
+                    role: 'user',
+                    content: ASSISTANT_PROMPT_GENERATOR.replace('{{task}}', task)
+                }
+            ])
+            const content = response?.content || response.kwargs?.content
+
+            return { content }
+        }
+
+        throw new InternalChronosError(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            `Error: nodesService.generateInstruction - Error generating instruction`
+        )
+    } catch (error) {
+        throw new InternalChronosError(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            `Error: nodesService.generateInstruction - ${getErrorMessage(error)}`
+        )
+    }
+}
+
 export default {
     getAllNodes,
     getNodeByName,
     getSingleNodeIcon,
     getSingleNodeAsyncOptions,
     executeCustomFunction,
-    getAllNodesForCategory
+    getAllNodesForCategory,
+    getChatModels,
+    getTools,
+    generateInstruction
 }

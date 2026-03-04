@@ -2,7 +2,6 @@ import { useState, useRef, useEffect, useCallback, Fragment, useContext, memo } 
 import { useSelector, useDispatch } from 'react-redux'
 import PropTypes from 'prop-types'
 import { cloneDeep } from 'lodash'
-import axios from 'axios'
 import { v4 as uuidv4 } from 'uuid'
 import { EventStreamContentType, fetchEventSource } from '@microsoft/fetch-event-source'
 
@@ -28,7 +27,6 @@ import {
 import { darken, useTheme } from '@mui/material/styles'
 import {
     IconCircleDot,
-    IconDownload,
     IconSend,
     IconMicrophone,
     IconPhotoPlus,
@@ -1209,26 +1207,6 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
             return fullFileUploadAllowedTypes === '' ? '*' : fullFileUploadAllowedTypes
         }
         return fileUploadAllowedTypes.includes('*') ? '*' : fileUploadAllowedTypes || '*'
-    }
-
-    const downloadFile = async (fileAnnotation) => {
-        try {
-            const response = await axios.post(
-                `${baseURL}/api/v1/openai-assistants-file/download`,
-                { fileName: fileAnnotation.fileName, chatflowId: chatflowid, chatId: chatId },
-                { responseType: 'blob' }
-            )
-            const blob = new Blob([response.data], { type: response.headers['content-type'] })
-            const downloadUrl = window.URL.createObjectURL(blob)
-            const link = document.createElement('a')
-            link.href = downloadUrl
-            link.download = fileAnnotation.fileName
-            document.body.appendChild(link)
-            link.click()
-            link.remove()
-        } catch (error) {
-            console.error('Download failed:', error)
-        }
     }
 
     const getAgentIcon = (nodeName, instructions) => {
@@ -2646,34 +2624,6 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                                 </>
                                             )}
                                         </div>
-                                        {message.fileAnnotations && (
-                                            <div
-                                                style={{
-                                                    display: 'block',
-                                                    flexDirection: 'row',
-                                                    width: '100%',
-                                                    marginBottom: '8px'
-                                                }}
-                                            >
-                                                {message.fileAnnotations.map((fileAnnotation, index) => {
-                                                    return (
-                                                        <Button
-                                                            sx={{
-                                                                fontSize: '0.85rem',
-                                                                textTransform: 'none',
-                                                                mb: 1
-                                                            }}
-                                                            key={index}
-                                                            variant='outlined'
-                                                            onClick={() => downloadFile(fileAnnotation)}
-                                                            endIcon={<IconDownload color={theme.palette.primary.main} />}
-                                                        >
-                                                            {fileAnnotation.fileName}
-                                                        </Button>
-                                                    )
-                                                })}
-                                            </div>
-                                        )}
                                         {message.sourceDocuments && (
                                             <div
                                                 style={{

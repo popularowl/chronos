@@ -50,7 +50,6 @@ import { BackdropLoader } from '@/ui-component/loading/BackdropLoader'
 import DocStoreInputHandler from '@/views/docstore/DocStoreInputHandler'
 
 import ToolDialog from '@/views/tools/ToolDialog'
-import AssistantDialog from '@/views/assistants/openai/AssistantDialog'
 import FormatPromptValuesDialog from '@/ui-component/dialog/FormatPromptValuesDialog'
 import ExpandTextDialog from '@/ui-component/dialog/ExpandTextDialog'
 import ExpandRichInputDialog from '@/ui-component/dialog/ExpandRichInputDialog'
@@ -62,7 +61,7 @@ import InputHintDialog from '@/ui-component/dialog/InputHintDialog'
 import PromptGeneratorDialog from '@/ui-component/dialog/PromptGeneratorDialog'
 
 // API
-import assistantsApi from '@/api/assistants'
+import nodesApi from '@/api/nodes'
 import documentstoreApi from '@/api/documentstore'
 
 // utils
@@ -535,7 +534,7 @@ const NodeInputHandler = ({
 
     const loadChatModels = async () => {
         try {
-            const resp = await assistantsApi.getChatModels()
+            const resp = await nodesApi.getChatModels()
             if (resp.data) {
                 const chatModels = resp.data ?? []
                 const chatModelsOptions = chatModels.map((model) => ({
@@ -1261,12 +1260,6 @@ const NodeInputHandler = ({
                 onCancel={() => setAsyncOptionEditDialog('')}
                 onConfirm={onConfirmAsyncOption}
             ></ToolDialog>
-            <AssistantDialog
-                show={showAsyncOptionDialog === 'selectedAssistant'}
-                dialogProps={asyncOptionEditDialogProps}
-                onCancel={() => setAsyncOptionEditDialog('')}
-                onConfirm={onConfirmAsyncOption}
-            ></AssistantDialog>
             <ExpandTextDialog
                 show={showExpandDialog}
                 dialogProps={expandDialogProps}

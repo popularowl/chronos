@@ -94,11 +94,38 @@ const executeCustomFunction = async (req: Request, res: Response, next: NextFunc
     }
 }
 
+const getChatModels = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const apiResponse = await nodesService.getChatModels()
+        return res.json(apiResponse)
+    } catch (error) {
+        next(error)
+    }
+}
+
+const generateInstruction = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (!req.body) {
+            throw new InternalChronosError(
+                StatusCodes.PRECONDITION_FAILED,
+                `Error: nodesController.generateInstruction - body not provided!`
+            )
+        }
+        const { task, selectedChatModel } = req.body
+        const apiResponse = await nodesService.generateInstruction(task, selectedChatModel)
+        return res.json(apiResponse)
+    } catch (error) {
+        next(error)
+    }
+}
+
 export default {
     getAllNodes,
     getNodeByName,
     getSingleNodeIcon,
     getSingleNodeAsyncOptions,
     executeCustomFunction,
-    getNodesByCategory
+    getNodesByCategory,
+    getChatModels,
+    generateInstruction
 }

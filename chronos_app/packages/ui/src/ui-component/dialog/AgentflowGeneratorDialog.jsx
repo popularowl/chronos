@@ -13,7 +13,7 @@ import generatorGIF from '@/assets/images/agentflow-generator.gif'
 import { flowContext } from '@/store/context/ReactFlowContext'
 import { Dropdown } from '@/ui-component/dropdown/Dropdown'
 import { useTheme } from '@mui/material/styles'
-import assistantsApi from '@/api/assistants'
+import nodesApi from '@/api/nodes'
 import { baseURL } from '@/store/constant'
 import { initNode, showHideInputParams } from '@/utils/genericHelper'
 import DocStoreInputHandler from '@/views/docstore/DocStoreInputHandler'
@@ -45,7 +45,7 @@ const AgentflowGeneratorDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
     const [selectedChatModel, setSelectedChatModel] = useState({})
     const customization = useSelector((state) => state.customization)
 
-    const getChatModelsApi = useApi(assistantsApi.getChatModels)
+    const getChatModelsApi = useApi(nodesApi.getChatModels)
     const { reactFlowInstance } = useContext(flowContext)
     const theme = useTheme()
 

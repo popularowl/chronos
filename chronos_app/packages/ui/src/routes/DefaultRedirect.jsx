@@ -8,7 +8,6 @@ import Account from '@/views/account'
 import Executions from '@/views/agentexecutions'
 import Agentflows from '@/views/agentflows'
 import APIKey from '@/views/apikey'
-import Assistants from '@/views/assistants'
 import LoginActivityPage from '@/views/auth/loginActivity'
 import SSOConfig from '@/views/auth/ssoConfig'
 import Unauthorized from '@/views/auth/unauthorized'
@@ -41,7 +40,6 @@ export const DefaultRedirect = () => {
         { component: Agentflows, permission: 'agentflows:view' },
         { component: Chatflows, permission: 'chatflows:view' },
         { component: Executions, permission: 'executions:view' },
-        { component: Assistants, permission: 'assistants:view' },
         { component: Marketplaces, permission: 'templates:marketplace,templates:custom' },
         { component: Tools, permission: 'tools:view' },
         { component: Credentials, permission: 'credentials:view' },

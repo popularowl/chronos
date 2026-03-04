@@ -50,22 +50,6 @@ const sanitizeVariable = (Variable) => {
     }
 }
 
-const sanitizeAssistant = (Assistant) => {
-    try {
-        return Assistant.map((assistant) => {
-            return {
-                id: assistant.id,
-                details: assistant.details,
-                credential: assistant.credential,
-                iconSrc: assistant.iconSrc,
-                type: assistant.type
-            }
-        })
-    } catch (error) {
-        throw new Error(`exportImport.sanitizeAssistant ${getErrorMessage(error)}`)
-    }
-}
-
 const sanitizeCustomTemplate = (CustomTemplate) => {
     try {
         return CustomTemplate.map((customTemplate) => {
@@ -110,10 +94,6 @@ export const exportData = (exportAllData) => {
         return {
             AgentFlow: sanitizeChatflow(exportAllData.AgentFlow),
             AgentFlowV2: sanitizeChatflow(exportAllData.AgentFlowV2),
-            AssistantFlow: sanitizeChatflow(exportAllData.AssistantFlow),
-            AssistantCustom: sanitizeAssistant(exportAllData.AssistantCustom),
-            AssistantOpenAI: sanitizeAssistant(exportAllData.AssistantOpenAI),
-            AssistantAzure: sanitizeAssistant(exportAllData.AssistantAzure),
             ChatFlow: sanitizeChatflow(exportAllData.ChatFlow),
             ChatMessage: exportAllData.ChatMessage,
             ChatMessageFeedback: exportAllData.ChatMessageFeedback,
