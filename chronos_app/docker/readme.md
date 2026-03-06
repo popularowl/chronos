@@ -1,25 +1,30 @@
 # Chronos Docker
 
-Collection of Chronos deployment options.
+This directory hosts Dockerfile.local with instructions to building container image. And docker compose examples for various Chronos deployment options.
 
-Simple build and run within local nodejs runtime.
+*Build and run Chronos locally, without Docker container images. Uses local Nodejs runtime enviroenment:*
 
 ```bash
-# nodejs runtime v24 is requirenment. use nvm is necesary
+# nodejs runtime v24 is required. use nvm if necesary
+# make sure you are in /chronos_app directory
+git clone git@github.com:intelligexhq/chronos.git
+cd chronos/chronos_app
 node -v
-pnpm install
-pnpm build
-pnpm run
+pnpm install # pnpm nuke && pnpm install --frozen-lockfile
+pnpm build # pnpm build --force
+pnpm dev
 # chronos is accessible on localhost:3000
 ```
 
 *Build and run a local Docker container image:*
 
 ```bash
+git clone git@github.com:intelligexhq/chronos.git
+# go to docker directory
+cd chronos/chronos_app/docker
 docker build -f Dockerfile.local -t chronos:local ..
 docker run -d --name chronos -p 3001:3000 chronos:local
 # chronos is now accessable on http://localhost:3001
-docker stop chronos
 ```
 
 *Use the local container image in [docker compose](https://docs.docker.com/compose/):*
@@ -58,14 +63,6 @@ docker compose -f docker-compose-vectordb.yml exec ollama ollama pull nomic-embe
 ## Env Variables
 
 To persista the data, or supply data to Chronos app you can use the following enviroenment variables. For more options see [.env.example](.env.example)
-
-```bash
-# see .env.example for enviroenment variables reference
-DATABASE_PATH=/root/.chronos
-LOG_PATH=/root/.chronos/logs
-SECRETKEY_PATH=/root/.chronos
-BLOB_STORAGE_PATH=/root/.chronos/storage
-```
 
 ## Examples
 

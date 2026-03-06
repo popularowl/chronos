@@ -14,6 +14,7 @@ services:
       DATABASE_NAME: chronos
       DATABASE_USER: postgres
       DATABASE_PASSWORD: postgres
+      CHRONOS_INITIAL_USER: admin@admin.com:test1234:admin
       REDIS_HOST: redis
       QUEUE_NAME: chronos-queue
       ENABLE_BULLMQ_DASHBOARD: true

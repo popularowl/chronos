@@ -1,8 +1,6 @@
 # Build local monorepo image
-# docker build -f Dockerfile.local -t chronos:local .
-
-# Run image
-# docker run -d -p 3000:3000 chronos:local
+# docker build -f Dockerfile.local -t chronos:local ..
+# docker run -d -p 3001:3000 chronos:local
 
 # =============================================================================
 # Stage 1: Builder - Install dependencies and build the application
