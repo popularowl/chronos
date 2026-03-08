@@ -18,7 +18,6 @@ This project started as a fork of [Flowise](https://github.com/FlowiseAI/Flowise
 - 100+ of prebuilt LLM model integrations and templates.
 - Observability, logging and tracing support.
 - Number of [Docker compose examples](./chronos_app/docker/) to get you started.
-- Set of [tutorials and how to guides](https://intelligex.com/chronos).
 
 ## Quick Start
 
@@ -39,6 +38,16 @@ docker run -d --name chronos -p 3001:3000 chronos:local
 ## Env Variables
 
 Chronos allows configuration via set of supported environment variables. See example [env variables](chronos_app/docker/.env.example).
+
+## Tutorials
+
+List of tutorials and guides to help running and using Chronos application:
+
+- [Chronos visual agent builder. Up and running in local enviroenment](https://intelligex.com/chronos/chronos-visual-ai-agent-builder-up-and-running)
+- [Chronos visual agent builder. Advanced docker compose examples](https://intelligex.com/chronos/hosting-chronos-advanced-examples)
+- [Chronos visual agent builder. Build your first agent](https://intelligex.com/chronos/chronos-build-your-first-agent-flow)
+- [Chronos visual agent builder. Build RAG agent with Qdrant and Ollama](https://intelligex.com/chronos/build-rag-for-your-documents-with-local-embeddings)
+- [Chronos visual agent builder. How and where data is stored](https://intelligex.com/chronos/how-chronos-agent-builder-stores-data)
 
 ## License
 
