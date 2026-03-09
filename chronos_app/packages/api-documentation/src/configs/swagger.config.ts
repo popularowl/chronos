@@ -11,7 +11,7 @@ const swaggerUiOptions = {
             summary: 'Interactive swagger-ui auto-generated API docs, based on a openapi specification file',
             version: '1.0.0',
             description:
-                'This module serves auto-generated swagger-ui generated API docs from Flowise express backend, based on a swagger.yml file. Swagger is available on: http://localhost:6655/api-docs',
+                'This module serves auto-generated swagger-ui generated API docs from Chronos express backend, based on a swagger.yml file. Swagger is available on: http://localhost:6655/api-docs',
             license: {
                 name: 'Apache 2.0',
                 url: 'https://github.com/popularowl/chronos/blob/main/LICENSE.md'

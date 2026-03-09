@@ -15,6 +15,8 @@
 .loki
 .grafana
 .alloy
+.tempo
+.prometheus
 
 ## logs
 **/logs

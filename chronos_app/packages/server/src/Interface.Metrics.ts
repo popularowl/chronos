@@ -15,6 +15,7 @@ export enum CHRONOS_METRIC_COUNTERS {
     AGENTFLOW_CREATED = 'agentflow_created',
     ASSISTANT_CREATED = 'assistant_created',
     TOOL_CREATED = 'tool_created',
+    TOOL_INVOCATION = 'tool_invocation',
     VECTORSTORE_UPSERT = 'vector_upserted',
 
     CHATFLOW_PREDICTION_INTERNAL = 'chatflow_prediction_internal',

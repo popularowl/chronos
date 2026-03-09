@@ -3,6 +3,14 @@ import express from 'express'
 import promClient, { Counter, Histogram, Registry } from 'prom-client'
 import { getVersion } from 'chronos-components'
 
+/**
+ * Normalizes a URL path by replacing UUIDs and numeric IDs with :id
+ * to prevent high cardinality in metric labels.
+ */
+function normalizePath(path: string): string {
+    return path.replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id').replace(/\/\d+/g, '/:id')
+}
+
 export class Prometheus implements IMetricsProvider {
     private app: express.Application
     private readonly register: Registry
@@ -28,7 +36,7 @@ export class Prometheus implements IMetricsProvider {
             app: serviceName
         })
 
-        // look at the FLOWISE_COUNTER enum in Interface.Metrics.ts and get all values
+        // look at the CHRONOS_METRIC_COUNTERS enum in Interface.Metrics.ts and get all values
         // for each counter in the enum, create a new promClient.Counter and add it to the registry
         this.counters = new Map<string, promClient.Counter<string> | promClient.Gauge<string> | promClient.Histogram<string>>()
         const enumEntries = Object.entries(CHRONOS_METRIC_COUNTERS)
@@ -66,12 +74,12 @@ export class Prometheus implements IMetricsProvider {
 
             const { version } = await getVersion()
             versionGaugeCounter.set({ version: 'v' + version }, 1)
-            this.counters.set('flowise_version', versionGaugeCounter)
+            this.counters.set('chronos_version', versionGaugeCounter)
         } catch (error) {
             // If metric already exists, get it from the registry
             const existingMetric = this.register.getSingleMetric('chronos_version')
             if (existingMetric) {
-                this.counters.set('flowise_version', existingMetric as promClient.Gauge<string>)
+                this.counters.set('chronos_version', existingMetric as promClient.Gauge<string>)
             }
         }
 
@@ -79,7 +87,7 @@ export class Prometheus implements IMetricsProvider {
             this.httpRequestDurationMicroseconds = new promClient.Histogram({
                 name: 'http_request_duration_ms',
                 help: 'Duration of HTTP requests in ms',
-                labelNames: ['method', 'route', 'code'],
+                labelNames: ['method', 'path', 'status'],
                 buckets: [1, 5, 15, 50, 100, 200, 300, 400, 500], // buckets for response time from 0.1ms to 500ms
                 registers: [this.register] // Explicitly set the registry
             })
@@ -126,6 +134,8 @@ export class Prometheus implements IMetricsProvider {
         // Runs before each requests
         this.app.use((req, res, next) => {
             res.locals.startEpoch = Date.now()
+            // Capture the original URL path before Express routers strip mount prefixes
+            res.locals.metricsPath = normalizePath(req.originalUrl.split('?')[0])
             next()
         })
 
@@ -133,11 +143,12 @@ export class Prometheus implements IMetricsProvider {
         this.app.use((req, res, next) => {
             res.on('finish', async () => {
                 if (res.locals.startEpoch) {
-                    this.requestCounter.inc()
+                    const method = req.method
+                    const path = res.locals.metricsPath || normalizePath(req.originalUrl.split('?')[0])
+                    const status = res.statusCode.toString()
+                    this.requestCounter.labels(method, path, status).inc()
                     const responseTimeInMs = Date.now() - res.locals.startEpoch
-                    this.httpRequestDurationMicroseconds
-                        .labels(req.method, req.baseUrl, res.statusCode.toString())
-                        .observe(responseTimeInMs)
+                    this.httpRequestDurationMicroseconds.labels(method, path, status).observe(responseTimeInMs)
                 }
             })
             next()
@@ -159,7 +170,7 @@ export class Prometheus implements IMetricsProvider {
             // and ensure they're only registered with our custom registry
             promClient.collectDefaultMetrics({
                 register: this.register,
-                prefix: 'flowise_' // Add a prefix to avoid conflicts
+                prefix: 'chronos_' // Add a prefix to avoid conflicts
             })
         }
 

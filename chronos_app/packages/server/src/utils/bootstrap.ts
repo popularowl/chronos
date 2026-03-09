@@ -10,14 +10,14 @@ export function bootstrap(stopProcessFn: () => Promise<void>) {
         try {
             // Shut down the app after timeout if it ever stuck removing pools
             setTimeout(async () => {
-                logger.info('Flowise was forced to shut down after 30 secs')
+                logger.info('Chronos was forced to shut down after 30 secs')
                 process.exit(1)
             }, 30000)
 
             await stopProcessFn()
             process.exit(0)
         } catch (error) {
-            logger.error('There was an error shutting down Flowise...', error)
+            logger.error('There was an error shutting down Chronos...', error)
             process.exit(1)
         }
     }

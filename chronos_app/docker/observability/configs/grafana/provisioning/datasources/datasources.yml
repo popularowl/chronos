@@ -6,11 +6,51 @@ datasources:
     uid: loki
     access: proxy
     url: http://loki:3100
-    isDefault: true
+    isDefault: false
     editable: false
     jsonData:
       maxLines: 1000
       derivedFields:
         - name: TraceID
           matcherRegex: "traceId=([\\w]+)"
+          datasourceUid: tempo
           url: "$${__value.raw}"
+          urlDisplayLabel: "View Trace"
+
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200
+    isDefault: false
+    editable: false
+    jsonData:
+      tracesToLogsV2:
+        datasourceUid: loki
+        filterByTraceID: true
+        filterBySpanID: true
+      tracesToMetrics:
+        datasourceUid: prometheus
+        spanStartTimeShift: "-1h"
+        spanEndTimeShift: "1h"
+      serviceMap:
+        datasourceUid: prometheus
+      nodeGraph:
+        enabled: true
+      search:
+        hide: false
+      lokiSearch:
+        datasourceUid: loki
+
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      httpMethod: POST
+      exemplarTraceIdDestinations:
+        - name: traceID
+          datasourceUid: tempo

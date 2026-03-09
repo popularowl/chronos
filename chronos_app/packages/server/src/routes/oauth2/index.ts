@@ -1,7 +1,7 @@
 /**
  * OAuth2 Authorization Code Flow Implementation
  *
- * This module implements a complete OAuth2 authorization code flow for Flowise credentials.
+ * This module implements a complete OAuth2 authorization code flow for Chronos credentials.
  * It supports Microsoft Graph and other OAuth2 providers.
  *
  * CREDENTIAL DATA STRUCTURE:

@@ -1,5 +1,71 @@
 // Grafana Alloy Configuration for Chronos
-// Collects logs from Docker containers and forwards to Loki
+// Unified telemetry collector: logs (Docker), traces (OTLP), metrics (OTLP)
+
+// ============================================================================
+// OTLP RECEIVER - Accept traces, metrics, and logs from Chronos app
+// ============================================================================
+
+otelcol.receiver.otlp "default" {
+  grpc {
+    endpoint = "0.0.0.0:4317"
+  }
+  http {
+    endpoint = "0.0.0.0:4318"
+  }
+
+  output {
+    traces  = [otelcol.processor.batch.default.input]
+    metrics = [otelcol.processor.batch.default.input]
+    logs    = [otelcol.processor.batch.default.input]
+  }
+}
+
+// ============================================================================
+// BATCH PROCESSOR - Buffer telemetry before export
+// ============================================================================
+
+otelcol.processor.batch "default" {
+  timeout          = "5s"
+  send_batch_size  = 1024
+
+  output {
+    traces  = [otelcol.exporter.otlphttp.tempo.input]
+    metrics = [otelcol.exporter.prometheus.default.input]
+    logs    = [otelcol.exporter.loki.default.input]
+  }
+}
+
+// ============================================================================
+// TRACE EXPORTER - Forward traces to Tempo
+// ============================================================================
+
+otelcol.exporter.otlphttp "tempo" {
+  client {
+    endpoint = "http://tempo:4318"
+  }
+}
+
+// ============================================================================
+// METRICS EXPORTER - Forward OTLP metrics to Prometheus via remote write
+// ============================================================================
+
+otelcol.exporter.prometheus "default" {
+  forward_to = [prometheus.remote_write.default.receiver]
+}
+
+prometheus.remote_write "default" {
+  endpoint {
+    url = "http://prometheus:9090/api/v1/write"
+  }
+}
+
+// ============================================================================
+// OTLP LOG EXPORTER - Forward OTLP logs to Loki
+// ============================================================================
+
+otelcol.exporter.loki "default" {
+  forward_to = [loki.write.local.receiver]
+}
 
 // ============================================================================
 // DOCKER LOG DISCOVERY

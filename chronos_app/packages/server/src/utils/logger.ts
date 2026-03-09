@@ -2,12 +2,13 @@ import * as path from 'path'
 import * as fs from 'fs'
 import { hostname } from 'node:os'
 import config from './config' // should be replaced by node-config or similar
-import { createLogger, transports } from 'winston'
+import { createLogger, format, transports } from 'winston'
 import { NextFunction, Request, Response } from 'express'
 import DailyRotateFile from 'winston-daily-rotate-file'
 import { S3ClientConfig } from '@aws-sdk/client-s3'
 import { LoggingWinston } from '@google-cloud/logging-winston'
 import { baseFormat, consoleFormat, fileJsonFormat } from 'chronos-components'
+import { trace, context } from '@opentelemetry/api'
 
 const { S3StreamLogger } = require('s3-streamlogger')
 
@@ -105,9 +106,26 @@ if (!fs.existsSync(logDir)) {
     fs.mkdirSync(logDir)
 }
 
+// Inject traceId/spanId into log entries when log-trace correlation is enabled
+const traceContextFormat =
+    process.env.ENABLE_LOG_CORRELATION === 'true'
+        ? format((info) => {
+              const span = trace.getSpan(context.active())
+              if (span) {
+                  const ctx = span.spanContext()
+                  info.traceId = ctx.traceId
+                  info.spanId = ctx.spanId
+                  info.traceFlags = ctx.traceFlags
+              }
+              return info
+          })()
+        : undefined
+
+const loggerFormat = traceContextFormat ? format.combine(baseFormat, traceContextFormat) : baseFormat
+
 const logger = createLogger({
     level,
-    format: baseFormat,
+    format: loggerFormat,
     defaultMeta: {
         package: 'server'
     },

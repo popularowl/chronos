@@ -1,5 +1,11 @@
+# Observability infrastructure stack.
+
+networks:
+  observability-network:
+    name: observability-network
+
 services:
-  # Grafana Alloy - unified telemetry collector (previously OTEL collector) 
+  # Grafana Alloy - unified telemetry collector (logs, traces, metrics)
   alloy:
     image: grafana/alloy:latest
     ports:
@@ -8,6 +14,7 @@ services:
       - "4318:4318"    # OTLP HTTP
     volumes:
       - ./configs/alloy-config.alloy:/etc/alloy/config.alloy
+      # allow access to docker runtime details
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
       - ./.alloy:/var/lib/alloy/data
@@ -16,8 +23,12 @@ services:
       - /etc/alloy/config.alloy
       - --storage.path=/var/lib/alloy/data
       - --server.http.listen-addr=0.0.0.0:12345
+    networks:
+      - observability-network
     depends_on:
       - loki
+      - tempo
+      - prometheus
 
   # Grafana Loki - log aggregation
   loki:
@@ -28,6 +39,37 @@ services:
       - ./configs/loki-config.yml:/etc/loki/local-config.yaml
       - ./.loki:/loki
     command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - observability-network
+
+  # Grafana Tempo - distributed tracing
+  tempo:
+    image: grafana/tempo:2.6.1
+    ports:
+      - "3200:3200"    # Tempo HTTP API (Grafana queries here)
+    volumes:
+      - ./configs/tempo-config.yml:/etc/tempo/config.yml
+      - ./.tempo:/var/tempo
+    command: ["-config.file=/etc/tempo/config.yml"]
+    networks:
+      - observability-network
+
+  # Prometheus - metrics storage
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./configs/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./.prometheus:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--storage.tsdb.retention.time=30d"
+      - "--web.enable-remote-write-receiver"
+      - "--web.enable-lifecycle"
+    networks:
+      - observability-network
 
   # Grafana - visualization
   grafana:
@@ -42,6 +84,10 @@ services:
     volumes:
       - ./configs/grafana/provisioning:/etc/grafana/provisioning
       - ./.grafana:/var/lib/grafana
+    networks:
+      - observability-network
     depends_on:
       - loki
-
+      - tempo
+      - prometheus
+      - alloy

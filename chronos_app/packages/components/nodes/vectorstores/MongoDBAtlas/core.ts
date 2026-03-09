@@ -59,7 +59,7 @@ export class MongoDBAtlasVectorSearch extends VectorStore {
     }
 
     async getClient() {
-        const driverInfo = { name: 'Flowise', version: (await getVersion()).version }
+        const driverInfo = { name: 'Chronos', version: (await getVersion()).version }
         const mongoClient = new MongoClient(this.connectionDetails.mongoDBConnectUrl, { driverInfo })
         return mongoClient
     }

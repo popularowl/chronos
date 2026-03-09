@@ -7,6 +7,14 @@ import { getVersion } from 'chronos-components'
 import express from 'express'
 import logger from '../utils/logger'
 
+/**
+ * Normalizes a URL path by replacing UUIDs and numeric IDs with :id
+ * to prevent high cardinality in metric labels.
+ */
+function normalizePath(path: string): string {
+    return path.replace(/\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, '/:id').replace(/\/\d+/g, '/:id')
+}
+
 // Create a static map to track created metrics and prevent duplicates
 const createdMetrics = new Map<string, boolean>()
 
@@ -27,8 +35,8 @@ export class OpenTelemetry implements IMetricsProvider {
     constructor(app: express.Application) {
         this.app = app
 
-        if (!process.env.METRICS_OPEN_TELEMETRY_METRIC_ENDPOINT) {
-            throw new Error('METRICS_OPEN_TELEMETRY_METRIC_ENDPOINT is not defined')
+        if (!process.env.TELEMETRY_COLLECTOR_ENDPOINT && !process.env.METRICS_OPEN_TELEMETRY_METRIC_ENDPOINT) {
+            throw new Error('TELEMETRY_COLLECTOR_ENDPOINT or METRICS_OPEN_TELEMETRY_METRIC_ENDPOINT must be defined')
         }
 
         if (process.env.METRICS_OPEN_TELEMETRY_DEBUG === 'true') {
@@ -46,11 +54,11 @@ export class OpenTelemetry implements IMetricsProvider {
     async initializeCounters(): Promise<void> {
         try {
             // Define the resource with the service name for trace grouping
-            const flowiseVersion = await getVersion()
+            const chronosVersion = await getVersion()
 
             this.resource = new Resource({
                 [ATTR_SERVICE_NAME]: process.env.METRICS_SERVICE_NAME || 'Chronos',
-                [ATTR_SERVICE_VERSION]: flowiseVersion.version // Version as a label
+                [ATTR_SERVICE_VERSION]: chronosVersion.version // Version as a label
             })
 
             const metricProtocol = process.env.METRICS_OPEN_TELEMETRY_PROTOCOL || 'http' // Default to 'http'
@@ -76,8 +84,10 @@ export class OpenTelemetry implements IMetricsProvider {
                 }
             }
 
+            const collectorBase = (process.env.TELEMETRY_COLLECTOR_ENDPOINT || 'http://localhost:4318').replace(/\/+$/, '')
+            const metricsEndpoint = process.env.METRICS_OPEN_TELEMETRY_METRIC_ENDPOINT || `${collectorBase}/v1/metrics`
             this.otlpMetricExporter = new OTLPMetricExporter({
-                url: process.env.METRICS_OPEN_TELEMETRY_METRIC_ENDPOINT // OTLP endpoint for metrics
+                url: metricsEndpoint
             })
 
             // Clean up any existing metric reader
@@ -105,8 +115,8 @@ export class OpenTelemetry implements IMetricsProvider {
 
             this.meterProvider = new MeterProvider({ resource: this.resource, readers: [this.metricReader] })
 
-            const meter = this.meterProvider.getMeter('flowise-metrics')
-            // look at the FLOWISE_COUNTER enum in Interface.Metrics.ts and get all values
+            const meter = this.meterProvider.getMeter('chronos-metrics')
+            // look at the CHRONOS_METRIC_COUNTERS enum in Interface.Metrics.ts and get all values
             // for each counter in the enum, create a new promClient.Counter and add it to the registry
             const enumEntries = Object.entries(CHRONOS_METRIC_COUNTERS)
             enumEntries.forEach(([name, value]) => {
@@ -131,14 +141,14 @@ export class OpenTelemetry implements IMetricsProvider {
 
             try {
                 // Add version gauge if not already created
-                if (!createdMetrics.has('flowise_version')) {
-                    const versionGuage = meter.createGauge('flowise_version', {
-                        description: 'Flowise version'
+                if (!createdMetrics.has('chronos_version')) {
+                    const versionGauge = meter.createGauge('chronos_version', {
+                        description: 'Chronos version'
                     })
                     // remove the last dot from the version string, e.g. 2.1.3 -> 2.13 (gauge needs a number - float)
-                    const formattedVersion = flowiseVersion.version.replace(/\.(\d+)$/, '$1')
-                    versionGuage.record(parseFloat(formattedVersion))
-                    createdMetrics.set('flowise_version', true)
+                    const formattedVersion = chronosVersion.version.replace(/\.(\d+)$/, '$1')
+                    versionGauge.record(parseFloat(formattedVersion))
+                    createdMetrics.set('chronos_version', true)
                 }
             } catch (error) {
                 logger.error('Error creating version gauge:', error)
@@ -222,6 +232,8 @@ export class OpenTelemetry implements IMetricsProvider {
             // Runs before each requests
             this.app.use((req, res, next) => {
                 res.locals.startEpoch = Date.now()
+                // Capture the original URL path before Express routers strip mount prefixes
+                res.locals.metricsPath = normalizePath(req.originalUrl.split('?')[0])
                 next()
             })
 
@@ -231,8 +243,9 @@ export class OpenTelemetry implements IMetricsProvider {
                     try {
                         if (res.locals.startEpoch) {
                             const responseTimeInMs = Date.now() - res.locals.startEpoch
-                            this.recordHttpRequest(req.method, req.path, res.statusCode)
-                            this.recordHttpRequestDuration(responseTimeInMs, req.method, req.path, res.statusCode)
+                            const path = res.locals.metricsPath || normalizePath(req.originalUrl.split('?')[0])
+                            this.recordHttpRequest(req.method, path, res.statusCode)
+                            this.recordHttpRequestDuration(responseTimeInMs, req.method, path, res.statusCode)
                         }
                     } catch (error) {
                         logger.error('Error in metrics middleware:', error)

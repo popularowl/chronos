@@ -13,7 +13,7 @@ import { Express } from 'express'
 import { UsageCacheManager } from '../UsageCacheManager'
 import { ExpressAdapter } from '@bull-board/express'
 
-const QUEUE_NAME = process.env.QUEUE_NAME || 'flowise-queue'
+const QUEUE_NAME = process.env.QUEUE_NAME || 'chronos-queue'
 
 type QUEUE_TYPE = 'prediction' | 'upsert'
 

@@ -261,7 +261,9 @@ const saveChatflow = async (newChatFlow: ChatFlow): Promise<any> => {
     )
 
     appServer.metricsProvider?.incrementCounter(
-        dbResponse?.type === 'MULTIAGENT' ? CHRONOS_METRIC_COUNTERS.AGENTFLOW_CREATED : CHRONOS_METRIC_COUNTERS.CHATFLOW_CREATED,
+        dbResponse?.type === 'AGENTFLOW' || dbResponse?.type === 'MULTIAGENT'
+            ? CHRONOS_METRIC_COUNTERS.AGENTFLOW_CREATED
+            : CHRONOS_METRIC_COUNTERS.CHATFLOW_CREATED,
         { status: CHRONOS_COUNTER_STATUS.SUCCESS }
     )
 

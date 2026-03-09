@@ -1,3 +1,7 @@
+// Tracing must be initialized before any other imports so auto-instrumentations
+// can monkey-patch libraries (express, http, pg, ioredis) before they are loaded.
+import { initTracing } from './tracing'
+
 import { QueueManager } from './queue/QueueManager'
 import { getDataSource } from './DataSource'
 import { Telemetry } from './utils/telemetry'
@@ -42,6 +46,8 @@ async function prepareData() {
 }
 
 async function run() {
+    await initTracing()
+
     bootstrap(async () => {
         try {
             const queueManager = QueueManager.getInstance()

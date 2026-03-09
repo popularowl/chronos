@@ -1,4 +1,4 @@
-services:
+services:  
     chronos:
       image: chronos:local
       environment:
@@ -12,7 +12,6 @@ services:
         DEBUG: true
         LOG_SANITIZE_HEADER_FIELDS: authorization,x-api-key,x-auth-token,cookie
         LOG_SANITIZE_BODY_FIELDS: password,pwd,pass,secret,token,apikey,api_key,accesstoken,access_token,refreshtoken
-        #DEBUG: true
       ports:
         - "3001:3000"
       volumes:
@@ -25,7 +24,7 @@ services:
       ports:
         - "5432:5432"
       volumes:
-        - ./.postgres_data:/var/lib/postgresql/data
+        - ./.postgres:/var/lib/postgresql/data
       environment:
         POSTGRES_DB: chronos
         POSTGRES_USER: chronos

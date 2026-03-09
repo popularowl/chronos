@@ -4,6 +4,7 @@ import * as path from 'path'
 import { v4 as uuidv4 } from 'uuid'
 import { cloneDeep, get, omit } from 'lodash'
 import TurndownService from 'turndown'
+import { trace, context, SpanStatusCode, Span } from '@opentelemetry/api'
 import {
     AnalyticHandler,
     ICommonObject,
@@ -78,6 +79,9 @@ import { validateFlowAPIKey } from './validateKey'
 import { checkStorage, updatePredictionsUsage, updateStorageUsage } from './quotaUsage'
 import { CHRONOS_METRIC_COUNTERS, CHRONOS_COUNTER_STATUS, IMetricsProvider } from '../Interface.Metrics'
 import { OMIT_QUEUE_JOB_DATA } from './constants'
+import { isTracingEnabled } from '../tracing'
+
+const agentflowTracer = trace.getTracer('chronos-agentflow')
 
 export interface IWaitingNode {
     nodeId: string
@@ -242,6 +246,10 @@ export const resolveVariables = async (
     iterationContext?: ICommonObject,
     loopCounts?: Map<string, number>
 ): Promise<INodeData> => {
+    const span = isTracingEnabled() ? agentflowTracer.startSpan('workflow.resolveVariables') : undefined
+    span?.setAttribute('workflow.step.id', reactFlowNodeData.id)
+    span?.setAttribute('workflow.step.name', reactFlowNodeData.label || '')
+
     let flowNodeData = cloneDeep(reactFlowNodeData)
     const types = 'inputs'
 
@@ -608,6 +616,7 @@ export const resolveVariables = async (
     const paramsObj = flowNodeData[types] ?? {}
     await getParamValues(paramsObj)
 
+    span?.end()
     return flowNodeData
 }
 
@@ -824,6 +833,8 @@ async function processNodeOutputs({
 }: IProcessNodeOutputsParams): Promise<{ humanInput?: IHumanInput }> {
     logger.debug(`[Agentflow Engine] Processing outputs from node: ${nodeId}`)
 
+    const activeSpan = isTracingEnabled() ? trace.getSpan(context.active()) : undefined
+
     let updatedHumanInput = humanInput
 
     const childNodeIds = graph[nodeId] || []
@@ -835,6 +846,7 @@ async function processNodeOutputs({
     // Get nodes to ignore based on conditions
     const ignoreNodeIds = await determineNodesToIgnore(currentNode, result, edges, nodeId)
     if (ignoreNodeIds.length) {
+        activeSpan?.addEvent('workflow.branch.skip', { 'workflow.skipped_nodes': ignoreNodeIds.join(', ') })
         logger.debug(`[Agentflow Engine] Skipping nodes: [${ignoreNodeIds.join(', ')}]`)
     }
 
@@ -1061,6 +1073,18 @@ const executeNode = async ({
     agentFlowExecutedData?: IAgentflowExecutedData[]
     humanInput?: IHumanInput
 }> => {
+    const stepSpan: Span | undefined = isTracingEnabled()
+        ? agentflowTracer.startSpan('workflow.step.execute', {
+              attributes: {
+                  'workflow.step.id': nodeId,
+                  'workflow.step.name': reactFlowNode.data.label || '',
+                  'workflow.step.type': reactFlowNode.data.name || '',
+                  'workflow.id': chatflow.id,
+                  'workflow.execution.id': parentExecutionId || ''
+              }
+          })
+        : undefined
+
     try {
         if (abortController?.signal?.aborted) {
             throw new Error('Aborted')
@@ -1206,6 +1230,21 @@ const executeNode = async ({
 
         // Execute node
         let results = await newNodeInstance.run(reactFlowNodeData, finalInput, runParams)
+
+        // Track tool invocations for metrics
+        if (reactFlowNode.data.name === 'toolAgentflow') {
+            const appServer = getRunningExpressApp()
+            appServer.metricsProvider?.incrementCounter(CHRONOS_METRIC_COUNTERS.TOOL_INVOCATION, {
+                status: CHRONOS_COUNTER_STATUS.SUCCESS
+            })
+        } else if (reactFlowNode.data.name === 'agentAgentflow' && results?.usedTools && Array.isArray(results.usedTools)) {
+            const appServer = getRunningExpressApp()
+            for (const tool of results.usedTools) {
+                appServer.metricsProvider?.incrementCounter(CHRONOS_METRIC_COUNTERS.TOOL_INVOCATION, {
+                    status: tool.error ? CHRONOS_COUNTER_STATUS.FAILURE : CHRONOS_COUNTER_STATUS.SUCCESS
+                })
+            }
+        }
 
         // Handle iteration node with recursive execution
         if (
@@ -1445,11 +1484,21 @@ const executeNode = async ({
 
             sseStreamer?.streamActionEvent(chatId, humanInputAction)
 
+            stepSpan?.setAttribute('workflow.step.status', 'stopped')
+            stepSpan?.end()
             return { result: results, shouldStop: true, agentFlowExecutedData, humanInput: updatedHumanInput }
         }
 
+        stepSpan?.setAttribute('workflow.step.status', 'success')
+        stepSpan?.end()
         return { result: results, agentFlowExecutedData, humanInput: updatedHumanInput }
     } catch (error) {
+        if (stepSpan) {
+            stepSpan.recordException(error as Error)
+            stepSpan.setStatus({ code: SpanStatusCode.ERROR, message: getErrorMessage(error) })
+            stepSpan.setAttribute('workflow.step.status', 'failure')
+            stepSpan.end()
+        }
         logger.error(`[Agentflow Engine] Error executing node ${nodeId}: ${getErrorMessage(error)}`)
         throw error
     }
@@ -1513,6 +1562,18 @@ export const executeAgentFlow = async ({
     const workspaceId = ''
     const subscriptionId = ''
     const productId = ''
+
+    const rootSpan: Span | undefined = isTracingEnabled()
+        ? agentflowTracer.startSpan('workflow.execute', {
+              attributes: {
+                  'workflow.id': chatflow.id,
+                  'workflow.name': chatflow.name || '',
+                  'workflow.type': 'agentflow',
+                  'workflow.mode': process.env.MODE || 'main'
+              }
+          })
+        : undefined
+
     logger.debug('[Agentflow Engine] Starting flow execution')
 
     const question = incomingInput.question
@@ -2108,6 +2169,13 @@ export const executeAgentFlow = async ({
                 await analyticHandlers.onChainError(parentTraceIds, errorMessage, true)
             }
 
+            if (rootSpan) {
+                rootSpan.recordException(error as Error)
+                rootSpan.setStatus({ code: SpanStatusCode.ERROR, message: errorMessage })
+                rootSpan.setAttribute('workflow.status', errorStatus)
+                rootSpan.end()
+            }
+
             throw new Error(errorMessage)
         }
 
@@ -2208,6 +2276,8 @@ export const executeAgentFlow = async ({
     }
 
     if (isRecursive) {
+        rootSpan?.setAttribute('workflow.status', status)
+        rootSpan?.end()
         return {
             agentFlowExecutedData,
             agentflowRuntime,
@@ -2353,6 +2423,10 @@ export const executeAgentFlow = async ({
             )
         }
     }
+
+    rootSpan?.setAttribute('workflow.status', status)
+    rootSpan?.setAttribute('workflow.execution.id', newExecution?.id || '')
+    rootSpan?.end()
 
     return result
 }

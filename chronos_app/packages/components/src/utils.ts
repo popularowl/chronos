@@ -1002,9 +1002,9 @@ export const prepareSandboxVars = (variables: IVariable[]) => {
     return vars
 }
 
-let version: string
-export const getVersion: () => Promise<{ version: string }> = async () => {
-    if (version != null) return { version }
+let cachedVersion: { version: string; releaseDate: string } | null = null
+export const getVersion: () => Promise<{ version: string; releaseDate: string }> = async () => {
+    if (cachedVersion != null) return cachedVersion
 
     const checkPaths = [
         path.join(__dirname, '..', 'package.json'),
@@ -1017,8 +1017,8 @@ export const getVersion: () => Promise<{ version: string }> = async () => {
         try {
             const content = await fs.promises.readFile(checkPath, 'utf8')
             const parsedContent = JSON.parse(content)
-            version = parsedContent.version
-            return { version }
+            cachedVersion = { version: parsedContent.version, releaseDate: parsedContent.releaseDate || '' }
+            return cachedVersion
         } catch {
             continue
         }

@@ -1,3 +1,7 @@
+// Tracing must be initialized before any other imports so auto-instrumentations
+// can monkey-patch libraries (express, http, pg, ioredis) before they are loaded.
+import { initTracing } from './tracing'
+
 import express, { Request, Response } from 'express'
 import path from 'path'
 import cors from 'cors'
@@ -15,7 +19,7 @@ import { AbortControllerPool } from './AbortControllerPool'
 import { RateLimiterManager } from './utils/rateLimit'
 import { getAllowedIframeOrigins, getCorsOptions, sanitizeMiddleware } from './utils/XSS'
 import { Telemetry } from './utils/telemetry'
-import flowiseApiV1Router from './routes'
+import chronosApiV1Router from './routes'
 import errorHandlerMiddleware from './middlewares/errors'
 import { WHITELIST_URLS } from './utils/constants'
 import { verifyToken } from './middlewares/auth'
@@ -268,7 +272,7 @@ export class App {
             }
         }
 
-        this.app.use('/api/v1', flowiseApiV1Router)
+        this.app.use('/api/v1', chronosApiV1Router)
 
         // ----------------------------------------
         // Configure number of proxies in Host Environment
@@ -276,7 +280,7 @@ export class App {
         this.app.get('/api/v1/ip', (request, response) => {
             response.send({
                 ip: request.ip,
-                msg: 'Check returned IP address in the response. If it matches your current IP address ( which you can get by going to http://ip.nfriedly.com/ or https://api.ipify.org/ ), then the number of proxies is correct and the rate limiter should now work correctly. If not, increase the number of proxies by 1 and restart Cloud-Hosted Flowise until the IP address matches your own. Visit https://docs.flowiseai.com/configuration/rate-limit#cloud-hosted-rate-limit-setup-guide for more information.'
+                msg: 'Check returned IP address in the response. If it matches your current IP address ( which you can get by going to http://ip.nfriedly.com/ or https://api.ipify.org/ ), then the number of proxies is correct and the rate limiter should now work correctly. If not, increase the number of proxies by 1 and restart Chronos until the IP address matches your own.'
             })
         })
 
@@ -312,7 +316,7 @@ export class App {
             }
             await Promise.all(removePromises)
         } catch (e) {
-            logger.error(`❌[server]: Flowise Server shut down error: ${e}`)
+            logger.error(`❌[server]: Chronos Server shut down error: ${e}`)
         }
     }
 }
@@ -320,6 +324,8 @@ export class App {
 let serverApp: App | undefined
 
 export async function start(): Promise<void> {
+    await initTracing()
+
     serverApp = new App()
 
     const host = process.env.HOST

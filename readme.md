@@ -10,13 +10,13 @@
 </div>
 <div style="page-break-after: always;">&nbsp;</div>
 
-[Chronos](https://intelligex.com/chronos) is a visual AI agent workflow builder. Focused on the self-hosted enviroenments, support for local data models and self hosted tool integrations. With detailed observability metrics.
+[Chronos](https://intelligex.com/chronos) is a visual AI agent workflow builder. Focused on the self-hosted enviroenments, support for local data models and self hosted tool integrations. With enterprise grade observability, tracing and auditing.
 
-This project started as a fork of [Flowise](https://github.com/FlowiseAI/Flowise) - with the focus on improvements for self-hosting and observability.
+This project started as a fork of [Flowise](https://github.com/FlowiseAI/Flowise) - with the focus on building enterprise grade self-hosting and observability support.
 
 - Self-hosting focused visual AI agent workflow builder.
 - 100+ of prebuilt LLM model integrations and templates.
-- Observability, logging and tracing support.
+- Best practices for observability, tracing and loging.
 - Number of [Docker compose examples](./chronos_app/docker/) to get you started.
 
 ## Quick Start

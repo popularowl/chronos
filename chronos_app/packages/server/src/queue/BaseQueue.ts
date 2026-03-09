@@ -1,6 +1,7 @@
 import { Queue, Worker, Job, QueueEvents, RedisOptions, KeepJobs } from 'bullmq'
 import { v4 as uuidv4 } from 'uuid'
 import logger from '../utils/logger'
+import { isTracingEnabled } from '../tracing'
 
 const QUEUE_REDIS_EVENT_STREAM_MAX_LEN = process.env.QUEUE_REDIS_EVENT_STREAM_MAX_LEN
     ? parseInt(process.env.QUEUE_REDIS_EVENT_STREAM_MAX_LEN)
@@ -17,12 +18,24 @@ export abstract class BaseQueue {
     protected queueEvents: QueueEvents
     protected connection: RedisOptions
     private worker: Worker
+    private telemetryOpt: any
 
     constructor(queueName: string, connection: RedisOptions) {
         this.connection = connection
+
+        if (isTracingEnabled()) {
+            try {
+                const { BullMQOtel } = require('bullmq-otel')
+                this.telemetryOpt = new BullMQOtel('chronos-queue')
+            } catch {
+                // bullmq-otel not available, continue without queue tracing
+            }
+        }
+
         this.queue = new Queue(queueName, {
             connection: this.connection,
-            streams: { events: { maxLen: QUEUE_REDIS_EVENT_STREAM_MAX_LEN } }
+            streams: { events: { maxLen: QUEUE_REDIS_EVENT_STREAM_MAX_LEN } },
+            telemetry: this.telemetryOpt
         })
         this.queueEvents = new QueueEvents(queueName, { connection: this.connection })
     }
@@ -87,7 +100,8 @@ export abstract class BaseQueue {
                     concurrency,
                     drainDelay: WORKER_DRAIN_DELAY,
                     stalledInterval: WORKER_STALLED_INTERVAL,
-                    lockDuration: WORKER_LOCK_DURATION
+                    lockDuration: WORKER_LOCK_DURATION,
+                    telemetry: this.telemetryOpt
                 }
             )
 

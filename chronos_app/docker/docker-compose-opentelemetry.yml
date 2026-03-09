@@ -1,0 +1,79 @@
+# Note: open telemetry stack is run
+# from observability/observability-stack.yml
+# It starts the following services:
+#
+# - Grafana -> http://localhost:3000 -> admin / admin
+# - Alloy UI -> http://localhost:12345
+# - Prometheus -> http://localhost:9090
+# - Loki API -> http://localhost:3100
+# - Tempo API -> http://localhost:3200
+#
+
+# Chronos app containers must set 
+# the following environment variables
+# to enable sending of telemetry data:
+#
+#   TELEMETRY_COLLECTOR_ENDPOINT=http://localhost:4318
+#   ENABLE_METRICS=true
+#   METRICS_PROVIDER=prometheus
+#   METRICS_SERVICE_NAME=chronos
+#   ENABLE_TRACING=true
+#   TRACING_PROTOCOL=http
+#   TRACING_SAMPLE_RATE=1.0
+#   TRACING_DEBUG=true
+#   ENABLE_LOG_CORRELATION=true
+
+networks:
+  observability-network:
+    external: true
+
+services:
+    chronos:
+      image: chronos:local
+      environment:
+        DATABASE_TYPE: postgres
+        DATABASE_HOST: postgres
+        DATABASE_PORT: 5432
+        DATABASE_NAME: chronos
+        DATABASE_USER: chronos
+        DATABASE_PASSWORD: secret
+        CHRONOS_INITIAL_USER: admin@admin.com:test1234:admin
+        DEBUG: true
+        LOG_SANITIZE_HEADER_FIELDS: authorization,x-api-key,x-auth-token,cookie
+        LOG_SANITIZE_BODY_FIELDS: password,pwd,pass,secret,token,apikey,api_key,accesstoken,access_token,refreshtoken
+        ## Telemetry specific enviroenment variables 
+        ## Enable example of telemetry collector stack: observability/observability-stack.yml
+        # Telemetry collector (shared by metrics + tracing)
+        TELEMETRY_COLLECTOR_ENDPOINT: http://alloy:4318 # OTLP collector alloy
+        # Metrics
+        ENABLE_METRICS: true # default false
+        METRICS_PROVIDER: prometheus
+        METRICS_SERVICE_NAME: chronos # name which appears in grafana
+        # Tracing
+        ENABLE_TRACING: true # default false
+        TRACING_PROTOCOL: http
+        TRACING_SAMPLE_RATE: 1.0 # 0 to 1.0
+        TRACING_DEBUG: false # default false
+        # Log-trace correlation
+        ENABLE_LOG_CORRELATION: true # default false
+      ports:
+        - "3001:3000"
+      volumes:
+        - ./.chronos:/root/.chronos
+      networks:
+        - observability-network
+      depends_on:
+        - postgres
+
+    postgres:
+      image: postgres:15
+      ports:
+        - "5432:5432"
+      volumes:
+        - ./.postgres_data:/var/lib/postgresql/data
+      environment:
+        POSTGRES_DB: chronos
+        POSTGRES_USER: chronos
+        POSTGRES_PASSWORD: secret
+      networks:
+        - observability-network
