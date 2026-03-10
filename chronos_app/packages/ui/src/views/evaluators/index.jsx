@@ -520,7 +520,7 @@ const Evaluators = () => {
                                                                                 label={
                                                                                     <span>
                                                                                         <b>Output Schema Elements</b>:{' '}
-                                                                                        {ds?.outputSchema.length > 0
+                                                                                        {ds?.outputSchema?.length > 0
                                                                                             ? ds?.outputSchema
                                                                                                   .map((item) => item.property)
                                                                                                   .join(', ')

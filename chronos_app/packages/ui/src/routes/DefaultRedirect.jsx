@@ -3,28 +3,6 @@ import { useConfig } from '@/store/context/ConfigContext'
 import { useSelector } from 'react-redux'
 import { Navigate } from 'react-router-dom'
 
-// Import all view components
-import Account from '@/views/account'
-import Executions from '@/views/agentexecutions'
-import Agentflows from '@/views/agentflows'
-import APIKey from '@/views/apikey'
-import LoginActivityPage from '@/views/auth/loginActivity'
-import SSOConfig from '@/views/auth/ssoConfig'
-import Unauthorized from '@/views/auth/unauthorized'
-import Chatflows from '@/views/chatflows'
-import Credentials from '@/views/credentials'
-import EvalDatasets from '@/views/datasets'
-import Documents from '@/views/docstore'
-import EvalEvaluation from '@/views/evaluations/index'
-import Evaluators from '@/views/evaluators'
-import Marketplaces from '@/views/marketplaces'
-import RolesPage from '@/views/roles'
-import Logs from '@/views/serverlogs'
-import Tools from '@/views/tools'
-import UsersPage from '@/views/users'
-import Variables from '@/views/variables'
-import Workspaces from '@/views/workspace'
-
 /**
  * Component that redirects users to the first accessible page based on their permissions
  * This prevents 403 errors when users don't have access to the default agentflows page
@@ -37,28 +15,28 @@ export const DefaultRedirect = () => {
 
     // Define the order of routes to check (based on the menu order in dashboard.js)
     const routesToCheck = [
-        { component: Agentflows, permission: 'agentflows:view' },
-        { component: Chatflows, permission: 'chatflows:view' },
-        { component: Executions, permission: 'executions:view' },
-        { component: Marketplaces, permission: 'templates:marketplace,templates:custom' },
-        { component: Tools, permission: 'tools:view' },
-        { component: Credentials, permission: 'credentials:view' },
-        { component: Variables, permission: 'variables:view' },
-        { component: APIKey, permission: 'apikeys:view' },
-        { component: Documents, permission: 'documentStores:view' },
+        { path: '/agentflows', permission: 'agentflows:view' },
+        { path: '/chatflows', permission: 'chatflows:view' },
+        { path: '/executions', permission: 'executions:view' },
+        { path: '/marketplaces', permission: 'templates:marketplace,templates:custom' },
+        { path: '/tools', permission: 'tools:view' },
+        { path: '/credentials', permission: 'credentials:view' },
+        { path: '/variables', permission: 'variables:view' },
+        { path: '/apikey', permission: 'apikeys:view' },
+        { path: '/document-stores', permission: 'documentStores:view' },
         // Evaluation routes (with display flags)
-        { component: EvalDatasets, permission: 'datasets:view', display: 'feat:datasets' },
-        { component: Evaluators, permission: 'evaluators:view', display: 'feat:evaluators' },
-        { component: EvalEvaluation, permission: 'evaluations:view', display: 'feat:evaluations' },
+        { path: '/datasets', permission: 'datasets:view', display: 'feat:datasets' },
+        { path: '/evaluators', permission: 'evaluators:view', display: 'feat:evaluators' },
+        { path: '/evaluations', permission: 'evaluations:view', display: 'feat:evaluations' },
         // Management routes (with display flags)
-        { component: SSOConfig, permission: 'sso:manage', display: 'feat:sso-config' },
-        { component: RolesPage, permission: 'roles:manage', display: 'feat:roles' },
-        { component: UsersPage, permission: 'users:manage', display: 'feat:users' },
-        { component: Workspaces, permission: 'workspace:view', display: 'feat:workspaces' },
-        { component: LoginActivityPage, permission: 'loginActivity:view', display: 'feat:login-activity' },
+        { path: '/sso-config', permission: 'sso:manage', display: 'feat:sso-config' },
+        { path: '/roles', permission: 'roles:manage', display: 'feat:roles' },
+        { path: '/users', permission: 'users:manage', display: 'feat:users' },
+        { path: '/workspaces', permission: 'workspace:view', display: 'feat:workspaces' },
+        { path: '/login-activity', permission: 'loginActivity:view', display: 'feat:login-activity' },
         // Other routes
-        { component: Logs, permission: 'logs:view', display: 'feat:logs' },
-        { component: Account, display: 'feat:account' }
+        { path: '/logs', permission: 'logs:view', display: 'feat:logs' },
+        { path: '/account', display: 'feat:account' }
     ]
 
     // If user is not authenticated, redirect to login page
@@ -66,19 +44,14 @@ export const DefaultRedirect = () => {
         return <Navigate to='/login' replace />
     }
 
-    // For open source, show agentflows (no permission checks)
-    if (isOpenSource) {
-        return <Agentflows />
+    // For open source or global admins, show agentflows
+    if (isOpenSource || isGlobal) {
+        return <Navigate to='/agentflows' replace />
     }
 
-    // For global admins, show agentflows (they have access to everything)
-    if (isGlobal) {
-        return <Agentflows />
-    }
-
-    // Check each route in order and return the first accessible component
+    // Check each route in order and redirect to the first accessible one
     for (const route of routesToCheck) {
-        const { component: Component, permission, display } = route
+        const { path, permission, display } = route
 
         // Check permission if specified
         const hasRequiredPermission = !permission || hasPermission(permission)
@@ -86,13 +59,12 @@ export const DefaultRedirect = () => {
         // Check display flag if specified
         const hasRequiredDisplay = !display || hasDisplay(display)
 
-        // If user has both required permission and display access, return this component
+        // If user has both required permission and display access, redirect there
         if (hasRequiredPermission && hasRequiredDisplay) {
-            return <Component />
+            return <Navigate to={path} replace />
         }
     }
 
     // If no accessible routes found, show unauthorized page
-    // This should rarely happen as most users should have at least one permission
-    return <Unauthorized />
+    return <Navigate to='/unauthorized' replace />
 }

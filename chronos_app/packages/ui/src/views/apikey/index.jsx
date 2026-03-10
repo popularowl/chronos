@@ -480,7 +480,11 @@ const APIKey = () => {
                     <ErrorBoundary error={error} />
                 ) : (
                     <Stack flexDirection='column' sx={{ gap: 3 }}>
-                        <ViewHeader title='Client Credentials' description='OAuth2 client credentials for the Management API' search={false}>
+                        <ViewHeader
+                            title='Client Credentials'
+                            description='OAuth2 client credentials for the Management API'
+                            search={false}
+                        >
                             <StyledPermissionButton
                                 permissionId={'apikeys:create'}
                                 variant='contained'

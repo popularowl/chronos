@@ -37,9 +37,17 @@ export default defineConfig(async ({ mode }) => {
                 '@lezer/highlight': resolve(__dirname, '../../node_modules/@lezer/highlight')
             }
         },
+        css: {
+            preprocessorOptions: {
+                scss: {
+                    silenceDeprecations: ['legacy-js-api', 'import']
+                }
+            }
+        },
         root: resolve(__dirname),
         build: {
-            outDir: './build'
+            outDir: './build',
+            chunkSizeWarningLimit: 6000
         },
         server: {
             open: true,
