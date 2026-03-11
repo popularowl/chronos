@@ -192,7 +192,16 @@ const OAuthClientDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             <DialogContent>
                 {createdCredentials ? (
                     <Box sx={{ p: 2 }}>
-                        <Alert severity='warning' sx={{ mb: 2 }}>
+                        <Alert
+                            icon={false}
+                            severity='warning'
+                            variant='filled'
+                            sx={{
+                                mb: 2,
+                                backgroundColor: theme.palette.warning.dark,
+                                color: '#1a1a1a'
+                            }}
+                        >
                             Save these credentials now. The Client Secret will not be shown again.
                         </Alert>
 
@@ -200,9 +209,11 @@ const OAuthClientDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                         <Stack direction='row' sx={{ mb: 2, alignItems: 'center' }}>
                             <Typography
                                 sx={{
-                                    p: 1,
+                                    px: 2,
+                                    py: 1,
                                     borderRadius: 10,
-                                    backgroundColor: theme.palette.primary.light,
+                                    backgroundColor: theme.palette.codeEditor.main,
+                                    color: theme.palette.grey[900],
                                     width: 'max-content',
                                     fontFamily: 'monospace',
                                     fontSize: '0.85rem',
@@ -225,9 +236,11 @@ const OAuthClientDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                         <Stack direction='row' sx={{ mb: 1, alignItems: 'center' }}>
                             <Typography
                                 sx={{
-                                    p: 1,
+                                    px: 2,
+                                    py: 1,
                                     borderRadius: 10,
-                                    backgroundColor: theme.palette.warning.light,
+                                    backgroundColor: theme.palette.codeEditor.main,
+                                    color: theme.palette.grey[900],
                                     width: 'max-content',
                                     fontFamily: 'monospace',
                                     fontSize: '0.85rem',
@@ -298,9 +311,11 @@ const OAuthClientDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                 <Stack direction='row' sx={{ alignItems: 'center' }}>
                                     <Typography
                                         sx={{
-                                            p: 1,
+                                            px: 2,
+                                            py: 1,
                                             borderRadius: 10,
-                                            backgroundColor: theme.palette.primary.light,
+                                            backgroundColor: theme.palette.codeEditor.main,
+                                            color: theme.palette.grey[900],
                                             fontFamily: 'monospace',
                                             fontSize: '0.85rem'
                                         }}

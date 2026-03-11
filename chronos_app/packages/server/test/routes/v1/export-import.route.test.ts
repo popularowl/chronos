@@ -243,7 +243,7 @@ export function exportImportRouteTest() {
                     .send({
                         name: `Export Test Chatflow ${Date.now()}`,
                         flowData: JSON.stringify({ nodes: [], edges: [] }),
-                        type: 'CHATFLOW'
+                        type: 'AGENTFLOW'
                     })
                 if (chatflowResponse.status === 200 || chatflowResponse.status === 201) {
                     createdChatflowId = chatflowResponse.body.id
@@ -292,28 +292,6 @@ export function exportImportRouteTest() {
 
                 expect([200]).toContain(response.status)
                 expect(response.body.Variable).toBeDefined()
-            })
-
-            it('should export chatflows', async () => {
-                const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/export-import/export')
-                    .send({ chatflow: true })
-                    .set('Authorization', `Bearer ${authToken}`)
-                    .set('x-request-from', 'internal')
-
-                expect([200]).toContain(response.status)
-                expect(response.body.ChatFlow).toBeDefined()
-            })
-
-            it('should export agentflows', async () => {
-                const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/export-import/export')
-                    .send({ agentflow: true })
-                    .set('Authorization', `Bearer ${authToken}`)
-                    .set('x-request-from', 'internal')
-
-                expect([200]).toContain(response.status)
-                expect(response.body.AgentFlow).toBeDefined()
             })
 
             it('should export agentflowv2', async () => {
@@ -386,9 +364,7 @@ export function exportImportRouteTest() {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/export-import/export')
                     .send({
-                        agentflow: true,
                         agentflowv2: true,
-                        chatflow: true,
                         chat_message: true,
                         chat_feedback: true,
                         custom_template: true,

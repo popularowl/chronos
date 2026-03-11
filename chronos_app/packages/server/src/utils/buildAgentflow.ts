@@ -2756,33 +2756,19 @@ export const utilBuildChatflow = async (req: Request, isInternal: boolean = fals
 /**
  * Increment success metric counter
  */
-const incrementSuccessMetricCounter = (metricsProvider: IMetricsProvider, isInternal: boolean, isAgentFlow: boolean) => {
-    if (isAgentFlow) {
-        metricsProvider?.incrementCounter(
-            isInternal ? CHRONOS_METRIC_COUNTERS.AGENTFLOW_PREDICTION_INTERNAL : CHRONOS_METRIC_COUNTERS.AGENTFLOW_PREDICTION_EXTERNAL,
-            { status: CHRONOS_COUNTER_STATUS.SUCCESS }
-        )
-    } else {
-        metricsProvider?.incrementCounter(
-            isInternal ? CHRONOS_METRIC_COUNTERS.CHATFLOW_PREDICTION_INTERNAL : CHRONOS_METRIC_COUNTERS.CHATFLOW_PREDICTION_EXTERNAL,
-            { status: CHRONOS_COUNTER_STATUS.SUCCESS }
-        )
-    }
+const incrementSuccessMetricCounter = (metricsProvider: IMetricsProvider, isInternal: boolean, _isAgentFlow: boolean) => {
+    metricsProvider?.incrementCounter(
+        isInternal ? CHRONOS_METRIC_COUNTERS.AGENTFLOW_PREDICTION_INTERNAL : CHRONOS_METRIC_COUNTERS.AGENTFLOW_PREDICTION_EXTERNAL,
+        { status: CHRONOS_COUNTER_STATUS.SUCCESS }
+    )
 }
 
 /**
  * Increment failed metric counter
  */
-const incrementFailedMetricCounter = (metricsProvider: IMetricsProvider, isInternal: boolean, isAgentFlow: boolean) => {
-    if (isAgentFlow) {
-        metricsProvider?.incrementCounter(
-            isInternal ? CHRONOS_METRIC_COUNTERS.AGENTFLOW_PREDICTION_INTERNAL : CHRONOS_METRIC_COUNTERS.AGENTFLOW_PREDICTION_EXTERNAL,
-            { status: CHRONOS_COUNTER_STATUS.FAILURE }
-        )
-    } else {
-        metricsProvider?.incrementCounter(
-            isInternal ? CHRONOS_METRIC_COUNTERS.CHATFLOW_PREDICTION_INTERNAL : CHRONOS_METRIC_COUNTERS.CHATFLOW_PREDICTION_EXTERNAL,
-            { status: CHRONOS_COUNTER_STATUS.FAILURE }
-        )
-    }
+const incrementFailedMetricCounter = (metricsProvider: IMetricsProvider, isInternal: boolean, _isAgentFlow: boolean) => {
+    metricsProvider?.incrementCounter(
+        isInternal ? CHRONOS_METRIC_COUNTERS.AGENTFLOW_PREDICTION_INTERNAL : CHRONOS_METRIC_COUNTERS.AGENTFLOW_PREDICTION_EXTERNAL,
+        { status: CHRONOS_COUNTER_STATUS.FAILURE }
+    )
 }

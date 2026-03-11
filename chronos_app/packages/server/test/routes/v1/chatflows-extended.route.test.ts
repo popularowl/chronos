@@ -124,7 +124,7 @@ export function chatflowsExtendedRouteTest() {
                     .set('x-request-from', 'internal')
                     .send({
                         name: `Test Chatflow ${Date.now()}`,
-                        type: 'CHATFLOW',
+                        type: 'AGENTFLOW',
                         flowData: JSON.stringify({ nodes: [], edges: [] })
                     })
 

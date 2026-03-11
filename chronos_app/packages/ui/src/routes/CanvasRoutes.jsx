@@ -6,8 +6,6 @@ import MinimalLayout from '@/layout/MinimalLayout'
 import { RequireAuth } from '@/routes/RequireAuth'
 
 // canvas routing
-const Canvas = Loadable(lazy(() => import('@/views/canvas')))
-const MarketplaceCanvas = Loadable(lazy(() => import('@/views/marketplaces/MarketplaceCanvas')))
 const CanvasV2 = Loadable(lazy(() => import('@/views/agentflowsv2/Canvas')))
 const MarketplaceCanvasV2 = Loadable(lazy(() => import('@/views/agentflowsv2/MarketplaceCanvas')))
 
@@ -17,38 +15,6 @@ const CanvasRoutes = {
     path: '/',
     element: <MinimalLayout />,
     children: [
-        {
-            path: '/canvas',
-            element: (
-                <RequireAuth permission={'chatflows:view'}>
-                    <Canvas />
-                </RequireAuth>
-            )
-        },
-        {
-            path: '/canvas/:id',
-            element: (
-                <RequireAuth permission={'chatflows:view'}>
-                    <Canvas />
-                </RequireAuth>
-            )
-        },
-        {
-            path: '/agentcanvas',
-            element: (
-                <RequireAuth permission={'agentflows:view'}>
-                    <Canvas />
-                </RequireAuth>
-            )
-        },
-        {
-            path: '/agentcanvas/:id',
-            element: (
-                <RequireAuth permission={'agentflows:view'}>
-                    <Canvas />
-                </RequireAuth>
-            )
-        },
         {
             path: '/v2/agentcanvas',
             element: (
@@ -62,14 +28,6 @@ const CanvasRoutes = {
             element: (
                 <RequireAuth permission={'agentflows:view'}>
                     <CanvasV2 />
-                </RequireAuth>
-            )
-        },
-        {
-            path: '/marketplace/:id',
-            element: (
-                <RequireAuth permission={'templates:marketplace,templates:custom'}>
-                    <MarketplaceCanvas />
                 </RequireAuth>
             )
         },

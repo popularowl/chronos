@@ -132,12 +132,7 @@ class ExecuteFlow_Agentflow implements INode {
             const chatflows = await appDataSource.getRepository(databaseEntities['ChatFlow']).findBy(searchOptions)
 
             for (let i = 0; i < chatflows.length; i += 1) {
-                let cfType = 'Chatflow'
-                if (chatflows[i].type === 'AGENTFLOW') {
-                    cfType = 'Agentflow V2'
-                } else if (chatflows[i].type === 'MULTIAGENT') {
-                    cfType = 'Agentflow V1'
-                }
+                const cfType = chatflows[i].type === 'ASSISTANT' ? 'Assistant' : 'Agentflow'
                 const data = {
                     label: chatflows[i].name,
                     name: chatflows[i].id,

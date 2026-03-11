@@ -66,15 +66,6 @@ const dashboard = {
             title: '',
             type: 'group',
             children: [
-                // {
-                //     id: 'chatflows',
-                //     title: 'Chatflows',
-                //     type: 'item',
-                //     url: '/chatflows',
-                //     icon: icons.IconHierarchy,
-                //     breadcrumbs: true,
-                //     permission: 'chatflows:view'
-                // },
                 {
                     id: 'agentflows',
                     title: 'Agentflows',
@@ -131,7 +122,7 @@ const dashboard = {
                 },
                 {
                     id: 'apikey',
-                    title: 'API Keys',
+                    title: 'API Credentials',
                     type: 'item',
                     url: '/apikey',
                     icon: icons.IconKey,

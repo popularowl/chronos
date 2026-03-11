@@ -88,7 +88,7 @@ export function validationRouteTest() {
                             ],
                             edges: []
                         }),
-                        type: 'CHATFLOW'
+                        type: 'AGENTFLOW'
                     })
 
                 if (validChatflowResponse.status === 200 || validChatflowResponse.status === 201) {
@@ -125,7 +125,7 @@ export function validationRouteTest() {
                             ],
                             edges: [{ id: 'edge-1', source: 'node-1', target: 'node-2' }]
                         }),
-                        type: 'CHATFLOW'
+                        type: 'AGENTFLOW'
                     })
 
                 if (chatflowMissingInputsResponse.status === 200 || chatflowMissingInputsResponse.status === 201) {
@@ -162,7 +162,7 @@ export function validationRouteTest() {
                             ],
                             edges: [] // No edges - nodes are unconnected
                         }),
-                        type: 'CHATFLOW'
+                        type: 'AGENTFLOW'
                     })
 
                 if (chatflowUnconnectedResponse.status === 200 || chatflowUnconnectedResponse.status === 201) {
@@ -261,7 +261,7 @@ export function validationRouteTest() {
                             ],
                             edges: [{ id: 'edge-1', source: 'node-1', target: 'non-existent-node' }]
                         }),
-                        type: 'CHATFLOW'
+                        type: 'AGENTFLOW'
                     })
 
                 if (response.status === 200 || response.status === 201) {
@@ -345,7 +345,7 @@ export function validationRouteTest() {
                             ],
                             edges: []
                         }),
-                        type: 'CHATFLOW'
+                        type: 'AGENTFLOW'
                     })
 
                 if (response.status === 200 || response.status === 201) {
@@ -391,7 +391,7 @@ export function validationRouteTest() {
                             ],
                             edges: []
                         }),
-                        type: 'CHATFLOW'
+                        type: 'AGENTFLOW'
                     })
 
                 if (response.status === 200 || response.status === 201) {
@@ -430,7 +430,7 @@ export function validationRouteTest() {
                             ],
                             edges: []
                         }),
-                        type: 'CHATFLOW'
+                        type: 'AGENTFLOW'
                     })
 
                 if (response.status === 200 || response.status === 201) {
@@ -453,7 +453,7 @@ export function validationRouteTest() {
                     .send({
                         name: `Empty Flow ${Date.now()}`,
                         flowData: JSON.stringify({ nodes: [], edges: [] }),
-                        type: 'CHATFLOW'
+                        type: 'AGENTFLOW'
                     })
 
                 if (response.status === 200 || response.status === 201) {

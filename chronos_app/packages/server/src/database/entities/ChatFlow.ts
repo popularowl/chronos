@@ -3,9 +3,7 @@ import { Entity, Column, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedCol
 import { ChatflowType, IChatFlow } from '../../Interface'
 
 export enum EnumChatflowType {
-    CHATFLOW = 'CHATFLOW',
     AGENTFLOW = 'AGENTFLOW',
-    MULTIAGENT = 'MULTIAGENT',
     ASSISTANT = 'ASSISTANT'
 }
 
@@ -50,7 +48,7 @@ export class ChatFlow implements IChatFlow {
     @Column({ nullable: true, type: 'text' })
     category?: string
 
-    @Column({ type: 'varchar', length: 20, default: EnumChatflowType.CHATFLOW })
+    @Column({ type: 'varchar', length: 20, default: EnumChatflowType.AGENTFLOW })
     type?: ChatflowType
 
     @Column({ type: 'timestamp' })

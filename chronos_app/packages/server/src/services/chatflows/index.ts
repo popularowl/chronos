@@ -44,13 +44,8 @@ const checkIfChatflowIsValidForStreaming = async (chatflowId: string): Promise<a
             }
         }
 
-        // Only Agentflow V2 is supported; always enable streaming
-        if (chatflow.type === 'AGENTFLOW') {
-            return { isStreaming: true }
-        }
-
-        // Deprecated flow types are not streamable
-        return { isStreaming: false }
+        // Agentflows always support streaming
+        return { isStreaming: true }
     } catch (error) {
         throw new InternalChronosError(
             StatusCodes.INTERNAL_SERVER_ERROR,
@@ -119,15 +114,8 @@ const getAllChatflows = async (type?: ChatflowType, page: number = -1, limit: nu
             queryBuilder.skip((page - 1) * limit)
             queryBuilder.take(limit)
         }
-        if (type === 'MULTIAGENT') {
-            queryBuilder.andWhere('chat_flow.type = :type', { type: 'MULTIAGENT' })
-        } else if (type === 'AGENTFLOW') {
-            queryBuilder.andWhere('chat_flow.type = :type', { type: 'AGENTFLOW' })
-        } else if (type === 'ASSISTANT') {
-            queryBuilder.andWhere('chat_flow.type = :type', { type: 'ASSISTANT' })
-        } else if (type === 'CHATFLOW') {
-            // fetch all chatflows that are not agentflow
-            queryBuilder.andWhere('chat_flow.type = :type', { type: 'CHATFLOW' })
+        if (type) {
+            queryBuilder.andWhere('chat_flow.type = :type', { type })
         }
         const [data, total] = await queryBuilder.getManyAndCount()
 
@@ -260,12 +248,7 @@ const saveChatflow = async (newChatFlow: ChatFlow): Promise<any> => {
         ''
     )
 
-    appServer.metricsProvider?.incrementCounter(
-        dbResponse?.type === 'AGENTFLOW' || dbResponse?.type === 'MULTIAGENT'
-            ? CHRONOS_METRIC_COUNTERS.AGENTFLOW_CREATED
-            : CHRONOS_METRIC_COUNTERS.CHATFLOW_CREATED,
-        { status: CHRONOS_COUNTER_STATUS.SUCCESS }
-    )
+    appServer.metricsProvider?.incrementCounter(CHRONOS_METRIC_COUNTERS.AGENTFLOW_CREATED, { status: CHRONOS_COUNTER_STATUS.SUCCESS })
 
     return dbResponse
 }

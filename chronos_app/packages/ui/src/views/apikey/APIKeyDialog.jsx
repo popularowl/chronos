@@ -155,9 +155,11 @@ const APIKeyDialog = ({ show, dialogProps, onCancel, onConfirm, setError }) => {
                         <Stack direction='row' sx={{ mb: 1 }}>
                             <Typography
                                 sx={{
-                                    p: 1,
+                                    px: 2,
+                                    py: 1,
                                     borderRadius: 10,
-                                    backgroundColor: theme.palette.primary.light,
+                                    backgroundColor: theme.palette.codeEditor.main,
+                                    color: theme.palette.grey[900],
                                     width: 'max-content',
                                     height: 'max-content'
                                 }}

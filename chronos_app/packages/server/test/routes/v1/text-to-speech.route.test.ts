@@ -29,7 +29,7 @@ async function createTestChatflowWithTTS(authToken: string): Promise<string> {
     const chatflowData = {
         name: `TTS Test Chatflow ${Date.now()}`,
         flowData: JSON.stringify({ nodes: [], edges: [] }),
-        type: 'CHATFLOW',
+        type: 'AGENTFLOW',
         textToSpeech: JSON.stringify(ttsConfig)
     }
     const response = await supertest(getRunningExpressApp().app)

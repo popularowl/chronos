@@ -11,15 +11,11 @@ export enum CHRONOS_COUNTER_STATUS {
 }
 
 export enum CHRONOS_METRIC_COUNTERS {
-    CHATFLOW_CREATED = 'chatflow_created',
     AGENTFLOW_CREATED = 'agentflow_created',
     ASSISTANT_CREATED = 'assistant_created',
     TOOL_CREATED = 'tool_created',
     TOOL_INVOCATION = 'tool_invocation',
     VECTORSTORE_UPSERT = 'vector_upserted',
-
-    CHATFLOW_PREDICTION_INTERNAL = 'chatflow_prediction_internal',
-    CHATFLOW_PREDICTION_EXTERNAL = 'chatflow_prediction_external',
 
     AGENTFLOW_PREDICTION_INTERNAL = 'agentflow_prediction_internal',
     AGENTFLOW_PREDICTION_EXTERNAL = 'agentflow_prediction_external'

@@ -136,16 +136,7 @@ class ChatflowTool_Tools implements INode {
             const chatflows = await appDataSource.getRepository(databaseEntities['ChatFlow']).findBy(searchOptions)
 
             for (let i = 0; i < chatflows.length; i += 1) {
-                let type = chatflows[i].type
-                if (type === 'AGENTFLOW') {
-                    type = 'AgentflowV2'
-                } else if (type === 'MULTIAGENT') {
-                    type = 'AgentflowV1'
-                } else if (type === 'ASSISTANT') {
-                    type = 'Custom Assistant'
-                } else {
-                    type = 'Chatflow'
-                }
+                const type = chatflows[i].type === 'ASSISTANT' ? 'Assistant' : 'Agentflow'
                 const data = {
                     label: chatflows[i].name,
                     name: chatflows[i].id,

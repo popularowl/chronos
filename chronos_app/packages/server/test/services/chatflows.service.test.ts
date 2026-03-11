@@ -23,7 +23,7 @@ async function getAuthToken(): Promise<string> {
 async function createTestChatflow(authToken: string): Promise<string> {
     const newChatflow = {
         name: 'Test Chatflow ' + Date.now(),
-        type: 'CHATFLOW',
+        type: 'AGENTFLOW',
         flowData: JSON.stringify({ nodes: [], edges: [] })
     }
 
@@ -55,16 +55,12 @@ export function chatflowsServiceTest() {
         const baseRoute = '/api/v1/chatflows'
 
         describe('validateChatflowType', () => {
-            it('should not throw error for valid CHATFLOW type', () => {
-                expect(() => validateChatflowType(EnumChatflowType.CHATFLOW)).not.toThrow()
-            })
-
             it('should not throw error for valid AGENTFLOW type', () => {
                 expect(() => validateChatflowType(EnumChatflowType.AGENTFLOW)).not.toThrow()
             })
 
-            it('should not throw error for valid MULTIAGENT type', () => {
-                expect(() => validateChatflowType(EnumChatflowType.MULTIAGENT)).not.toThrow()
+            it('should not throw error for valid ASSISTANT type', () => {
+                expect(() => validateChatflowType(EnumChatflowType.ASSISTANT)).not.toThrow()
             })
 
             it('should throw error for invalid chatflow type', () => {
@@ -81,7 +77,7 @@ export function chatflowsServiceTest() {
                 const authToken = await getAuthToken()
                 const newChatflow = {
                     name: 'Test Chatflow Create',
-                    type: 'CHATFLOW',
+                    type: 'AGENTFLOW',
                     flowData: JSON.stringify({ nodes: [], edges: [] })
                 }
 
@@ -133,14 +129,14 @@ export function chatflowsServiceTest() {
                 const authToken = await getAuthToken()
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .get(`${baseRoute}?type=CHATFLOW`)
+                    .get(`${baseRoute}?type=AGENTFLOW`)
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
                 expect(response.status).toEqual(StatusCodes.OK)
                 if (Array.isArray(response.body)) {
                     response.body.forEach((chatflow: any) => {
-                        expect(chatflow.type).toEqual('CHATFLOW')
+                        expect(chatflow.type).toEqual('AGENTFLOW')
                     })
                 }
             })

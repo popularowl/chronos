@@ -21,7 +21,7 @@ async function getAuthToken(): Promise<string> {
 async function createTestChatflow(authToken: string): Promise<string> {
     const newChatflow = {
         name: 'Prediction Test Chatflow ' + Date.now(),
-        type: 'CHATFLOW',
+        type: 'AGENTFLOW',
         flowData: JSON.stringify({ nodes: [], edges: [] })
     }
 

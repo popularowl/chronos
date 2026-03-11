@@ -601,7 +601,7 @@ const APIKey = () => {
                             search={true}
                             searchPlaceholder='Search API Keys'
                             title='API Keys'
-                            description='Chronos API keys and credentials'
+                            description='Chronos API keys'
                         >
                             <PermissionButton
                                 permissionId={'apikeys:import'}

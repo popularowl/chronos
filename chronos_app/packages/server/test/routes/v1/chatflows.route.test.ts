@@ -49,7 +49,7 @@ export function chatflowsRouteTest() {
                     name: 'Test Chatflow',
                     flowData: '{}',
                     deployed: false,
-                    type: 'CHATFLOW'
+                    type: 'AGENTFLOW'
                 }
 
                 const response = await supertest(getRunningExpressApp().app)
@@ -84,7 +84,7 @@ export function chatflowsRouteTest() {
             it('should get all chatflows with type filter', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/chatflows')
-                    .query({ type: 'CHATFLOW' })
+                    .query({ type: 'AGENTFLOW' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
