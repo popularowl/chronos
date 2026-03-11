@@ -22,9 +22,7 @@ import {
     Popper,
     Stack,
     Typography,
-    Chip,
-    Tab,
-    Tabs
+    Chip
 } from '@mui/material'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 
@@ -39,38 +37,14 @@ import AgentflowGeneratorDialog from '@/ui-component/dialog/AgentflowGeneratorDi
 
 // icons
 import { IconPlus, IconSearch, IconMinus, IconX, IconSparkles } from '@tabler/icons-react'
-import LlamaindexPNG from '@/assets/images/llamaindex.png'
-import LangChainPNG from '@/assets/images/langchain.png'
-import utilNodesPNG from '@/assets/images/utilNodes.png'
 
 // const
 import { baseURL, AGENTFLOW_ICONS } from '@/store/constant'
 import { SET_COMPONENT_NODES } from '@/store/actions'
 
 // ==============================|| ADD NODES||============================== //
-function a11yProps(index) {
-    return {
-        id: `attachment-tab-${index}`,
-        'aria-controls': `attachment-tabpanel-${index}`
-    }
-}
 
-const blacklistCategoriesForAgentCanvas = ['Agents', 'Memory', 'Record Manager', 'Utilities']
-
-const agentMemoryNodes = ['agentMemory', 'sqliteAgentMemory', 'postgresAgentMemory', 'mySQLAgentMemory']
-
-// Show blacklisted nodes (exceptions) for agent canvas
-const exceptionsForAgentCanvas = {
-    Memory: agentMemoryNodes,
-    Utilities: ['getVariable', 'setVariable', 'stickyNote']
-}
-
-// Hide some nodes from the chatflow canvas
-const blacklistForChatflowCanvas = {
-    Memory: agentMemoryNodes
-}
-
-const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerated }) => {
+const AddNodes = ({ nodesData, node, isAgentCanvas: _isAgentCanvas, isAgentflowv2, onFlowGenerated }) => {
     const theme = useTheme()
     const customization = useSelector((state) => state.customization)
     const dispatch = useDispatch()
@@ -79,12 +53,9 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
     const [nodes, setNodes] = useState({})
     const [open, setOpen] = useState(false)
     const [categoryExpanded, setCategoryExpanded] = useState({})
-    const [tabValue, setTabValue] = useState(0)
 
     const [openDialog, setOpenDialog] = useState(false)
     const [dialogProps, setDialogProps] = useState({})
-
-    const isAgentCanvasV2 = window.location.pathname.includes('/v2/agentcanvas')
 
     const anchorRef = useRef(null)
     const prevOpen = useRef(open)
@@ -95,25 +66,6 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
         if (curr) {
             curr.scrollTop = 0
         }
-    }
-
-    const handleTabChange = (event, newValue) => {
-        setTabValue(newValue)
-        filterSearch(searchValue, newValue)
-    }
-
-    const addException = (category) => {
-        let nodes = []
-        if (category) {
-            const nodeNames = exceptionsForAgentCanvas[category] || []
-            nodes = nodesData.filter((nd) => nd.category === category && nodeNames.includes(nd.name))
-        } else {
-            for (const category in exceptionsForAgentCanvas) {
-                const nodeNames = exceptionsForAgentCanvas[category]
-                nodes.push(...nodesData.filter((nd) => nd.category === category && nodeNames.includes(nd.name)))
-            }
-        }
-        return nodes
     }
 
     // Fuzzy search utility function that calculates similarity score
@@ -217,114 +169,43 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
     }
 
     const getSearchedNodes = (value) => {
-        if (isAgentCanvas) {
-            const nodes = nodesData.filter((nd) => !blacklistCategoriesForAgentCanvas.includes(nd.category))
-            nodes.push(...addException())
-            return scoreAndSortNodes(nodes, value)
-        }
-        let nodes = nodesData.filter((nd) => nd.category !== 'Multi Agents' && nd.category !== 'Sequential Agents')
-
-        for (const category in blacklistForChatflowCanvas) {
-            const nodeNames = blacklistForChatflowCanvas[category]
-            nodes = nodes.filter((nd) => !nodeNames.includes(nd.name))
-        }
-
+        const nodes = nodesData.filter((nd) => nd.category === 'Agent Flows')
         return scoreAndSortNodes(nodes, value)
     }
 
-    const filterSearch = (value, newTabValue) => {
+    const filterSearch = (value) => {
         setSearchValue(value)
         setTimeout(() => {
             if (value) {
                 const returnData = getSearchedNodes(value)
-                groupByCategory(returnData, newTabValue ?? tabValue, true)
+                groupByCategory(returnData, true)
                 scrollTop()
             } else if (value === '') {
-                groupByCategory(nodesData, newTabValue ?? tabValue)
+                groupByCategory(nodesData)
                 scrollTop()
             }
         }, 500)
     }
 
-    const groupByTags = (nodes, newTabValue = 0) => {
-        const langchainNodes = nodes.filter((nd) => !nd.tags)
-        const llmaindexNodes = nodes.filter((nd) => nd.tags && nd.tags.includes('LlamaIndex'))
-        const utilitiesNodes = nodes.filter((nd) => nd.tags && nd.tags.includes('Utilities'))
-        if (newTabValue === 0) {
-            return langchainNodes
-        } else if (newTabValue === 1) {
-            return llmaindexNodes
-        } else {
-            return utilitiesNodes
-        }
-    }
+    const groupByCategory = (nodes, isFilter) => {
+        const accordianCategories = {}
+        const result = nodes.reduce(function (r, a) {
+            r[a.category] = r[a.category] || []
+            r[a.category].push(a)
+            accordianCategories[a.category] = isFilter ? true : false
+            return r
+        }, Object.create(null))
 
-    const groupByCategory = (nodes, newTabValue, isFilter) => {
-        if (isAgentCanvas) {
-            const accordianCategories = {}
-            const result = nodes.reduce(function (r, a) {
-                r[a.category] = r[a.category] || []
-                r[a.category].push(a)
-                accordianCategories[a.category] = isFilter ? true : false
-                return r
-            }, Object.create(null))
-
-            const filteredResult = {}
-            for (const category in result) {
-                if (isAgentCanvasV2) {
-                    if (category !== 'Agent Flows') {
-                        continue
-                    }
-                } else {
-                    if (category === 'Agent Flows') {
-                        continue
-                    }
-                }
-                // Filter out blacklisted categories
-                if (!blacklistCategoriesForAgentCanvas.includes(category)) {
-                    // Filter out LlamaIndex nodes
-                    const nodes = result[category].filter((nd) => !nd.tags || !nd.tags.includes('LlamaIndex'))
-                    if (!nodes.length) continue
-
-                    filteredResult[category] = nodes
-                }
-
-                // Allow exceptionsForAgentCanvas
-                if (Object.keys(exceptionsForAgentCanvas).includes(category)) {
-                    filteredResult[category] = addException(category)
-                }
+        const filteredResult = {}
+        for (const category in result) {
+            if (category !== 'Agent Flows') {
+                continue
             }
-            setNodes(filteredResult)
-            accordianCategories['Multi Agents'] = true
-            accordianCategories['Sequential Agents'] = true
-            accordianCategories['Memory'] = true
-            accordianCategories['Agent Flows'] = true
-            setCategoryExpanded(accordianCategories)
-        } else {
-            const taggedNodes = groupByTags(nodes, newTabValue)
-            const accordianCategories = {}
-            const result = taggedNodes.reduce(function (r, a) {
-                r[a.category] = r[a.category] || []
-                r[a.category].push(a)
-                accordianCategories[a.category] = isFilter ? true : false
-                return r
-            }, Object.create(null))
-
-            const filteredResult = {}
-            for (const category in result) {
-                if (category === 'Agent Flows' || category === 'Multi Agents' || category === 'Sequential Agents') {
-                    continue
-                }
-                if (Object.keys(blacklistForChatflowCanvas).includes(category)) {
-                    const nodes = blacklistForChatflowCanvas[category]
-                    result[category] = result[category].filter((nd) => !nodes.includes(nd.name))
-                }
-                filteredResult[category] = result[category]
-            }
-
-            setNodes(filteredResult)
-            setCategoryExpanded(accordianCategories)
+            filteredResult[category] = result[category]
         }
+        setNodes(filteredResult)
+        accordianCategories['Agent Flows'] = true
+        setCategoryExpanded(accordianCategories)
     }
 
     const handleAccordionChange = (category) => (event, isExpanded) => {
@@ -347,16 +228,6 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
     const onDragStart = (event, node) => {
         event.dataTransfer.setData('application/reactflow', JSON.stringify(node))
         event.dataTransfer.effectAllowed = 'move'
-    }
-
-    const getImage = (tabValue) => {
-        if (tabValue === 0) {
-            return LangChainPNG
-        } else if (tabValue === 1) {
-            return LlamaindexPNG
-        } else {
-            return utilNodesPNG
-        }
     }
 
     const renderIcon = (node) => {
@@ -514,44 +385,6 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
                                                 'aria-label': 'weight'
                                             }}
                                         />
-                                        {!isAgentCanvas && (
-                                            <Tabs
-                                                sx={{ position: 'relative', minHeight: '50px', height: '50px' }}
-                                                variant='fullWidth'
-                                                value={tabValue}
-                                                onChange={handleTabChange}
-                                                aria-label='tabs'
-                                            >
-                                                {['LangChain', 'LlamaIndex', 'Utilities'].map((item, index) => (
-                                                    <Tab
-                                                        icon={
-                                                            <div
-                                                                style={{
-                                                                    borderRadius: '50%'
-                                                                }}
-                                                            >
-                                                                <img
-                                                                    style={{
-                                                                        width: '20px',
-                                                                        height: '20px',
-                                                                        borderRadius: '50%',
-                                                                        objectFit: 'contain'
-                                                                    }}
-                                                                    src={getImage(index)}
-                                                                    alt={item}
-                                                                />
-                                                            </div>
-                                                        }
-                                                        iconPosition='start'
-                                                        sx={{ minHeight: '50px', height: '50px' }}
-                                                        key={index}
-                                                        label={item}
-                                                        {...a11yProps(index)}
-                                                    ></Tab>
-                                                ))}
-                                            </Tabs>
-                                        )}
-
                                         <Divider />
                                     </Box>
                                     <PerfectScrollbar
@@ -560,7 +393,7 @@ const AddNodes = ({ nodesData, node, isAgentCanvas, isAgentflowv2, onFlowGenerat
                                         }}
                                         style={{
                                             height: '100%',
-                                            maxHeight: `calc(100vh - ${isAgentCanvas ? '300' : '380'}px)`,
+                                            maxHeight: 'calc(100vh - 300px)',
                                             overflowX: 'hidden'
                                         }}
                                     >
