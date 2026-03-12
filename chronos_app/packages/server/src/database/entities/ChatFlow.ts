@@ -51,6 +51,9 @@ export class ChatFlow implements IChatFlow {
     @Column({ type: 'varchar', length: 20, default: EnumChatflowType.AGENTFLOW })
     type?: ChatflowType
 
+    @Column({ nullable: true })
+    userId?: string
+
     @Column({ type: 'timestamp' })
     @CreateDateColumn()
     createdDate: Date

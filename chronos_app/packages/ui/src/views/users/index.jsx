@@ -22,7 +22,8 @@ import {
     Dialog,
     DialogTitle,
     DialogContent,
-    DialogActions
+    DialogActions,
+    TextField
 } from '@mui/material'
 
 // project imports
@@ -44,7 +45,7 @@ import useConfirm from '@/hooks/useConfirm'
 import useNotifier from '@/utils/useNotifier'
 
 // Icons
-import { IconTrash, IconEdit, IconX, IconUser, IconShieldCheck } from '@tabler/icons-react'
+import { IconTrash, IconEdit, IconX, IconUser, IconShieldCheck, IconUserPlus } from '@tabler/icons-react'
 import users_emptySVG from '@/assets/images/users_empty.svg'
 
 // store
@@ -138,6 +139,119 @@ ChangeRoleDialog.propTypes = {
     onConfirm: PropTypes.func
 }
 
+/**
+ * Dialog for creating a new user (admin only)
+ */
+const AddUserDialog = ({ show, onCancel, onConfirm }) => {
+    const [email, setEmail] = useState('')
+    const [name, setName] = useState('')
+    const [password, setPassword] = useState('')
+    const [selectedRole, setSelectedRole] = useState('user')
+    const [saving, setSaving] = useState(false)
+    const [error, setError] = useState('')
+    const dispatch = useDispatch()
+
+    useEffect(() => {
+        if (show) {
+            dispatch({ type: SHOW_CANVAS_DIALOG })
+            setEmail('')
+            setName('')
+            setPassword('')
+            setSelectedRole('user')
+            setError('')
+        } else {
+            dispatch({ type: HIDE_CANVAS_DIALOG })
+        }
+        return () => dispatch({ type: HIDE_CANVAS_DIALOG })
+    }, [show, dispatch])
+
+    /** @returns {void} */
+    const handleSave = async () => {
+        setError('')
+        if (!email || !password) {
+            setError('Email and password are required')
+            return
+        }
+        if (password.length < 8) {
+            setError('Password must be at least 8 characters long')
+            return
+        }
+        setSaving(true)
+        try {
+            await usersApi.createUser({ email, password, name, role: selectedRole })
+            onConfirm()
+        } catch (err) {
+            setError(err?.response?.data?.error || err.message || 'Failed to create user')
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    if (!show) return null
+
+    return (
+        <Dialog fullWidth maxWidth='xs' open={show} onClose={onCancel}>
+            <DialogTitle sx={{ fontSize: '1rem' }}>
+                <div style={{ display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+                    <IconUserPlus style={{ marginRight: '10px' }} />
+                    Add User
+                </div>
+            </DialogTitle>
+            <DialogContent>
+                <Box sx={{ pt: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <TextField
+                        label='Email'
+                        type='email'
+                        required
+                        fullWidth
+                        size='small'
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                    />
+                    <TextField label='Name' fullWidth size='small' value={name} onChange={(e) => setName(e.target.value)} />
+                    <TextField
+                        label='Password'
+                        type='password'
+                        required
+                        fullWidth
+                        size='small'
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        helperText='Minimum 8 characters'
+                    />
+                    <Box>
+                        <Typography sx={{ mb: 1 }}>Role</Typography>
+                        <Dropdown
+                            name='role'
+                            options={roleOptions}
+                            onSelect={(newValue) => setSelectedRole(newValue)}
+                            value={selectedRole}
+                            disableClearable
+                        />
+                    </Box>
+                    {error && (
+                        <Typography color='error' variant='body2'>
+                            {error}
+                        </Typography>
+                    )}
+                </Box>
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+                <Button onClick={onCancel}>Cancel</Button>
+                <StyledButton variant='contained' onClick={handleSave} disabled={saving}>
+                    {saving ? <CircularProgress size={20} /> : 'Create'}
+                </StyledButton>
+            </DialogActions>
+        </Dialog>
+    )
+}
+
+AddUserDialog.propTypes = {
+    show: PropTypes.bool,
+    onCancel: PropTypes.func,
+    onConfirm: PropTypes.func
+}
+
 // ==============================|| Users Page ||============================== //
 
 const Users = () => {
@@ -157,6 +271,7 @@ const Users = () => {
     const [deletingUserId, setDeletingUserId] = useState(null)
     const [error, setError] = useState(null)
     const [roleDialogUser, setRoleDialogUser] = useState(null)
+    const [showAddUserDialog, setShowAddUserDialog] = useState(false)
 
     const { confirm } = useConfirm()
 
@@ -234,6 +349,23 @@ const Users = () => {
         }
     }
 
+    const onAddUserConfirm = () => {
+        setShowAddUserDialog(false)
+        enqueueSnackbar({
+            message: 'User created successfully',
+            options: {
+                key: new Date().getTime() + Math.random(),
+                variant: 'success',
+                action: (key) => (
+                    <Button style={{ color: 'white' }} onClick={() => closeSnackbar(key)}>
+                        <IconX />
+                    </Button>
+                )
+            }
+        })
+        fetchUsers()
+    }
+
     const onRoleChangeConfirm = () => {
         setRoleDialogUser(null)
         enqueueSnackbar({
@@ -271,12 +403,11 @@ const Users = () => {
                     <ErrorBoundary error={error} />
                 ) : (
                     <Stack flexDirection='column' sx={{ gap: 3 }}>
-                        <ViewHeader
-                            onSearchChange={onSearchChange}
-                            search={true}
-                            searchPlaceholder='Search Users'
-                            title='User Management'
-                        />
+                        <ViewHeader onSearchChange={onSearchChange} search={true} searchPlaceholder='Search Users' title='User Management'>
+                            <StyledButton variant='contained' startIcon={<IconUserPlus />} onClick={() => setShowAddUserDialog(true)}>
+                                Add User
+                            </StyledButton>
+                        </ViewHeader>
                         {!isLoading && users.length === 0 ? (
                             <Stack sx={{ alignItems: 'center', justifyContent: 'center' }} flexDirection='column'>
                                 <Box sx={{ p: 2, height: 'auto' }}>
@@ -405,6 +536,7 @@ const Users = () => {
                 onCancel={() => setRoleDialogUser(null)}
                 onConfirm={onRoleChangeConfirm}
             />
+            <AddUserDialog show={showAddUserDialog} onCancel={() => setShowAddUserDialog(false)} onConfirm={onAddUserConfirm} />
             <ConfirmDialog />
         </>
     )

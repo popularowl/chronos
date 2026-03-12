@@ -5,6 +5,7 @@ import { Execution } from '../../database/entities/Execution'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { ExecutionState, IAgentflowExecutedData } from '../../Interface'
+import { UserContext } from '../../Interface.Auth'
 import { _removeCredentialId } from '../../utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 
@@ -20,14 +21,20 @@ export interface ExecutionFilters {
     limit?: number
 }
 
-const getExecutionById = async (executionId: string): Promise<Execution | null> => {
+const getExecutionById = async (executionId: string, userContext?: UserContext): Promise<Execution | null> => {
     try {
         const appServer = getRunningExpressApp()
         const executionRepository = appServer.AppDataSource.getRepository(Execution)
 
-        const res = await executionRepository.findOne({ where: { id: executionId } })
+        const res = await executionRepository.findOne({
+            where: { id: executionId },
+            relations: userContext && userContext.role !== 'admin' ? ['agentflow'] : undefined
+        })
         if (!res) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `Execution ${executionId} not found`)
+        }
+        if (userContext && userContext.role !== 'admin' && res.agentflow?.userId !== userContext.userId) {
+            throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to access this execution')
         }
         return res
     } catch (error) {
@@ -58,7 +65,10 @@ const getPublicExecutionById = async (executionId: string): Promise<Execution | 
     }
 }
 
-const getAllExecutions = async (filters: ExecutionFilters = {}): Promise<{ data: Execution[]; total: number }> => {
+const getAllExecutions = async (
+    filters: ExecutionFilters = {},
+    userContext?: UserContext
+): Promise<{ data: Execution[]; total: number }> => {
     try {
         const appServer = getRunningExpressApp()
         const { id, agentflowId, agentflowName, sessionId, state, startDate, endDate, page = 1, limit = 12 } = filters
@@ -78,6 +88,11 @@ const getAllExecutions = async (filters: ExecutionFilters = {}): Promise<{ data:
             queryBuilder.andWhere('LOWER(agentflow.name) LIKE LOWER(:agentflowName)', { agentflowName: `%${agentflowName}%` })
         if (sessionId) queryBuilder.andWhere('execution.sessionId = :sessionId', { sessionId })
         if (state) queryBuilder.andWhere('execution.state = :state', { state })
+
+        // User scoping: non-admin users only see executions for their own agentflows
+        if (userContext && userContext.role !== 'admin') {
+            queryBuilder.andWhere('agentflow.userId = :userId', { userId: userContext.userId })
+        }
 
         // Date range conditions
         if (startDate && endDate) {
@@ -99,13 +114,19 @@ const getAllExecutions = async (filters: ExecutionFilters = {}): Promise<{ data:
     }
 }
 
-const updateExecution = async (executionId: string, data: Partial<Execution>): Promise<Execution | null> => {
+const updateExecution = async (executionId: string, data: Partial<Execution>, userContext?: UserContext): Promise<Execution | null> => {
     try {
         const appServer = getRunningExpressApp()
 
-        const execution = await appServer.AppDataSource.getRepository(Execution).findOneBy({ id: executionId })
+        const execution = await appServer.AppDataSource.getRepository(Execution).findOne({
+            where: { id: executionId },
+            relations: userContext && userContext.role !== 'admin' ? ['agentflow'] : undefined
+        })
         if (!execution) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `Execution ${executionId} not found`)
+        }
+        if (userContext && userContext.role !== 'admin' && execution.agentflow?.userId !== userContext.userId) {
+            throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to update this execution')
         }
         const updateExecution = new Execution()
         Object.assign(updateExecution, data)
@@ -125,10 +146,22 @@ const updateExecution = async (executionId: string, data: Partial<Execution>): P
  * @param executionIds Array of execution IDs to delete
  * @returns Object with success status and count of deleted executions
  */
-const deleteExecutions = async (executionIds: string[]): Promise<{ success: boolean; deletedCount: number }> => {
+const deleteExecutions = async (executionIds: string[], userContext?: UserContext): Promise<{ success: boolean; deletedCount: number }> => {
     try {
         const appServer = getRunningExpressApp()
         const executionRepository = appServer.AppDataSource.getRepository(Execution)
+
+        // Ownership check for non-admin users
+        if (userContext && userContext.role !== 'admin') {
+            const executions = await executionRepository.find({
+                where: { id: In(executionIds) },
+                relations: ['agentflow']
+            })
+            const unauthorized = executions.find((e) => e.agentflow?.userId !== userContext.userId)
+            if (unauthorized) {
+                throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to delete one or more executions')
+            }
+        }
 
         // Delete executions where id is in the provided array
         const result = await executionRepository.delete({ id: In(executionIds) })

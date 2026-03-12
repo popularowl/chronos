@@ -14,6 +14,31 @@ router.use(authMiddleware)
 router.use(requireRole(UserRole.ADMIN))
 
 /**
+ * POST /api/v1/users
+ * Create a new user (admin only)
+ */
+router.post('/', async (req: Request, res: Response) => {
+    try {
+        const { email, password } = req.body
+        if (!email || !password) {
+            return res.status(400).json({ error: 'Email and password are required' })
+        }
+
+        const usersService = new UsersService()
+        const user = await usersService.createUser(req.body)
+        res.status(201).json(user)
+    } catch (error: any) {
+        if (error.message === 'User with this email already exists') {
+            return res.status(409).json({ error: error.message })
+        }
+        if (error.message === 'Password must be at least 8 characters long') {
+            return res.status(400).json({ error: error.message })
+        }
+        res.status(500).json({ error: error.message })
+    }
+})
+
+/**
  * GET /api/v1/users
  * List all registered users (admin only)
  */

@@ -1,19 +1,23 @@
 import { StatusCodes } from 'http-status-codes'
 import { omit } from 'lodash'
 import { ICredentialReturnResponse } from '../../Interface'
+import { UserContext } from '../../Interface.Auth'
 import { Credential } from '../../database/entities/Credential'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { decryptCredentialData, transformToCredentialEntity } from '../../utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 
-const createCredential = async (requestBody: any) => {
+const createCredential = async (requestBody: any, userContext?: UserContext) => {
     try {
         const appServer = getRunningExpressApp()
         const newCredential = await transformToCredentialEntity(requestBody)
 
         if (requestBody.id) {
             newCredential.id = requestBody.id
+        }
+        if (userContext) {
+            newCredential.userId = userContext.userId
         }
 
         const credential = await appServer.AppDataSource.getRepository(Credential).create(newCredential)
@@ -27,10 +31,19 @@ const createCredential = async (requestBody: any) => {
     }
 }
 
-// Delete all credentials from chatflowid
-const deleteCredentials = async (credentialId: string): Promise<any> => {
+// Delete credential by id
+const deleteCredentials = async (credentialId: string, userContext?: UserContext): Promise<any> => {
     try {
         const appServer = getRunningExpressApp()
+        if (userContext && userContext.role !== 'admin') {
+            const credential = await appServer.AppDataSource.getRepository(Credential).findOneBy({ id: credentialId })
+            if (!credential) {
+                throw new InternalChronosError(StatusCodes.NOT_FOUND, `Credential ${credentialId} not found`)
+            }
+            if (credential.userId !== userContext.userId) {
+                throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to delete this credential')
+            }
+        }
         const dbResponse = await appServer.AppDataSource.getRepository(Credential).delete({ id: credentialId })
         if (!dbResponse) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `Credential ${credentialId} not found`)
@@ -44,29 +57,32 @@ const deleteCredentials = async (credentialId: string): Promise<any> => {
     }
 }
 
-const getAllCredentials = async (paramCredentialName: any) => {
+const getAllCredentials = async (paramCredentialName: any, userContext?: UserContext) => {
     try {
         const appServer = getRunningExpressApp()
+        const userFilter: any = userContext && userContext.role !== 'admin' ? { userId: userContext.userId } : {}
         let dbResponse: any[] = []
         if (paramCredentialName) {
             if (Array.isArray(paramCredentialName)) {
                 for (let i = 0; i < paramCredentialName.length; i += 1) {
                     const name = paramCredentialName[i] as string
                     const searchOptions = {
-                        credentialName: name
+                        credentialName: name,
+                        ...userFilter
                     }
                     const credentials = await appServer.AppDataSource.getRepository(Credential).findBy(searchOptions)
                     dbResponse.push(...credentials)
                 }
             } else {
                 const searchOptions = {
-                    credentialName: paramCredentialName
+                    credentialName: paramCredentialName,
+                    ...userFilter
                 }
                 const credentials = await appServer.AppDataSource.getRepository(Credential).findBy(searchOptions)
                 dbResponse = [...credentials]
             }
         } else {
-            const credentials = await appServer.AppDataSource.getRepository(Credential).find()
+            const credentials = await appServer.AppDataSource.getRepository(Credential).find({ where: userFilter })
             for (const credential of credentials) {
                 dbResponse.push(omit(credential, ['encryptedData']))
             }
@@ -80,7 +96,7 @@ const getAllCredentials = async (paramCredentialName: any) => {
     }
 }
 
-const getCredentialById = async (credentialId: string): Promise<any> => {
+const getCredentialById = async (credentialId: string, userContext?: UserContext): Promise<any> => {
     try {
         const appServer = getRunningExpressApp()
         const credential = await appServer.AppDataSource.getRepository(Credential).findOneBy({
@@ -89,7 +105,10 @@ const getCredentialById = async (credentialId: string): Promise<any> => {
         if (!credential) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `Credential ${credentialId} not found`)
         }
-        // Decrpyt credentialData
+        if (userContext && userContext.role !== 'admin' && credential.userId !== userContext.userId) {
+            throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to access this credential')
+        }
+        // Decrypt credentialData
         const decryptedCredentialData = await decryptCredentialData(
             credential.encryptedData,
             credential.credentialName,
@@ -109,7 +128,7 @@ const getCredentialById = async (credentialId: string): Promise<any> => {
     }
 }
 
-const updateCredential = async (credentialId: string, requestBody: any): Promise<any> => {
+const updateCredential = async (credentialId: string, requestBody: any, userContext?: UserContext): Promise<any> => {
     try {
         const appServer = getRunningExpressApp()
         const credential = await appServer.AppDataSource.getRepository(Credential).findOneBy({
@@ -117,6 +136,9 @@ const updateCredential = async (credentialId: string, requestBody: any): Promise
         })
         if (!credential) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `Credential ${credentialId} not found`)
+        }
+        if (userContext && userContext.role !== 'admin' && credential.userId !== userContext.userId) {
+            throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to update this credential')
         }
         const decryptedCredentialData = await decryptCredentialData(credential.encryptedData)
         requestBody.plainDataObj = { ...decryptedCredentialData, ...requestBody.plainDataObj }

@@ -4,9 +4,20 @@ import documentStoreService from '../../services/documentstore'
 import { DocumentStore } from '../../database/entities/DocumentStore'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { DocumentStoreDTO } from '../../Interface'
+import { UserContext } from '../../Interface.Auth'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 import { CHRONOS_COUNTER_STATUS, CHRONOS_METRIC_COUNTERS } from '../../Interface.Metrics'
 import { getPageAndLimitParams } from '../../utils/pagination'
+
+/**
+ * Build a UserContext from the Express request.
+ * @param req - Express request with userId/userRole set by auth middleware
+ * @returns UserContext or undefined if no auth info present
+ */
+const getUserContext = (req: Request): UserContext | undefined => {
+    if (!req.userId || !req.userRole) return undefined
+    return { userId: req.userId, role: req.userRole }
+}
 
 const createDocumentStore = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -19,7 +30,7 @@ const createDocumentStore = async (req: Request, res: Response, next: NextFuncti
 
         const body = req.body
         const docStore = DocumentStoreDTO.toEntity(body)
-        const apiResponse = await documentStoreService.createDocumentStore(docStore, '')
+        const apiResponse = await documentStoreService.createDocumentStore(docStore, '', getUserContext(req))
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -30,7 +41,7 @@ const getAllDocumentStores = async (req: Request, res: Response, next: NextFunct
     try {
         const { page, limit } = getPageAndLimitParams(req)
 
-        const apiResponse: any = await documentStoreService.getAllDocumentStores('', page, limit)
+        const apiResponse: any = await documentStoreService.getAllDocumentStores('', page, limit, getUserContext(req))
         if (apiResponse?.total >= 0) {
             return res.json({
                 total: apiResponse.total,
@@ -77,7 +88,7 @@ const getDocumentStoreById = async (req: Request, res: Response, next: NextFunct
                 `Error: documentStoreController.getDocumentStoreById - id not provided!`
             )
         }
-        const apiResponse = await documentStoreService.getDocumentStoreById(req.params.id, '')
+        const apiResponse = await documentStoreService.getDocumentStoreById(req.params.id, '', getUserContext(req))
         if (apiResponse && apiResponse.whereUsed) {
             apiResponse.whereUsed = JSON.stringify(await documentStoreService.getUsedChatflowNames(apiResponse, ''))
         }
@@ -253,7 +264,8 @@ const updateDocumentStore = async (req: Request, res: Response, next: NextFuncti
                 `Error: documentStoreController.updateDocumentStore - body not provided!`
             )
         }
-        const store = await documentStoreService.getDocumentStoreById(req.params.id, '')
+        const userContext = getUserContext(req)
+        const store = await documentStoreService.getDocumentStoreById(req.params.id, '', userContext)
         if (!store) {
             throw new InternalChronosError(
                 StatusCodes.NOT_FOUND,
@@ -263,7 +275,7 @@ const updateDocumentStore = async (req: Request, res: Response, next: NextFuncti
         const body = req.body
         const updateDocStore = new DocumentStore()
         Object.assign(updateDocStore, body)
-        const apiResponse = await documentStoreService.updateDocumentStore(store, updateDocStore)
+        const apiResponse = await documentStoreService.updateDocumentStore(store, updateDocStore, userContext)
         return res.json(DocumentStoreDTO.fromEntity(apiResponse))
     } catch (error) {
         next(error)
@@ -278,7 +290,13 @@ const deleteDocumentStore = async (req: Request, res: Response, next: NextFuncti
                 `Error: documentStoreController.deleteDocumentStore - storeId not provided!`
             )
         }
-        const apiResponse = await documentStoreService.deleteDocumentStore(req.params.id, '', '', getRunningExpressApp().usageCacheManager)
+        const apiResponse = await documentStoreService.deleteDocumentStore(
+            req.params.id,
+            '',
+            '',
+            getRunningExpressApp().usageCacheManager,
+            getUserContext(req)
+        )
         return res.json(apiResponse)
     } catch (error) {
         next(error)

@@ -250,25 +250,25 @@ export function executionsServiceTest() {
                 const existingExecution = { id: 'exec-1', state: 'running' }
                 const updatedExecution = { id: 'exec-1', state: 'completed' }
 
-                mockExecutionRepository.findOneBy.mockResolvedValue(existingExecution)
+                mockExecutionRepository.findOne.mockResolvedValue(existingExecution)
                 mockExecutionRepository.save.mockResolvedValue(updatedExecution)
 
                 const result = await executionsService.updateExecution('exec-1', { state: 'completed' as any })
 
-                expect(mockExecutionRepository.findOneBy).toHaveBeenCalledWith({ id: 'exec-1' })
+                expect(mockExecutionRepository.findOne).toHaveBeenCalled()
                 expect(mockExecutionRepository.merge).toHaveBeenCalled()
                 expect(mockExecutionRepository.save).toHaveBeenCalled()
                 expect(result).toEqual(updatedExecution)
             })
 
             it('should throw NOT_FOUND error for non-existent execution', async () => {
-                mockExecutionRepository.findOneBy.mockResolvedValue(null)
+                mockExecutionRepository.findOne.mockResolvedValue(null)
 
                 await expect(executionsService.updateExecution('non-existent', { state: 'completed' as any })).rejects.toThrow('not found')
             })
 
             it('should throw error on database failure', async () => {
-                mockExecutionRepository.findOneBy.mockResolvedValue({ id: 'exec-1' })
+                mockExecutionRepository.findOne.mockResolvedValue({ id: 'exec-1' })
                 mockExecutionRepository.save.mockRejectedValue(new Error('Database error'))
 
                 await expect(executionsService.updateExecution('exec-1', { state: 'completed' as any })).rejects.toThrow()

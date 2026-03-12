@@ -5,6 +5,7 @@
  */
 
 import { Request, Response, NextFunction } from 'express'
+import { UserContext } from '../Interface.Auth'
 
 /**
  * Stub permission check middleware that always allows access.
@@ -46,4 +47,24 @@ export const getWorkspaceSearchOptions = (_workspaceId?: string): Record<string,
  */
 export const getWorkspaceSearchOptionsFromReq = (_req: Request): Record<string, any> => {
     return {}
+}
+
+/**
+ * Returns userId filter for non-admin users, or empty object for admins.
+ * @param userContext - User context with userId and role
+ * @returns Search options object with userId filter (or empty for admins)
+ */
+export const getUserSearchOptions = (userContext: UserContext): Record<string, any> => {
+    if (userContext.role === 'admin') return {}
+    return { userId: userContext.userId }
+}
+
+/**
+ * Returns userId filter from the Express request for non-admin users.
+ * @param req - Express request with userId and userRole set by auth middleware
+ * @returns Search options object with userId filter (or empty for admins)
+ */
+export const getUserSearchOptionsFromReq = (req: Request): Record<string, any> => {
+    if (req.userRole === 'admin') return {}
+    return { userId: req.userId }
 }

@@ -3,10 +3,21 @@ import { StatusCodes } from 'http-status-codes'
 import { ChatFlow } from '../../database/entities/ChatFlow'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { ChatflowType } from '../../Interface'
+import { UserContext } from '../../Interface.Auth'
 import apiKeyService from '../../services/apikey'
 import chatflowsService from '../../services/chatflows'
 import { RateLimiterManager } from '../../utils/rateLimit'
 import { getPageAndLimitParams } from '../../utils/pagination'
+
+/**
+ * Build a UserContext from the Express request.
+ * @param req - Express request with userId/userRole set by auth middleware
+ * @returns UserContext or undefined if no auth info present
+ */
+const getUserContext = (req: Request): UserContext | undefined => {
+    if (!req.userId || !req.userRole) return undefined
+    return { userId: req.userId, role: req.userRole }
+}
 
 const checkIfChatflowIsValidForStreaming = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -43,7 +54,7 @@ const deleteChatflow = async (req: Request, res: Response, next: NextFunction) =
         if (typeof req.params === 'undefined' || !req.params.id) {
             throw new InternalChronosError(StatusCodes.PRECONDITION_FAILED, `Error: chatflowsController.deleteChatflow - id not provided!`)
         }
-        const apiResponse = await chatflowsService.deleteChatflow(req.params.id)
+        const apiResponse = await chatflowsService.deleteChatflow(req.params.id, getUserContext(req))
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -53,7 +64,7 @@ const deleteChatflow = async (req: Request, res: Response, next: NextFunction) =
 const getAllChatflows = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const { page, limit } = getPageAndLimitParams(req)
-        const apiResponse = await chatflowsService.getAllChatflows(req.query?.type as ChatflowType, page, limit)
+        const apiResponse = await chatflowsService.getAllChatflows(req.query?.type as ChatflowType, page, limit, getUserContext(req))
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -85,7 +96,7 @@ const getChatflowById = async (req: Request, res: Response, next: NextFunction) 
         if (typeof req.params === 'undefined' || !req.params.id) {
             throw new InternalChronosError(StatusCodes.PRECONDITION_FAILED, `Error: chatflowsController.getChatflowById - id not provided!`)
         }
-        const apiResponse = await chatflowsService.getChatflowById(req.params.id)
+        const apiResponse = await chatflowsService.getChatflowById(req.params.id, getUserContext(req))
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -100,7 +111,7 @@ const saveChatflow = async (req: Request, res: Response, next: NextFunction) => 
         const body = req.body
         const newChatFlow = new ChatFlow()
         Object.assign(newChatFlow, body)
-        const apiResponse = await chatflowsService.saveChatflow(newChatFlow)
+        const apiResponse = await chatflowsService.saveChatflow(newChatFlow, getUserContext(req))
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -112,7 +123,8 @@ const updateChatflow = async (req: Request, res: Response, next: NextFunction) =
         if (typeof req.params === 'undefined' || !req.params.id) {
             throw new InternalChronosError(StatusCodes.PRECONDITION_FAILED, `Error: chatflowsController.updateChatflow - id not provided!`)
         }
-        const chatflow = await chatflowsService.getChatflowById(req.params.id)
+        const userContext = getUserContext(req)
+        const chatflow = await chatflowsService.getChatflowById(req.params.id, userContext)
         if (!chatflow) {
             return res.status(404).send(`Chatflow ${req.params.id} not found`)
         }
@@ -124,7 +136,7 @@ const updateChatflow = async (req: Request, res: Response, next: NextFunction) =
         const rateLimiterManager = RateLimiterManager.getInstance()
         await rateLimiterManager.updateRateLimiter(updateChatFlow)
 
-        const apiResponse = await chatflowsService.updateChatflow(chatflow, updateChatFlow)
+        const apiResponse = await chatflowsService.updateChatflow(chatflow, updateChatFlow, userContext)
         return res.json(apiResponse)
     } catch (error) {
         next(error)

@@ -28,6 +28,7 @@ export interface IDocumentStore {
     vectorStoreConfig: string | null // JSON string
     embeddingConfig: string | null // JSON string
     recordManagerConfig: string | null // JSON string
+    userId?: string
 }
 
 export interface IDocumentStoreFileChunk {

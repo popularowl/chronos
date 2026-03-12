@@ -1,11 +1,17 @@
 import { Request, Response, NextFunction } from 'express'
 import executionsService from '../../services/executions'
 import { ExecutionState } from '../../Interface'
+import { UserContext } from '../../Interface.Auth'
+
+const getUserContext = (req: Request): UserContext | undefined => {
+    if (!req.userId || !req.userRole) return undefined
+    return { userId: req.userId, role: req.userRole }
+}
 
 const getExecutionById = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const executionId = req.params.id
-        const execution = await executionsService.getExecutionById(executionId)
+        const execution = await executionsService.getExecutionById(executionId, getUserContext(req))
         return res.json(execution)
     } catch (error) {
         next(error)
@@ -25,7 +31,7 @@ const getPublicExecutionById = async (req: Request, res: Response, next: NextFun
 const updateExecution = async (req: Request, res: Response, next: NextFunction) => {
     try {
         const executionId = req.params.id
-        const execution = await executionsService.updateExecution(executionId, req.body)
+        const execution = await executionsService.updateExecution(executionId, req.body, getUserContext(req))
         return res.json(execution)
     } catch (error) {
         next(error)
@@ -71,7 +77,7 @@ const getAllExecutions = async (req: Request, res: Response, next: NextFunction)
             filters.limit = parseInt(req.query.limit as string, 10)
         }
 
-        const apiResponse = await executionsService.getAllExecutions(filters)
+        const apiResponse = await executionsService.getAllExecutions(filters, getUserContext(req))
 
         return res.json(apiResponse)
     } catch (error) {
@@ -99,7 +105,7 @@ const deleteExecutions = async (req: Request, res: Response, next: NextFunction)
             return res.status(400).json({ success: false, message: 'No execution IDs provided' })
         }
 
-        const result = await executionsService.deleteExecutions(executionIds)
+        const result = await executionsService.deleteExecutions(executionIds, getUserContext(req))
         return res.json(result)
     } catch (error) {
         next(error)

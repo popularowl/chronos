@@ -1,6 +1,7 @@
 import { ICommonObject, removeFolderFromStorage } from 'chronos-components'
 import { StatusCodes } from 'http-status-codes'
 import { ChatflowType, IReactFlowObject } from '../../Interface'
+import { UserContext } from '../../Interface.Auth'
 import { CHRONOS_COUNTER_STATUS, CHRONOS_METRIC_COUNTERS } from '../../Interface.Metrics'
 import { ChatFlow, EnumChatflowType } from '../../database/entities/ChatFlow'
 import { ChatMessage } from '../../database/entities/ChatMessage'
@@ -67,11 +68,14 @@ const checkIfChatflowIsValidForUploads = async (chatflowId: string): Promise<any
     }
 }
 
-const deleteChatflow = async (chatflowId: string): Promise<any> => {
+const deleteChatflow = async (chatflowId: string, userContext?: UserContext): Promise<any> => {
     try {
         const appServer = getRunningExpressApp()
 
-        await getChatflowById(chatflowId)
+        const chatflow = await getChatflowById(chatflowId)
+        if (userContext && userContext.role !== 'admin' && chatflow.userId !== userContext.userId) {
+            throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to delete this chatflow')
+        }
 
         const dbResponse = await appServer.AppDataSource.getRepository(ChatFlow).delete({ id: chatflowId })
 
@@ -102,7 +106,7 @@ const deleteChatflow = async (chatflowId: string): Promise<any> => {
     }
 }
 
-const getAllChatflows = async (type?: ChatflowType, page: number = -1, limit: number = -1) => {
+const getAllChatflows = async (type?: ChatflowType, page: number = -1, limit: number = -1, userContext?: UserContext) => {
     try {
         const appServer = getRunningExpressApp()
 
@@ -110,6 +114,9 @@ const getAllChatflows = async (type?: ChatflowType, page: number = -1, limit: nu
             .createQueryBuilder('chat_flow')
             .orderBy('chat_flow.updatedDate', 'DESC')
 
+        if (userContext && userContext.role !== 'admin') {
+            queryBuilder.andWhere('chat_flow.userId = :userId', { userId: userContext.userId })
+        }
         if (page > 0 && limit > 0) {
             queryBuilder.skip((page - 1) * limit)
             queryBuilder.take(limit)
@@ -151,16 +158,13 @@ async function getAllChatflowsCountByOrganization(type: ChatflowType, _organizat
     }
 }
 
-const getAllChatflowsCount = async (type?: ChatflowType): Promise<number> => {
+const getAllChatflowsCount = async (type?: ChatflowType, userContext?: UserContext): Promise<number> => {
     try {
         const appServer = getRunningExpressApp()
-        if (type) {
-            const dbResponse = await appServer.AppDataSource.getRepository(ChatFlow).countBy({
-                type
-            })
-            return dbResponse
-        }
-        const dbResponse = await appServer.AppDataSource.getRepository(ChatFlow).count()
+        const whereOptions: any = {}
+        if (type) whereOptions.type = type
+        if (userContext && userContext.role !== 'admin') whereOptions.userId = userContext.userId
+        const dbResponse = await appServer.AppDataSource.getRepository(ChatFlow).countBy(whereOptions)
         return dbResponse
     } catch (error) {
         throw new InternalChronosError(
@@ -194,7 +198,7 @@ const getChatflowByApiKey = async (apiKeyId: string, keyonly?: unknown): Promise
     }
 }
 
-const getChatflowById = async (chatflowId: string): Promise<any> => {
+const getChatflowById = async (chatflowId: string, userContext?: UserContext): Promise<any> => {
     try {
         const appServer = getRunningExpressApp()
         const dbResponse = await appServer.AppDataSource.getRepository(ChatFlow).findOne({
@@ -205,6 +209,9 @@ const getChatflowById = async (chatflowId: string): Promise<any> => {
         if (!dbResponse) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `Chatflow ${chatflowId} not found in the database!`)
         }
+        if (userContext && userContext.role !== 'admin' && dbResponse.userId !== userContext.userId) {
+            throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to access this chatflow')
+        }
         return dbResponse
     } catch (error) {
         throw new InternalChronosError(
@@ -214,8 +221,11 @@ const getChatflowById = async (chatflowId: string): Promise<any> => {
     }
 }
 
-const saveChatflow = async (newChatFlow: ChatFlow): Promise<any> => {
+const saveChatflow = async (newChatFlow: ChatFlow, userContext?: UserContext): Promise<any> => {
     validateChatflowType(newChatFlow.type)
+    if (userContext) {
+        newChatFlow.userId = userContext.userId
+    }
     const appServer = getRunningExpressApp()
 
     let dbResponse: ChatFlow
@@ -253,7 +263,10 @@ const saveChatflow = async (newChatFlow: ChatFlow): Promise<any> => {
     return dbResponse
 }
 
-const updateChatflow = async (chatflow: ChatFlow, updateChatFlow: ChatFlow): Promise<any> => {
+const updateChatflow = async (chatflow: ChatFlow, updateChatFlow: ChatFlow, userContext?: UserContext): Promise<any> => {
+    if (userContext && userContext.role !== 'admin' && chatflow.userId !== userContext.userId) {
+        throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to update this chatflow')
+    }
     const appServer = getRunningExpressApp()
     if (updateChatFlow.flowData && containsBase64File(updateChatFlow)) {
         updateChatFlow.flowData = await updateFlowDataWithFilePaths(chatflow.id, updateChatFlow.flowData)

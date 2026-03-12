@@ -41,3 +41,11 @@ export interface AuthResponse {
     user: SimpleUser
     token: string
 }
+
+/**
+ * Lightweight user context for service-layer authorization.
+ */
+export interface UserContext {
+    userId: string
+    role: string
+}

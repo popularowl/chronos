@@ -60,6 +60,7 @@ import { internalChatMessagesRouteTest } from './routes/v1/internal-chat-message
 import { oauth2RouteTest } from './routes/v1/oauth2.route.test'
 import { openaiRealtimeRouteTest } from './routes/v1/openai-realtime.route.test'
 import { usersRouteTest } from './routes/v1/users.route.test'
+import { usersCreateRouteTest } from './routes/v1/users-create.route.test'
 import { adminRouteTest } from './routes/v1/admin.route.test'
 import { chatflowsServiceTest } from './services/chatflows.service.test'
 import { agentflowv2GeneratorServiceTest } from './services/agentflowv2-generator.service.test'
@@ -73,6 +74,8 @@ import { feedbackValidationServiceTest } from './services/feedback-validation.se
 import { chatMessagesServiceTest } from './services/chat-messages.service.test'
 import { marketplacesServiceTest } from './services/marketplaces.service.test'
 import { usersServiceTest } from './services/users.service.test'
+import { usersCreateServiceTest } from './services/users-create.service.test'
+import { userScopingServiceTest } from './services/user-scoping.service.test'
 import { apikeyServiceTest } from './services/apikey.service.test'
 import { variablesServiceTest } from './services/variables.service.test'
 import { leadsServiceTest } from './services/leads.service.test'
@@ -195,6 +198,7 @@ describe('Routes Test', () => {
     oauth2RouteTest()
     openaiRealtimeRouteTest()
     usersRouteTest()
+    usersCreateRouteTest()
     adminRouteTest()
 })
 
@@ -211,6 +215,7 @@ describe('Services Test', () => {
     chatMessagesServiceTest()
     marketplacesServiceTest()
     usersServiceTest()
+    usersCreateServiceTest()
     apikeyServiceTest()
     variablesServiceTest()
     leadsServiceTest()
@@ -230,6 +235,7 @@ describe('Services Test', () => {
     evaluatorServiceTest()
     documentstoreServiceTest()
     oauthClientServiceTest()
+    userScopingServiceTest()
 })
 
 describe('Utils Test', () => {

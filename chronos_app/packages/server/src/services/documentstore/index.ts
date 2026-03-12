@@ -43,6 +43,7 @@ import { ChatFlow } from '../../database/entities/ChatFlow'
 import { DocumentStore } from '../../database/entities/DocumentStore'
 import { DocumentStoreFileChunk } from '../../database/entities/DocumentStoreFileChunk'
 import { UpsertHistory } from '../../database/entities/UpsertHistory'
+import { UserContext } from '../../Interface.Auth'
 import { getWorkspaceSearchOptions } from '../../utils/openSourceStubs'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
@@ -56,10 +57,13 @@ import { checkStorage, updateStorageUsage } from '../../utils/quotaUsage'
 import { Telemetry } from '../../utils/telemetry'
 import nodesService from '../nodes'
 
-const createDocumentStore = async (newDocumentStore: DocumentStore, orgId: string) => {
+const createDocumentStore = async (newDocumentStore: DocumentStore, orgId: string, userContext?: UserContext) => {
     try {
         const appServer = getRunningExpressApp()
 
+        if (userContext) {
+            newDocumentStore.userId = userContext.userId
+        }
         const documentStore = appServer.AppDataSource.getRepository(DocumentStore).create(newDocumentStore)
         const dbResponse = await appServer.AppDataSource.getRepository(DocumentStore).save(documentStore)
         await appServer.telemetry.sendTelemetry(
@@ -78,12 +82,16 @@ const createDocumentStore = async (newDocumentStore: DocumentStore, orgId: strin
     }
 }
 
-const getAllDocumentStores = async (workspaceId: string, page: number = -1, limit: number = -1) => {
+const getAllDocumentStores = async (workspaceId: string, page: number = -1, limit: number = -1, userContext?: UserContext) => {
     try {
         const appServer = getRunningExpressApp()
         const queryBuilder = appServer.AppDataSource.getRepository(DocumentStore)
             .createQueryBuilder('doc_store')
             .orderBy('doc_store.updatedDate', 'DESC')
+
+        if (userContext && userContext.role !== 'admin') {
+            queryBuilder.andWhere('doc_store.userId = :userId', { userId: userContext.userId })
+        }
 
         if (page > 0 && limit > 0) {
             queryBuilder.skip((page - 1) * limit)
@@ -166,7 +174,7 @@ const deleteLoaderFromDocumentStore = async (
     }
 }
 
-const getDocumentStoreById = async (storeId: string, _workspaceId: string) => {
+const getDocumentStoreById = async (storeId: string, _workspaceId: string, userContext?: UserContext) => {
     try {
         const appServer = getRunningExpressApp()
         const entity = await appServer.AppDataSource.getRepository(DocumentStore).findOneBy({
@@ -177,6 +185,9 @@ const getDocumentStoreById = async (storeId: string, _workspaceId: string) => {
                 StatusCodes.NOT_FOUND,
                 `Error: documentStoreServices.getDocumentStoreById - Document store ${storeId} not found`
             )
+        }
+        if (userContext && userContext.role !== 'admin' && entity.userId !== userContext.userId) {
+            throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to access this document store')
         }
         return entity
     } catch (error) {
@@ -302,7 +313,13 @@ const getDocumentStoreFileChunks = async (
     }
 }
 
-const deleteDocumentStore = async (storeId: string, orgId: string, workspaceId: string, usageCacheManager: UsageCacheManager) => {
+const deleteDocumentStore = async (
+    storeId: string,
+    orgId: string,
+    workspaceId: string,
+    usageCacheManager: UsageCacheManager,
+    userContext?: UserContext
+) => {
     try {
         const appServer = getRunningExpressApp()
 
@@ -311,6 +328,9 @@ const deleteDocumentStore = async (storeId: string, orgId: string, workspaceId: 
         })
         if (!entity) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `Document store ${storeId} not found`)
+        }
+        if (userContext && userContext.role !== 'admin' && entity.userId !== userContext.userId) {
+            throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to delete this document store')
         }
 
         // delete all the chunks associated with the store
@@ -503,8 +523,11 @@ const editDocumentStoreFileChunk = async (
     }
 }
 
-const updateDocumentStore = async (documentStore: DocumentStore, updatedDocumentStore: DocumentStore) => {
+const updateDocumentStore = async (documentStore: DocumentStore, updatedDocumentStore: DocumentStore, userContext?: UserContext) => {
     try {
+        if (userContext && userContext.role !== 'admin' && documentStore.userId !== userContext.userId) {
+            throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to update this document store')
+        }
         const appServer = getRunningExpressApp()
         const tmpUpdatedDocumentStore = appServer.AppDataSource.getRepository(DocumentStore).merge(documentStore, updatedDocumentStore)
         const dbResponse = await appServer.AppDataSource.getRepository(DocumentStore).save(tmpUpdatedDocumentStore)

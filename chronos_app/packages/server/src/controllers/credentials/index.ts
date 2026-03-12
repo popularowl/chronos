@@ -2,6 +2,17 @@ import { Request, Response, NextFunction } from 'express'
 import credentialsService from '../../services/credentials'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { StatusCodes } from 'http-status-codes'
+import { UserContext } from '../../Interface.Auth'
+
+/**
+ * Build a UserContext from the Express request.
+ * @param req - Express request with userId/userRole set by auth middleware
+ * @returns UserContext or undefined if no auth info present
+ */
+const getUserContext = (req: Request): UserContext | undefined => {
+    if (!req.userId || !req.userRole) return undefined
+    return { userId: req.userId, role: req.userRole }
+}
 
 const createCredential = async (req: Request, res: Response, next: NextFunction) => {
     try {
@@ -12,7 +23,7 @@ const createCredential = async (req: Request, res: Response, next: NextFunction)
             )
         }
         const body = req.body
-        const apiResponse = await credentialsService.createCredential(body)
+        const apiResponse = await credentialsService.createCredential(body, getUserContext(req))
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -27,7 +38,7 @@ const deleteCredentials = async (req: Request, res: Response, next: NextFunction
                 `Error: credentialsController.deleteCredentials - id not provided!`
             )
         }
-        const apiResponse = await credentialsService.deleteCredentials(req.params.id)
+        const apiResponse = await credentialsService.deleteCredentials(req.params.id, getUserContext(req))
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -36,7 +47,7 @@ const deleteCredentials = async (req: Request, res: Response, next: NextFunction
 
 const getAllCredentials = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const apiResponse = await credentialsService.getAllCredentials(req.query.credentialName)
+        const apiResponse = await credentialsService.getAllCredentials(req.query.credentialName, getUserContext(req))
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -51,7 +62,7 @@ const getCredentialById = async (req: Request, res: Response, next: NextFunction
                 `Error: credentialsController.getCredentialById - id not provided!`
             )
         }
-        const apiResponse = await credentialsService.getCredentialById(req.params.id)
+        const apiResponse = await credentialsService.getCredentialById(req.params.id, getUserContext(req))
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -72,7 +83,7 @@ const updateCredential = async (req: Request, res: Response, next: NextFunction)
                 `Error: credentialsController.updateCredential - body not provided!`
             )
         }
-        const apiResponse = await credentialsService.updateCredential(req.params.id, req.body)
+        const apiResponse = await credentialsService.updateCredential(req.params.id, req.body, getUserContext(req))
         return res.json(apiResponse)
     } catch (error) {
         next(error)

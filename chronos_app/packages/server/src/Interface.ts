@@ -68,6 +68,7 @@ export interface IChatFlow {
     apiConfig?: string
     category?: string
     type?: ChatflowType
+    userId?: string
 }
 
 export interface IChatMessage {
@@ -130,6 +131,7 @@ export interface ICredential {
     encryptedData: string
     updatedDate: Date
     createdDate: Date
+    userId?: string
 }
 
 export interface IVariable {
