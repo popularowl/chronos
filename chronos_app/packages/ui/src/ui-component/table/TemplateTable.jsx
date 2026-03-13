@@ -48,6 +48,7 @@ export const TemplateTable = ({
     filterByUsecases,
     goToCanvas,
     goToTool,
+    goToSkill,
     isLoading,
     onDelete,
     onShare
@@ -58,6 +59,8 @@ export const TemplateTable = ({
     const openTemplate = (selectedTemplate) => {
         if (selectedTemplate.flowData) {
             goToCanvas(selectedTemplate)
+        } else if (selectedTemplate.type === 'Skill' && goToSkill) {
+            goToSkill(selectedTemplate)
         } else {
             goToTool(selectedTemplate)
         }
@@ -277,6 +280,7 @@ TemplateTable.propTypes = {
     filterByUsecases: PropTypes.func,
     goToTool: PropTypes.func,
     goToCanvas: PropTypes.func,
+    goToSkill: PropTypes.func,
     isLoading: PropTypes.bool,
     onDelete: PropTypes.func,
     onShare: PropTypes.func

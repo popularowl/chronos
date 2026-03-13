@@ -34,6 +34,7 @@ import MainCard from '@/ui-component/cards/MainCard'
 import ItemCard from '@/ui-component/cards/ItemCard'
 import WorkflowEmptySVG from '@/assets/images/workflow_empty.svg'
 import ToolDialog from '@/views/tools/ToolDialog'
+import SkillDialog from '@/views/skills/SkillDialog'
 import { TemplateTable } from '@/ui-component/table/TemplateTable'
 import ViewHeader from '@/layout/MainLayout/ViewHeader'
 import ErrorBoundary from '@/ErrorBoundary'
@@ -61,8 +62,8 @@ import { gridSpacing } from '@/store/constant'
 import { useError } from '@/store/context/ErrorContext'
 
 const badges = ['POPULAR', 'NEW']
-const types = ['AgentflowV2', 'Tool']
-const typeDisplayNames = { AgentflowV2: 'Agentflow', Tool: 'Tool' }
+const types = ['AgentflowV2', 'Tool', 'Skill']
+const typeDisplayNames = { AgentflowV2: 'Agentflow', Tool: 'Tool', Skill: 'Skill' }
 const MenuProps = {
     PaperProps: {
         style: {
@@ -90,6 +91,8 @@ const Templates = () => {
 
     const [showToolDialog, setShowToolDialog] = useState(false)
     const [toolDialogProps, setToolDialogProps] = useState({})
+    const [showSkillDialog, setShowSkillDialog] = useState(false)
+    const [skillDialogProps, setSkillDialogProps] = useState({})
 
     const getAllBuiltinTemplatesApi = useApi(templatesApi.getAllTemplatesFromTemplates)
 
@@ -322,6 +325,18 @@ const Templates = () => {
         }
         setToolDialogProps(dialogProp)
         setShowToolDialog(true)
+    }
+
+    const goToSkill = (selectedSkill) => {
+        const dialogProp = {
+            title: 'Import Skill',
+            type: 'IMPORT',
+            cancelButtonName: 'Cancel',
+            confirmButtonName: 'Add',
+            data: selectedSkill
+        }
+        setSkillDialogProps(dialogProp)
+        setShowSkillDialog(true)
     }
 
     const goToCanvas = (selectedChatflow) => {
@@ -695,6 +710,9 @@ const Templates = () => {
                                                                     {data.type === 'Tool' && (
                                                                         <ItemCard data={data} onClick={() => goToTool(data)} />
                                                                     )}
+                                                                    {data.type === 'Skill' && (
+                                                                        <ItemCard data={data} onClick={() => goToSkill(data)} />
+                                                                    )}
                                                                 </Badge>
                                                             )}
                                                             {!data.badge &&
@@ -711,6 +729,9 @@ const Templates = () => {
                                                             {!data.badge && data.type === 'Tool' && (
                                                                 <ItemCard data={data} onClick={() => goToTool(data)} />
                                                             )}
+                                                            {!data.badge && data.type === 'Skill' && (
+                                                                <ItemCard data={data} onClick={() => goToSkill(data)} />
+                                                            )}
                                                         </Box>
                                                     ))}
                                             </Box>
@@ -726,6 +747,7 @@ const Templates = () => {
                                         filterByUsecases={filterByUsecases}
                                         goToTool={goToTool}
                                         goToCanvas={goToCanvas}
+                                        goToSkill={goToSkill}
                                         isLoading={isLoading}
                                         setError={setError}
                                     />
@@ -827,6 +849,9 @@ const Templates = () => {
                                                                     {data.type === 'Tool' && (
                                                                         <ItemCard data={data} onClick={() => goToTool(data)} />
                                                                     )}
+                                                                    {data.type === 'Skill' && (
+                                                                        <ItemCard data={data} onClick={() => goToSkill(data)} />
+                                                                    )}
                                                                 </Badge>
                                                             )}
                                                             {!data.badge &&
@@ -843,6 +868,9 @@ const Templates = () => {
                                                             {!data.badge && data.type === 'Tool' && (
                                                                 <ItemCard data={data} onClick={() => goToTool(data)} />
                                                             )}
+                                                            {!data.badge && data.type === 'Skill' && (
+                                                                <ItemCard data={data} onClick={() => goToSkill(data)} />
+                                                            )}
                                                         </Box>
                                                     ))}
                                             </Box>
@@ -858,6 +886,7 @@ const Templates = () => {
                                         filterByUsecases={filterByUsecases}
                                         goToTool={goToTool}
                                         goToCanvas={goToCanvas}
+                                        goToSkill={goToSkill}
                                         isLoading={isLoading}
                                         setError={setError}
                                         onDelete={hasPermission('templates:custom-delete') ? onDeleteCustomTemplate : null}
@@ -888,6 +917,13 @@ const Templates = () => {
                 onConfirm={() => setShowToolDialog(false)}
                 onUseTemplate={(tool) => onUseTemplate(tool)}
             ></ToolDialog>
+            <SkillDialog
+                show={showSkillDialog}
+                dialogProps={skillDialogProps}
+                onCancel={() => setShowSkillDialog(false)}
+                onConfirm={() => setShowSkillDialog(false)}
+                setError={setError}
+            />
             {showShareTemplateDialog && (
                 <ShareWithWorkspaceDialog
                     show={showShareTemplateDialog}

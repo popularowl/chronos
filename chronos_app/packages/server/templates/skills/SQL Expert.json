@@ -1,0 +1,8 @@
+{
+    "name": "SQL Expert",
+    "description": "SQL query generation and optimisation patterns for writing correct, efficient, and readable SQL.",
+    "category": "database",
+    "color": "#64B5F6",
+    "iconSrc": null,
+    "content": "## SQL Expert Skill\n\nWhen writing or reviewing SQL queries, follow these patterns:\n\n### Correctness\n- Always qualify column names with table aliases in joins.\n- Use explicit JOIN syntax (never implicit comma joins).\n- Be explicit about NULL handling (IS NULL, COALESCE, NULLIF).\n- Use UNION ALL instead of UNION unless deduplication is needed.\n\n### Performance\n- Filter early: put conditions in WHERE, not HAVING, when possible.\n- Avoid SELECT * — list only the columns needed.\n- Use EXISTS instead of IN for subquery existence checks.\n- Be aware of index usage: leading columns matter.\n- Limit result sets during development.\n\n### Readability\n- Use uppercase for SQL keywords (SELECT, FROM, WHERE).\n- One clause per line for complex queries.\n- Indent subqueries and CASE expressions.\n- Use meaningful table aliases (o for orders, not t1).\n- Add comments for non-obvious business logic.\n\n### Safety\n- Never use string interpolation for user input — use parameterised queries.\n- Always include a WHERE clause in UPDATE and DELETE statements.\n- Test destructive queries with SELECT first.\n- Use transactions for multi-statement modifications."
+}

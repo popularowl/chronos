@@ -15,6 +15,7 @@ import { versionsRouteTest } from './routes/v1/versions.route.test'
 import { statsRouteTest } from './routes/v1/stats.route.test'
 import { promptsListsRouteTest } from './routes/v1/prompts-lists.route.test'
 import { nodesRouteTest } from './routes/v1/nodes.route.test'
+import { skillsRouteTest } from './routes/v1/skills.route.test'
 import { toolsRouteTest } from './routes/v1/tools.route.test'
 import { variablesRouteTest } from './routes/v1/variables.route.test'
 import { credentialsRouteTest } from './routes/v1/credentials.route.test'
@@ -64,6 +65,7 @@ import { usersCreateRouteTest } from './routes/v1/users-create.route.test'
 import { adminRouteTest } from './routes/v1/admin.route.test'
 import { chatflowsServiceTest } from './services/chatflows.service.test'
 import { agentflowv2GeneratorServiceTest } from './services/agentflowv2-generator.service.test'
+import { skillsServiceTest } from './services/skills.service.test'
 import { toolsServiceTest } from './services/tools.service.test'
 import { credentialsServiceTest } from './services/credentials.service.test'
 import { executionsServiceTest } from './services/executions.service.test'
@@ -153,6 +155,7 @@ describe('Routes Test', () => {
     statsRouteTest()
     promptsListsRouteTest()
     nodesRouteTest()
+    skillsRouteTest()
     toolsRouteTest()
     variablesRouteTest()
     credentialsRouteTest()
@@ -205,6 +208,7 @@ describe('Routes Test', () => {
 describe('Services Test', () => {
     chatflowsServiceTest()
     agentflowv2GeneratorServiceTest()
+    skillsServiceTest()
     toolsServiceTest()
     credentialsServiceTest()
     executionsServiceTest()

@@ -219,6 +219,14 @@ class Agent_Agentflow implements INode {
                 }
             },
             {
+                label: 'Skills',
+                name: 'agentSkills',
+                type: 'asyncMultiOptions',
+                loadMethod: 'listSkills',
+                optional: true,
+                description: 'Select skills to inject into the agent system message'
+            },
+            {
                 label: 'Tools',
                 name: 'agentTools',
                 type: 'array',
@@ -572,6 +580,21 @@ class Agent_Agentflow implements INode {
                 }
             }
             return returnOptions
+        },
+        async listSkills(_: INodeData, options: ICommonObject): Promise<INodeOptionsValue[]> {
+            const appDataSource = options.appDataSource as DataSource
+            const databaseEntities = options.databaseEntities as IDatabaseEntity
+
+            if (appDataSource === undefined || !appDataSource) {
+                return []
+            }
+
+            const skills = await appDataSource.getRepository(databaseEntities['Skill']).find()
+            return skills.map((skill: any) => ({
+                label: skill.name,
+                name: skill.id,
+                description: skill.description
+            }))
         },
         async listTools(_: INodeData, options: ICommonObject): Promise<INodeOptionsValue[]> {
             const componentNodes = options.componentNodes as {
@@ -1059,6 +1082,23 @@ class Agent_Agentflow implements INode {
                     } else {
                         messages.push({ role, content })
                     }
+                }
+            }
+
+            // Load selected skills and inject into system message
+            const selectedSkillIds = nodeData.inputs?.agentSkills as string[]
+            if (selectedSkillIds?.length) {
+                const appDataSource = options.appDataSource as DataSource
+                const databaseEntities = options.databaseEntities as IDatabaseEntity
+                const skillContents = await Promise.all(
+                    selectedSkillIds.map((id: string) => appDataSource.getRepository(databaseEntities['Skill']).findOneBy({ id }))
+                )
+                const skillsText = skillContents
+                    .filter(Boolean)
+                    .map((s: any) => s.content)
+                    .join('\n\n---\n\n')
+                if (skillsText) {
+                    messages.unshift({ role: 'system', content: skillsText })
                 }
             }
 

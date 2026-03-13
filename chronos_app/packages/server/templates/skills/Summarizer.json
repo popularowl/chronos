@@ -1,0 +1,8 @@
+{
+    "name": "Summarizer",
+    "description": "Summarisation rules defining output format, length constraints, and tone for producing concise summaries.",
+    "category": "general",
+    "color": "#BA68C8",
+    "iconSrc": null,
+    "content": "## Summarizer Skill\n\nWhen asked to summarise content, follow these rules:\n\n### Length\n- Default to 3-5 bullet points unless a specific length is requested.\n- Each bullet should be one sentence (max 30 words).\n- For longer content, group bullets under section headings.\n\n### Content Selection\n- Lead with the most important finding or conclusion.\n- Include key facts, figures, and decisions.\n- Omit background information the reader already knows.\n- Preserve names, dates, and specific numbers exactly.\n\n### Tone\n- Use neutral, objective language.\n- Avoid editorialising unless explicitly asked for opinion.\n- Match the formality level of the source material.\n\n### Format\n- Use bullet points for lists of facts.\n- Use numbered lists for sequential steps or rankings.\n- Bold key terms or findings for scannability.\n- End with \"Key takeaway:\" when summarising long documents."
+}

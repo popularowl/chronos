@@ -8,6 +8,7 @@ import { CustomTemplate } from '../../database/entities/CustomTemplate'
 import { DocumentStore } from '../../database/entities/DocumentStore'
 import { DocumentStoreFileChunk } from '../../database/entities/DocumentStoreFileChunk'
 import { Execution } from '../../database/entities/Execution'
+import { Skill } from '../../database/entities/Skill'
 import { Tool } from '../../database/entities/Tool'
 import { Variable } from '../../database/entities/Variable'
 import { InternalChronosError } from '../../errors/internalChronosError'
@@ -22,6 +23,7 @@ import chatflowService from '../chatflows'
 import documenStoreService from '../documentstore'
 import executionService, { ExecutionFilters } from '../executions'
 import templatesService from '../templates'
+import skillsService from '../skills'
 import toolsService from '../tools'
 import variableService from '../variables'
 
@@ -32,6 +34,7 @@ type ExportInput = {
     custom_template: boolean
     document_store: boolean
     execution: boolean
+    skill: boolean
     tool: boolean
     variable: boolean
 }
@@ -44,6 +47,7 @@ type ExportData = {
     DocumentStore: DocumentStore[]
     DocumentStoreFileChunk: DocumentStoreFileChunk[]
     Execution: Execution[]
+    Skill: Skill[]
     Tool: Tool[]
     Variable: Variable[]
 }
@@ -61,6 +65,7 @@ const convertExportInput = (body: any): ExportInput => {
         if (body.document_store && typeof body.document_store !== 'boolean')
             throw new Error('Invalid document_store property in ExportInput object')
         if (body.execution && typeof body.execution !== 'boolean') throw new Error('Invalid execution property in ExportInput object')
+        if (body.skill && typeof body.skill !== 'boolean') throw new Error('Invalid skill property in ExportInput object')
         if (body.tool && typeof body.tool !== 'boolean') throw new Error('Invalid tool property in ExportInput object')
         if (body.variable && typeof body.variable !== 'boolean') throw new Error('Invalid variable property in ExportInput object')
         return body as ExportInput
@@ -107,6 +112,9 @@ const exportData = async (exportInput: ExportInput, activeWorkspaceId: string): 
         const { data: totalExecutions } = exportInput.execution === true ? await executionService.getAllExecutions(filters) : { data: [] }
         let Execution: Execution[] = exportInput.execution === true ? totalExecutions : []
 
+        let Skill: Skill[] | { data: Skill[]; total: number } = exportInput.skill === true ? await skillsService.getAllSkills() : []
+        Skill = 'data' in Skill ? Skill.data : Skill
+
         let Tool: Tool[] | { data: Tool[]; total: number } = exportInput.tool === true ? await toolsService.getAllTools() : []
         Tool = 'data' in Tool ? Tool.data : Tool
 
@@ -123,6 +131,7 @@ const exportData = async (exportInput: ExportInput, activeWorkspaceId: string): 
             DocumentStore,
             DocumentStoreFileChunk,
             Execution,
+            Skill,
             Tool,
             Variable
         }
@@ -462,6 +471,27 @@ async function replaceDuplicateIdsForTool(queryRunner: QueryRunner, originalData
     }
 }
 
+async function replaceDuplicateIdsForSkill(queryRunner: QueryRunner, originalData: ExportData, skills: Skill[]) {
+    try {
+        const ids = skills.map((skill) => skill.id)
+        const records = await queryRunner.manager.find(Skill, {
+            where: { id: In(ids) }
+        })
+        if (records.length < 0) return originalData
+        for (let record of records) {
+            const oldId = record.id
+            const newId = uuidv4()
+            originalData = JSON.parse(JSON.stringify(originalData).replaceAll(oldId, newId))
+        }
+        return originalData
+    } catch (error) {
+        throw new InternalChronosError(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            `Error: exportImportService.replaceDuplicateIdsForSkill - ${getErrorMessage(error)}`
+        )
+    }
+}
+
 async function replaceDuplicateIdsForVariable(queryRunner: QueryRunner, originalData: ExportData, variables: Variable[]) {
     try {
         const ids = variables.map((variable) => variable.id)
@@ -545,6 +575,7 @@ const importData = async (importData: ExportData, orgId: string, activeWorkspace
     importData.DocumentStore = importData.DocumentStore || []
     importData.DocumentStoreFileChunk = importData.DocumentStoreFileChunk || []
     importData.Execution = importData.Execution || []
+    importData.Skill = importData.Skill || []
     importData.Tool = importData.Tool || []
     importData.Variable = importData.Variable || []
 
@@ -588,6 +619,9 @@ const importData = async (importData: ExportData, orgId: string, activeWorkspace
             }
             if (importData.DocumentStoreFileChunk.length > 0)
                 importData = await replaceDuplicateIdsForDocumentStoreFileChunk(queryRunner, importData, importData.DocumentStoreFileChunk)
+            if (importData.Skill.length > 0) {
+                importData = await replaceDuplicateIdsForSkill(queryRunner, importData, importData.Skill)
+            }
             if (importData.Tool.length > 0) {
                 importData.Tool = insertWorkspaceId(importData.Tool, activeWorkspaceId)
                 importData = await replaceDuplicateIdsForTool(queryRunner, importData, importData.Tool)
@@ -613,6 +647,7 @@ const importData = async (importData: ExportData, orgId: string, activeWorkspace
             if (importData.DocumentStore.length > 0) await queryRunner.manager.save(DocumentStore, importData.DocumentStore)
             if (importData.DocumentStoreFileChunk.length > 0)
                 await saveBatch(queryRunner.manager, DocumentStoreFileChunk, importData.DocumentStoreFileChunk)
+            if (importData.Skill.length > 0) await queryRunner.manager.save(Skill, importData.Skill)
             if (importData.Tool.length > 0) await queryRunner.manager.save(Tool, importData.Tool)
             if (importData.Execution.length > 0) await queryRunner.manager.save(Execution, importData.Execution)
             if (importData.Variable.length > 0) await queryRunner.manager.save(Variable, importData.Variable)

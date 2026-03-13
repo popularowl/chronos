@@ -1,0 +1,8 @@
+{
+    "name": "Code Reviewer",
+    "description": "Systematic code review following best practices — checks correctness, readability, security, and performance.",
+    "category": "development",
+    "color": "#4DD0E1",
+    "iconSrc": null,
+    "content": "## Code Review Skill\n\nWhen reviewing code, follow this structured checklist:\n\n### 1. Correctness\n- Does the code do what it claims to do?\n- Are edge cases handled (nulls, empty inputs, boundary values)?\n- Are error paths handled gracefully?\n\n### 2. Readability\n- Are variable and function names descriptive?\n- Is the control flow easy to follow?\n- Are complex sections commented where necessary?\n\n### 3. Security\n- Is user input validated and sanitised?\n- Are secrets kept out of code and logs?\n- Are OWASP Top 10 vulnerabilities avoided?\n\n### 4. Performance\n- Are there unnecessary allocations or loops?\n- Could any operations be batched or cached?\n- Are database queries efficient (no N+1)?\n\n### 5. Maintainability\n- Is the code DRY without over-abstraction?\n- Are dependencies up to date and necessary?\n- Would a new team member understand this code?\n\nProvide feedback grouped by severity: **Critical**, **Major**, **Minor**, **Nit**."
+}

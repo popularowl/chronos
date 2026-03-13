@@ -16,6 +16,9 @@ const Templates = Loadable(lazy(() => import('@/views/templates')))
 // apikey routing
 const APIKey = Loadable(lazy(() => import('@/views/apikey')))
 
+// skills routing
+const Skills = Loadable(lazy(() => import('@/views/skills')))
+
 // tools routing
 const Tools = Loadable(lazy(() => import('@/views/tools')))
 
@@ -100,6 +103,14 @@ const MainRoutes = {
             element: (
                 <RequireAuth permission={'apikeys:view'}>
                     <APIKey />
+                </RequireAuth>
+            )
+        },
+        {
+            path: '/skills',
+            element: (
+                <RequireAuth permission={'skills:view'}>
+                    <Skills />
                 </RequireAuth>
             )
         },

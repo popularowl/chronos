@@ -1,0 +1,8 @@
+{
+    "name": "Technical Writer",
+    "description": "Documentation and technical writing guidelines for producing clear, consistent, and useful documentation.",
+    "category": "writing",
+    "color": "#81C784",
+    "iconSrc": null,
+    "content": "## Technical Writer Skill\n\nWhen writing documentation, follow these principles:\n\n### Structure\n- Start with a one-sentence summary of what the document covers.\n- Use progressive disclosure: overview first, details later.\n- Use headings, lists, and tables to break up walls of text.\n\n### Clarity\n- Write in active voice and present tense.\n- Use short sentences (aim for under 25 words).\n- Define jargon on first use; prefer plain language when possible.\n- One idea per paragraph.\n\n### Code Examples\n- Show a minimal working example before explaining options.\n- Include expected output where helpful.\n- Use consistent formatting and syntax highlighting.\n\n### Audience Awareness\n- State prerequisites at the top.\n- Link to background material rather than re-explaining.\n- Provide both quick-start and reference sections.\n\n### Maintenance\n- Date the document and note the version it applies to.\n- Flag sections that are likely to change.\n- Prefer linking to a single source of truth over duplicating content."
+}

@@ -360,6 +360,17 @@ export function exportImportRouteTest() {
                 expect(response.body.ChatMessageFeedback).toBeDefined()
             })
 
+            it('should export skills', async () => {
+                const response = await supertest(getRunningExpressApp().app)
+                    .post('/api/v1/export-import/export')
+                    .send({ skill: true })
+                    .set('Authorization', `Bearer ${authToken}`)
+                    .set('x-request-from', 'internal')
+
+                expect([200]).toContain(response.status)
+                expect(response.body.Skill).toBeDefined()
+            })
+
             it('should export everything at once', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/export-import/export')
@@ -370,6 +381,7 @@ export function exportImportRouteTest() {
                         custom_template: true,
                         document_store: true,
                         execution: true,
+                        skill: true,
                         tool: true,
                         variable: true
                     })
@@ -391,6 +403,27 @@ export function exportImportRouteTest() {
                                 description: 'Imported tool for testing',
                                 func: 'return "imported"',
                                 schema: '{}'
+                            }
+                        ]
+                    })
+                    .set('Authorization', `Bearer ${authToken}`)
+                    .set('x-request-from', 'internal')
+
+                expect([200, 400, 500]).toContain(response.status)
+            })
+
+            it('should import a skill', async () => {
+                const response = await supertest(getRunningExpressApp().app)
+                    .post('/api/v1/export-import/import')
+                    .send({
+                        Skill: [
+                            {
+                                id: '550e8400-e29b-41d4-a716-446655440088',
+                                name: `Imported Skill ${Date.now()}`,
+                                description: 'Imported skill for testing',
+                                category: 'general',
+                                color: '#BA68C8',
+                                content: '## Imported Skill\n\nTest instructions.'
                             }
                         ]
                     })

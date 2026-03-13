@@ -19,6 +19,7 @@ import { CustomTemplate } from './CustomTemplate'
 import { Execution } from './Execution'
 import { User } from './User'
 import { OAuthClient } from './OAuthClient'
+import { Skill } from './Skill'
 
 export const entities = {
     ChatFlow,
@@ -41,5 +42,6 @@ export const entities = {
     CustomTemplate,
     Execution,
     User,
-    OAuthClient
+    OAuthClient,
+    Skill
 }

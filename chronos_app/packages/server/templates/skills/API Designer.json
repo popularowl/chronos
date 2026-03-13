@@ -1,0 +1,8 @@
+{
+    "name": "API Designer",
+    "description": "REST and GraphQL API design best practices for building consistent, well-documented, and developer-friendly APIs.",
+    "category": "development",
+    "color": "#E57373",
+    "iconSrc": null,
+    "content": "## API Designer Skill\n\nWhen designing or reviewing APIs, apply these best practices:\n\n### Resource Naming\n- Use plural nouns for collections: /users, /orders.\n- Use path parameters for identity: /users/{id}.\n- Use query parameters for filtering: /users?status=active.\n- Avoid verbs in URLs — let HTTP methods convey the action.\n\n### HTTP Methods\n- GET: Read (safe, idempotent).\n- POST: Create (not idempotent).\n- PUT: Full replace (idempotent).\n- PATCH: Partial update (idempotent).\n- DELETE: Remove (idempotent).\n\n### Response Design\n- Return appropriate status codes (201 for create, 204 for delete, 404 for not found).\n- Use consistent envelope: { data, meta, errors }.\n- Include pagination metadata for list endpoints: { page, limit, total }.\n- Return the created/updated resource in mutation responses.\n\n### Error Handling\n- Use standard HTTP status codes (4xx for client errors, 5xx for server errors).\n- Return structured error objects: { code, message, details }.\n- Never expose internal stack traces in production.\n\n### Versioning & Evolution\n- Version via URL path (/v1/) or header.\n- Add fields without removing existing ones (backward-compatible).\n- Deprecate before removing — communicate timelines clearly."
+}

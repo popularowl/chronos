@@ -1,5 +1,14 @@
 import { BaseChatModel } from '@langchain/core/language_models/chat_models'
-import { ICommonObject, IMessage, INode, INodeData, INodeOptionsValue, INodeParams, IServerSideEventStreamer } from '../../../src/Interface'
+import {
+    ICommonObject,
+    IDatabaseEntity,
+    IMessage,
+    INode,
+    INodeData,
+    INodeOptionsValue,
+    INodeParams,
+    IServerSideEventStreamer
+} from '../../../src/Interface'
 import { AIMessageChunk, BaseMessageLike, MessageContentText } from '@langchain/core/messages'
 import { DEFAULT_SUMMARIZER_TEMPLATE } from '../prompt'
 import { AnalyticHandler } from '../../../src/handler'
@@ -17,6 +26,7 @@ import {
 } from '../utils'
 import { processTemplateVariables, configureStructuredOutput } from '../../../src/utils'
 import { flatten } from 'lodash'
+import { DataSource } from 'typeorm'
 
 class LLM_Agentflow implements INode {
     label: string
@@ -88,6 +98,14 @@ class LLM_Agentflow implements INode {
                         rows: 4
                     }
                 ]
+            },
+            {
+                label: 'Skills',
+                name: 'llmSkills',
+                type: 'asyncMultiOptions',
+                loadMethod: 'listSkills',
+                optional: true,
+                description: 'Select skills to inject into the LLM system message'
             },
             {
                 label: 'Enable Memory',
@@ -328,6 +346,21 @@ class LLM_Agentflow implements INode {
             }
             return returnOptions
         },
+        async listSkills(_: INodeData, options: ICommonObject): Promise<INodeOptionsValue[]> {
+            const appDataSource = options.appDataSource as DataSource
+            const databaseEntities = options.databaseEntities as IDatabaseEntity
+
+            if (appDataSource === undefined || !appDataSource) {
+                return []
+            }
+
+            const skills = await appDataSource.getRepository(databaseEntities['Skill']).find()
+            return skills.map((skill: any) => ({
+                label: skill.name,
+                name: skill.id,
+                description: skill.description
+            }))
+        },
         async listRuntimeStateKeys(_: INodeData, options: ICommonObject): Promise<INodeOptionsValue[]> {
             const previousNodes = options.previousNodes as ICommonObject[]
             const startAgentflowNode = previousNodes.find((node) => node.name === 'startAgentflow')
@@ -407,6 +440,23 @@ class LLM_Agentflow implements INode {
                     } else {
                         messages.push({ role, content })
                     }
+                }
+            }
+
+            // Load selected skills and inject into system message
+            const selectedSkillIds = nodeData.inputs?.llmSkills as string[]
+            if (selectedSkillIds?.length) {
+                const appDataSource = options.appDataSource as DataSource
+                const databaseEntities = options.databaseEntities as IDatabaseEntity
+                const skillContents = await Promise.all(
+                    selectedSkillIds.map((id: string) => appDataSource.getRepository(databaseEntities['Skill']).findOneBy({ id }))
+                )
+                const skillsText = skillContents
+                    .filter(Boolean)
+                    .map((s: any) => s.content)
+                    .join('\n\n---\n\n')
+                if (skillsText) {
+                    messages.unshift({ role: 'system', content: skillsText })
                 }
             }
 

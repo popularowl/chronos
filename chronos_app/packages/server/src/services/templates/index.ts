@@ -88,6 +88,28 @@ const getAllTemplates = async () => {
             }
             templates.push(template)
         })
+        // Skills templates
+        const skillsDir = path.join(__dirname, '..', '..', '..', 'templates', 'skills')
+        if (fs.existsSync(skillsDir)) {
+            const skillJsons = fs.readdirSync(skillsDir).filter((file) => path.extname(file) === '.json')
+            skillJsons.forEach((file) => {
+                const filePath = path.join(skillsDir, file)
+                const fileData = fs.readFileSync(filePath)
+                const fileDataObj = JSON.parse(fileData.toString())
+                const template = {
+                    ...fileDataObj,
+                    id: uuidv4(),
+                    type: 'Skill',
+                    framework: fileDataObj?.framework,
+                    badge: fileDataObj?.badge,
+                    usecases: fileDataObj?.usecases,
+                    categories: [],
+                    templateName: file.split('.json')[0]
+                }
+                templates.push(template)
+            })
+        }
+
         const sortedTemplates = templates.sort((a, b) => {
             // Prioritize AgentflowV2 templates first
             if (a.type === 'AgentflowV2' && b.type !== 'AgentflowV2') {
