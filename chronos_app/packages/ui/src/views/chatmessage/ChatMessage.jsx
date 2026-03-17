@@ -2455,75 +2455,68 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                                     sessionId={chatId}
                                                 />
                                             )}
-                                        {message.calledTools && (
+                                        {(message.usedTools || message.calledTools) && (
                                             <div
                                                 style={{
                                                     display: 'block',
                                                     flexDirection: 'row',
-                                                    width: '100%'
+                                                    width: '100%',
+                                                    marginBottom: 8
                                                 }}
                                             >
-                                                {message.calledTools.map((tool, index) => {
-                                                    return tool ? (
-                                                        <Chip
-                                                            size='small'
-                                                            key={`called-${index}`}
-                                                            label={tool.tool}
-                                                            component='a'
-                                                            sx={{
-                                                                mr: 1,
-                                                                mt: 1,
-                                                                borderColor: 'primary.main',
-                                                                color: 'primary.main',
-                                                                backgroundColor: 'rgba(25, 118, 210, 0.1)',
-                                                                opacity: 0.9,
-                                                                '&:hover': {
-                                                                    backgroundColor: 'rgba(25, 118, 210, 0.2)',
-                                                                    opacity: 1
+                                                {message.usedTools &&
+                                                    message.usedTools.map((tool, index) => {
+                                                        return tool ? (
+                                                            <Chip
+                                                                size='small'
+                                                                key={`used-${tool.tool}-${index}`}
+                                                                label={tool.tool}
+                                                                component='a'
+                                                                sx={{
+                                                                    mr: 1,
+                                                                    mt: 1,
+                                                                    borderColor: tool.error ? 'error.main' : undefined,
+                                                                    color: tool.error ? 'error.main' : undefined
+                                                                }}
+                                                                variant='outlined'
+                                                                clickable
+                                                                icon={
+                                                                    <IconTool
+                                                                        size={15}
+                                                                        color={tool.error ? theme.palette.error.main : undefined}
+                                                                    />
                                                                 }
-                                                            }}
-                                                            variant='outlined'
-                                                            clickable
-                                                            icon={<CircularProgress size={15} color='primary' />}
-                                                            onClick={() => onSourceDialogClick(tool, 'Called Tools')}
-                                                        />
-                                                    ) : null
-                                                })}
-                                            </div>
-                                        )}
-                                        {message.usedTools && (
-                                            <div
-                                                style={{
-                                                    display: 'block',
-                                                    flexDirection: 'row',
-                                                    width: '100%'
-                                                }}
-                                            >
-                                                {message.usedTools.map((tool, index) => {
-                                                    return tool ? (
-                                                        <Chip
-                                                            size='small'
-                                                            key={`used-${index}`}
-                                                            label={tool.tool}
-                                                            component='a'
-                                                            sx={{
-                                                                mr: 1,
-                                                                mt: 1,
-                                                                borderColor: tool.error ? 'error.main' : undefined,
-                                                                color: tool.error ? 'error.main' : undefined
-                                                            }}
-                                                            variant='outlined'
-                                                            clickable
-                                                            icon={
-                                                                <IconTool
-                                                                    size={15}
-                                                                    color={tool.error ? theme.palette.error.main : undefined}
-                                                                />
-                                                            }
-                                                            onClick={() => onSourceDialogClick(tool, 'Used Tools')}
-                                                        />
-                                                    ) : null
-                                                })}
+                                                                onClick={() => onSourceDialogClick(tool, 'Used Tools')}
+                                                            />
+                                                        ) : null
+                                                    })}
+                                                {message.calledTools &&
+                                                    message.calledTools.map((tool, index) => {
+                                                        return tool ? (
+                                                            <Chip
+                                                                size='small'
+                                                                key={`called-${tool.tool}-${index}`}
+                                                                label={tool.tool}
+                                                                component='a'
+                                                                sx={{
+                                                                    mr: 1,
+                                                                    mt: 1,
+                                                                    borderColor: 'primary.main',
+                                                                    color: 'primary.main',
+                                                                    backgroundColor: 'rgba(25, 118, 210, 0.1)',
+                                                                    opacity: 0.9,
+                                                                    '&:hover': {
+                                                                        backgroundColor: 'rgba(25, 118, 210, 0.2)',
+                                                                        opacity: 1
+                                                                    }
+                                                                }}
+                                                                variant='outlined'
+                                                                clickable
+                                                                icon={<CircularProgress size={15} color='primary' />}
+                                                                onClick={() => onSourceDialogClick(tool, 'Called Tools')}
+                                                            />
+                                                        ) : null
+                                                    })}
                                             </div>
                                         )}
                                         {message.artifacts && (

@@ -1,9 +1,9 @@
 import { VectorStore } from '@langchain/core/vectorstores'
 import { v5 as uuidv5 } from 'uuid'
 import { RecordManagerInterface, UUIDV5_NAMESPACE } from '@langchain/community/indexes/base'
-import { insecureHash } from '@langchain/core/utils/hash'
+import { createHash } from 'crypto'
 import { Document, DocumentInterface } from '@langchain/core/documents'
-import { BaseDocumentLoader } from 'langchain/document_loaders/base.js'
+import { BaseDocumentLoader } from '@langchain/core/document_loaders/base'
 import { IndexingResult } from './Interface'
 
 type Metadata = Record<string, unknown>
@@ -101,13 +101,13 @@ export class _HashedDocument implements HashedDocumentInterface {
     }
 
     private _hashStringToUUID(inputString: string): string {
-        const hash_value = insecureHash(inputString)
+        const hash_value = createHash('sha256').update(inputString).digest('hex')
         return uuidv5(hash_value, UUIDV5_NAMESPACE)
     }
 
     private _hashNestedDictToUUID(data: Record<string, unknown>): string {
         const serialized_data = JSON.stringify(data, Object.keys(data).sort())
-        const hash_value = insecureHash(serialized_data)
+        const hash_value = createHash('sha256').update(serialized_data).digest('hex')
         return uuidv5(hash_value, UUIDV5_NAMESPACE)
     }
 }
@@ -203,7 +203,7 @@ export function _getSourceIdAssigner(sourceIdKey: StringOrDocFunc | null): (doc:
 }
 
 export const _isBaseDocumentLoader = (arg: any): arg is BaseDocumentLoader => {
-    if ('load' in arg && typeof arg.load === 'function' && 'loadAndSplit' in arg && typeof arg.loadAndSplit === 'function') {
+    if ('load' in arg && typeof arg.load === 'function') {
         return true
     }
     return false

@@ -1,4 +1,4 @@
-import { TavilySearchResults } from '@langchain/community/tools/tavily_search'
+import { TavilySearchResults } from './TavilySearchResults'
 import { ICommonObject, INode, INodeData, INodeParams } from '../../../src/Interface'
 import { getBaseClasses, getCredentialData, getCredentialParam } from '../../../src/utils'
 

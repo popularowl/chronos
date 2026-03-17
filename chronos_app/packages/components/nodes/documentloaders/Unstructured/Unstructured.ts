@@ -4,9 +4,10 @@ import {
     UnstructuredLoaderOptions,
     UnstructuredLoaderStrategy
 } from '@langchain/community/document_loaders/fs/unstructured'
-import { BaseDocumentLoader } from 'langchain/document_loaders/base'
-import { StringWithAutocomplete } from 'langchain/dist/util/types'
+import { BaseDocumentLoader } from '@langchain/core/document_loaders/base'
 import { Document } from '@langchain/core/documents'
+
+type StringWithAutocomplete<T extends string> = T | (string & Record<never, never>)
 
 /**
  * Set the chunking_strategy to chunk text into larger or smaller elements. Defaults to None with optional arg of by_title

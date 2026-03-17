@@ -1,4 +1,4 @@
-import { TextSplitter } from 'langchain/text_splitter'
+import { TextSplitter } from '@langchain/textsplitters'
 import { CSVLoader } from './CsvLoader'
 import { getFileFromStorage, handleDocumentLoaderDocuments, handleDocumentLoaderMetadata, handleDocumentLoaderOutput } from '../../../src'
 import { ICommonObject, IDocument, INode, INodeData, INodeOutputsValue, INodeParams } from '../../../src/Interface'

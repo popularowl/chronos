@@ -1,11 +1,11 @@
 import { omit } from 'lodash'
 import { ICommonObject, IDocument, INode, INodeData, INodeParams } from '../../../src/Interface'
-import { TextSplitter } from 'langchain/text_splitter'
+import { TextSplitter } from '@langchain/textsplitters'
 import { getFileFromStorage, handleEscapeCharacters, INodeOutputsValue } from '../../../src'
 import { Document } from '@langchain/core/documents'
 import jsonpointer from 'jsonpointer'
 import type { readFile as ReadFileT } from 'node:fs/promises'
-import { BaseDocumentLoader } from 'langchain/document_loaders/base'
+import { BaseDocumentLoader } from '@langchain/core/document_loaders/base'
 
 const howToUseCode = `
 You can add metadata dynamically from the document:

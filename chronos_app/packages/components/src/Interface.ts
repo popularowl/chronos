@@ -1,5 +1,5 @@
 import { BaseMessage } from '@langchain/core/messages'
-import { BufferMemory } from 'langchain/memory'
+import { BufferMemory } from './compat/memory'
 
 /**
  * Types

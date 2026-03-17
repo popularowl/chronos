@@ -1,7 +1,7 @@
 import { omit } from 'lodash'
 import { ICommonObject, IDocument, INode, INodeData, INodeOutputsValue, INodeParams } from '../../../src/Interface'
-import { TextSplitter } from 'langchain/text_splitter'
-import { TextLoader } from 'langchain/document_loaders/fs/text'
+import { TextSplitter } from '@langchain/textsplitters'
+import { TextLoader } from '../../../src/compat/loaders'
 import { getFileFromStorage, handleEscapeCharacters } from '../../../src'
 
 class Text_DocumentLoaders implements INode {
