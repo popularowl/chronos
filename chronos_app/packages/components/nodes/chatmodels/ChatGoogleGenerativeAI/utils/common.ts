@@ -460,18 +460,18 @@ export function mapGenerateContentResultToChatResult(
         content = candidateContent.parts.map((p) => {
             if ('text' in p) {
                 return {
-                    type: 'text',
+                    type: 'text' as const,
                     text: p.text
                 }
             } else if ('executableCode' in p) {
                 return {
-                    type: 'executableCode',
-                    executableCode: p.executableCode
+                    type: 'text' as const,
+                    text: JSON.stringify(p.executableCode)
                 }
             } else if ('codeExecutionResult' in p) {
                 return {
-                    type: 'codeExecutionResult',
-                    codeExecutionResult: p.codeExecutionResult
+                    type: 'text' as const,
+                    text: JSON.stringify(p.codeExecutionResult)
                 }
             } else if ('inlineData' in p && p.inlineData) {
                 // Extract inline image data for processing by Agent
@@ -482,11 +482,14 @@ export function mapGenerateContentResultToChatResult(
                 })
                 // Return the inline data as part of the content structure
                 return {
-                    type: 'inlineData',
-                    inlineData: p.inlineData
+                    type: 'text' as const,
+                    text: ''
                 }
             }
-            return p
+            return {
+                type: 'text' as const,
+                text: typeof p === 'string' ? p : JSON.stringify(p)
+            }
         })
     } else {
         // no content returned - likely due to abnormal stop reason, e.g. malformed function call
@@ -562,18 +565,18 @@ export function convertResponseContentToChatGenerationChunk(
         content = candidateContent.parts.map((p) => {
             if ('text' in p) {
                 return {
-                    type: 'text',
+                    type: 'text' as const,
                     text: p.text
                 }
             } else if ('executableCode' in p) {
                 return {
-                    type: 'executableCode',
-                    executableCode: p.executableCode
+                    type: 'text' as const,
+                    text: JSON.stringify(p.executableCode)
                 }
             } else if ('codeExecutionResult' in p) {
                 return {
-                    type: 'codeExecutionResult',
-                    codeExecutionResult: p.codeExecutionResult
+                    type: 'text' as const,
+                    text: JSON.stringify(p.codeExecutionResult)
                 }
             } else if ('inlineData' in p && p.inlineData) {
                 // Extract inline image data for processing by Agent
@@ -584,11 +587,14 @@ export function convertResponseContentToChatGenerationChunk(
                 })
                 // Return the inline data as part of the content structure
                 return {
-                    type: 'inlineData',
-                    inlineData: p.inlineData
+                    type: 'text' as const,
+                    text: ''
                 }
             }
-            return p
+            return {
+                type: 'text' as const,
+                text: typeof p === 'string' ? p : JSON.stringify(p)
+            }
         })
     } else {
         // no content returned - likely due to abnormal stop reason, e.g. malformed function call

@@ -1,4 +1,4 @@
-import { TextLoader } from 'langchain/document_loaders/fs/text'
+import { TextLoader } from '../../../src/compat/loaders'
 import Papa from 'papaparse'
 
 type CSVLoaderOptions = {

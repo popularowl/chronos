@@ -1,4 +1,4 @@
-import { BaseChain } from 'langchain/chains'
+import { BaseChain } from '../../../src/compat/chains'
 import { INode, INodeData, INodeParams } from '../../../src/Interface'
 import { getBaseClasses } from '../../../src/utils'
 import { ChainTool } from './core'

@@ -1,6 +1,6 @@
 import { omit } from 'lodash'
 import { ICommonObject, IDocument, INode, INodeData, INodeParams } from '../../../src/Interface'
-import { TextSplitter } from 'langchain/text_splitter'
+import { TextSplitter } from '@langchain/textsplitters'
 import { NotionAPILoader, NotionAPILoaderOptions } from '@langchain/community/document_loaders/web/notionapi'
 import { getCredentialData, getCredentialParam, handleEscapeCharacters, INodeOutputsValue } from '../../../src'
 
@@ -101,8 +101,7 @@ class NotionPage_DocumentLoaders implements INode {
             clientOptions: {
                 auth: notionIntegrationToken
             },
-            id: pageId,
-            type: 'page'
+            id: pageId
         }
         const loader = new NotionAPILoader(obj)
 

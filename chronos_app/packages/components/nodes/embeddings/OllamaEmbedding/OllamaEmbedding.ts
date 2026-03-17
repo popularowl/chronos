@@ -1,5 +1,4 @@
-import { OllamaEmbeddings } from '@langchain/community/embeddings/ollama'
-import { OllamaInput } from '@langchain/community/llms/ollama'
+import { OllamaEmbeddings, OllamaInput } from '@langchain/ollama'
 import { INode, INodeData, INodeParams } from '../../../src/Interface'
 import { getBaseClasses } from '../../../src/utils'
 
@@ -86,7 +85,7 @@ class OllamaEmbedding_Embeddings implements INode {
         if (numGpu) requestOptions.numGpu = parseFloat(numGpu)
 
         // default useMMap to true
-        requestOptions.useMMap = useMMap === undefined ? true : useMMap
+        requestOptions.useMmap = useMMap === undefined ? true : useMMap
 
         if (Object.keys(requestOptions).length) obj.requestOptions = requestOptions
 

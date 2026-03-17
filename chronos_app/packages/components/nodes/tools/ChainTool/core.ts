@@ -1,5 +1,5 @@
 import { DynamicTool, DynamicToolInput } from '@langchain/core/tools'
-import { BaseChain } from 'langchain/chains'
+import { BaseChain } from '../../../src/compat/chains'
 import { handleEscapeCharacters } from '../../../src/utils'
 import { CustomChainHandler } from '../../../src'
 
@@ -28,7 +28,7 @@ export class ChainTool extends DynamicTool {
                 if ((chain as any).prompt && (chain as any).prompt.promptValues) {
                     const promptValues = handleEscapeCharacters((chain as any).prompt.promptValues, true)
 
-                    const values = await chain.call(promptValues, runManager?.getChild())
+                    const values = await chain.invoke(promptValues, { callbacks: runManager?.getChild() })
                     if (runManager && sseStreamer) {
                         const callbacks = runManager.handlers
                         for (let i = 0; i < callbacks.length; i += 1) {
@@ -37,10 +37,10 @@ export class ChainTool extends DynamicTool {
                             }
                         }
                     }
-                    return values?.text
+                    return (values as any)?.text
                 }
 
-                const values = chain.run(input, runManager?.getChild())
+                const values = await chain.invoke({ input }, { callbacks: runManager?.getChild() })
                 if (runManager && sseStreamer) {
                     const callbacks = runManager.handlers
                     for (let i = 0; i < callbacks.length; i += 1) {

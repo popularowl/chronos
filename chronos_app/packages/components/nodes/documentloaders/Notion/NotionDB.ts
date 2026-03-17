@@ -1,6 +1,6 @@
 import { omit } from 'lodash'
 import { ICommonObject, IDocument, INode, INodeData, INodeParams } from '../../../src/Interface'
-import { TextSplitter } from 'langchain/text_splitter'
+import { TextSplitter } from '@langchain/textsplitters'
 import { NotionAPILoader, NotionAPILoaderOptions } from '@langchain/community/document_loaders/web/notionapi'
 import { getCredentialData, getCredentialParam, handleEscapeCharacters, INodeOutputsValue } from '../../../src'
 
@@ -104,8 +104,7 @@ class NotionDB_DocumentLoaders implements INode {
             callerOptions: {
                 maxConcurrency: 64 // Default value
             },
-            propertiesAsHeader: true, // Prepends a front matter header of the page properties to the page contents
-            type: 'database'
+            propertiesAsHeader: true // Prepends a front matter header of the page properties to the page contents
         }
         const loader = new NotionAPILoader(obj)
 

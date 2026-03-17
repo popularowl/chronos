@@ -1578,7 +1578,7 @@ class Agent_Agentflow implements INode {
             return builtInUsedTools
         }
 
-        const { output, tools, groundingMetadata, urlContextMetadata } = response.response_metadata
+        const { output, tools, groundingMetadata, urlContextMetadata } = response.response_metadata as any
 
         // Handle OpenAI built-in tools
         if (output && Array.isArray(output) && output.length > 0 && tools && Array.isArray(tools) && tools.length > 0) {
@@ -1668,7 +1668,7 @@ class Agent_Agentflow implements INode {
         // Handle Gemini codeExecution tool
         if (response.content && Array.isArray(response.content)) {
             for (let i = 0; i < response.content.length; i++) {
-                const item = response.content[i]
+                const item = response.content[i] as any
 
                 if (item.type === 'executableCode' && item.executableCode) {
                     const language = item.executableCode.language || 'PYTHON'
@@ -1687,7 +1687,7 @@ class Agent_Agentflow implements INode {
                     }
 
                     // Check the next item for the output
-                    const nextItem = i + 1 < response.content.length ? response.content[i + 1] : null
+                    const nextItem: any = i + 1 < response.content.length ? response.content[i + 1] : null
 
                     if (nextItem) {
                         if (nextItem.type === 'codeExecutionResult' && nextItem.codeExecutionResult) {
