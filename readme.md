@@ -4,20 +4,23 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.md)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D24-brightgreen)](chronos_app/.nvmrc)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
+[![LangChain Core](https://img.shields.io/badge/%40langchain%2Fcore-^1.1.32-blue)](https://www.npmjs.com/package/@langchain/core)
+[![LangGraph](https://img.shields.io/badge/%40langchain%2Flanggraph-^1.2.2-blue)](https://www.npmjs.com/package/@langchain/langgraph)
+[![MCP SDK](https://img.shields.io/badge/%40modelcontextprotocol%2Fsdk-^1.27.1-blue)](https://www.npmjs.com/package/@modelcontextprotocol/sdk)
 
 <div align=center style="padding-bottom: 35px;">
 <img src="./resources/chronos_main_page.gif" width="600"/>
 </div>
 <div style="page-break-after: always;">&nbsp;</div>
 
-[Chronos](https://intelligex.com/chronos) is a visual AI agent workflow builder. Focused on the self-hosted enviroenments, support for local data models and self hosted tool integrations. With enterprise grade observability, tracing and auditing.
+[Chronos](https://intelligex.com/chronos) is a visual AI agent workflow builder. Focused on the self-hosted enviroenments, with strong support for local data models and self hosted tool integrations. With enterprise grade observability, tracing and auditing.
 
-This project started as a fork of [Flowise](https://github.com/FlowiseAI/Flowise) - with the focus on building enterprise grade self-hosting and observability support.
+This project has started as a fork of [Flowise](https://github.com/FlowiseAI/Flowise) - but since has implemented multiple improvements and updates towards enterprise grade and self-hosting focus.
 
-- Self-hosting focused visual AI agent workflow builder.
-- 100+ of prebuilt LLM model integrations and templates.
-- Best practices for observability, tracing and loging.
-- Number of [Docker compose examples](./chronos_app/docker/) to get you started.
+- 100+ of prebuilt LLM model integrations, vector databases and templates.
+- Enterprise level observability, tracing, loging and auditing.
+- Number of [Docker compose examples](./chronos_app/docker/) to get you started fast.
+- Maintained project [`backlog`](#backlog) with regular releases.
 
 ## Quick Start
 
@@ -39,9 +42,17 @@ docker run -d --name chronos -p 3001:3000 chronos:local
 
 Chronos allows configuration via set of supported environment variables. See example [env variables](chronos_app/docker/.env.example).
 
+## Backlog
+
+- OpenAI API specification for running agents.
+- Additional Chronos tutorials on Intelligex, covering agent skill catalogue, deep agents, research agents, data privacy.
+- Additional examples in the Teamplates section
+- `.http` file support for HTTP nodes
+
+
 ## Tutorials
 
-List of tutorials and guides to help running and using Chronos application:
+List of tutorials and guides to get you started and building Chronos agents:
 
 - [Chronos visual agent builder. Up and running in local enviroenment](https://intelligex.com/chronos/chronos-visual-ai-agent-builder-up-and-running)
 - [Chronos visual agent builder. Advanced docker compose examples](https://intelligex.com/chronos/hosting-chronos-advanced-examples)

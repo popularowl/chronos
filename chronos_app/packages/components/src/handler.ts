@@ -8,12 +8,12 @@ import { RunTree, RunTreeConfig, Client as LangsmithClient } from 'langsmith'
 import { Langfuse, LangfuseTraceClient, LangfuseSpanClient, LangfuseGenerationClient } from 'langfuse'
 import { LangChainInstrumentation } from '@arizeai/openinference-instrumentation-langchain'
 import { Metadata } from '@grpc/grpc-js'
-import opentelemetry, { Span, SpanStatusCode } from '@opentelemetry/api'
+import opentelemetry, { Span, SpanStatusCode, Tracer } from '@opentelemetry/api'
 import { OTLPTraceExporter as GrpcOTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc'
 import { OTLPTraceExporter as ProtoOTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto'
 import { registerInstrumentations } from '@opentelemetry/instrumentation'
-import { Resource } from '@opentelemetry/resources'
-import { SimpleSpanProcessor, Tracer } from '@opentelemetry/sdk-trace-base'
+import { resourceFromAttributes } from '@opentelemetry/resources'
+import { SimpleSpanProcessor } from '@opentelemetry/sdk-trace-base'
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
 
@@ -60,14 +60,14 @@ function getArizeTracer(options: ArizeTracerOptions): Tracer | undefined {
             metadata
         })
         const tracerProvider = new NodeTracerProvider({
-            resource: new Resource({
+            resource: resourceFromAttributes({
                 [ATTR_SERVICE_NAME]: options.projectName,
                 [ATTR_SERVICE_VERSION]: '1.0.0',
                 [SEMRESATTRS_PROJECT_NAME]: options.projectName,
                 model_id: options.projectName
-            })
+            }),
+            spanProcessors: [new SimpleSpanProcessor(traceExporter)]
         })
-        tracerProvider.addSpanProcessor(new SimpleSpanProcessor(traceExporter))
         if (options.enableCallback) {
             registerInstrumentations({
                 instrumentations: []
@@ -115,13 +115,13 @@ export function getPhoenixTracer(options: PhoenixTracerOptions): Tracer | undefi
             headers: exporterHeaders
         })
         const tracerProvider = new NodeTracerProvider({
-            resource: new Resource({
+            resource: resourceFromAttributes({
                 [ATTR_SERVICE_NAME]: options.projectName,
                 [ATTR_SERVICE_VERSION]: '1.0.0',
                 [SEMRESATTRS_PROJECT_NAME]: options.projectName
-            })
+            }),
+            spanProcessors: [new SimpleSpanProcessor(traceExporter)]
         })
-        tracerProvider.addSpanProcessor(new SimpleSpanProcessor(traceExporter))
         if (options.enableCallback) {
             registerInstrumentations({
                 instrumentations: []
@@ -159,13 +159,13 @@ function getOpikTracer(options: OpikTracerOptions): Tracer | undefined {
             }
         })
         const tracerProvider = new NodeTracerProvider({
-            resource: new Resource({
+            resource: resourceFromAttributes({
                 [ATTR_SERVICE_NAME]: options.projectName,
                 [ATTR_SERVICE_VERSION]: '1.0.0',
                 [SEMRESATTRS_PROJECT_NAME]: options.projectName
-            })
+            }),
+            spanProcessors: [new SimpleSpanProcessor(traceExporter)]
         })
-        tracerProvider.addSpanProcessor(new SimpleSpanProcessor(traceExporter))
         if (options.enableCallback) {
             registerInstrumentations({
                 instrumentations: []

@@ -40,7 +40,7 @@ export async function initTracing(): Promise<void> {
         }
 
         const { NodeSDK } = require('@opentelemetry/sdk-node')
-        const { Resource } = require('@opentelemetry/resources')
+        const { resourceFromAttributes } = require('@opentelemetry/resources')
         const { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } = require('@opentelemetry/semantic-conventions')
         const { BatchSpanProcessor } = require('@opentelemetry/sdk-trace-base')
         const { ParentBasedSampler, TraceIdRatioBasedSampler } = require('@opentelemetry/sdk-trace-base')
@@ -74,7 +74,7 @@ export async function initTracing(): Promise<void> {
             // version lookup is non-critical
         }
 
-        const resource = new Resource({
+        const resource = resourceFromAttributes({
             [ATTR_SERVICE_NAME]: serviceName,
             [ATTR_SERVICE_VERSION]: version
         })

@@ -1,5 +1,5 @@
 import { CHRONOS_METRIC_COUNTERS, IMetricsProvider } from '../Interface.Metrics'
-import { Resource } from '@opentelemetry/resources'
+import { Resource, resourceFromAttributes } from '@opentelemetry/resources'
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions'
 import { MeterProvider, PeriodicExportingMetricReader, Histogram } from '@opentelemetry/sdk-metrics'
 import { diag, DiagLogLevel, DiagConsoleLogger, Attributes, Counter } from '@opentelemetry/api'
@@ -56,7 +56,7 @@ export class OpenTelemetry implements IMetricsProvider {
             // Define the resource with the service name for trace grouping
             const chronosVersion = await getVersion()
 
-            this.resource = new Resource({
+            this.resource = resourceFromAttributes({
                 [ATTR_SERVICE_NAME]: process.env.METRICS_SERVICE_NAME || 'Chronos',
                 [ATTR_SERVICE_VERSION]: chronosVersion.version // Version as a label
             })
