@@ -3,7 +3,7 @@ import {
     IconList,
     IconUsersGroup,
     IconHierarchy,
-    IconBuildingStore,
+    IconTemplate,
     IconKey,
     IconTool,
     IconLock,
@@ -24,14 +24,15 @@ import {
     IconFileDatabase,
     IconShieldLock,
     IconListCheck,
-    IconSparkles
+    IconSparkles,
+    IconCalendarTime
 } from '@tabler/icons-react'
 
 // constant
 const icons = {
     IconHierarchy,
     IconUsersGroup,
-    IconBuildingStore,
+    IconTemplate,
     IconList,
     IconKey,
     IconTool,
@@ -53,7 +54,8 @@ const icons = {
     IconFileDatabase,
     IconShieldLock,
     IconListCheck,
-    IconSparkles
+    IconSparkles,
+    IconCalendarTime
 }
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
@@ -87,11 +89,20 @@ const dashboard = {
                     permission: 'executions:view'
                 },
                 {
+                    id: 'schedules',
+                    title: 'Schedules',
+                    type: 'item',
+                    url: '/schedules',
+                    icon: icons.IconCalendarTime,
+                    breadcrumbs: true,
+                    permission: 'schedules:view'
+                },
+                {
                     id: 'templates',
                     title: 'Templates',
                     type: 'item',
                     url: '/templates',
-                    icon: icons.IconBuildingStore,
+                    icon: icons.IconTemplate,
                     breadcrumbs: true,
                     permission: 'templates:marketplace,templates:custom'
                 },

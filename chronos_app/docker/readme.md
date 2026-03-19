@@ -32,11 +32,13 @@ docker run -d --name chronos -p 3001:3000 chronos:local
 ```bash
 docker compose -f docker-compose.yml up  # or docker compose -f docker-compose.yml up -d
 # docker build -f Dockerfile.local -t chronos:local .. && docker compose -f docker-compose.yml up
-# docker compose -f docker-compose-opentelemetry.yml up # start chronos with telemetry enabled
+# docker build -f Dockerfile.local -t chronos:local .. && docker compose -f docker-compose-schedules.yml up
+# docker build -f Dockerfile.local -t chronos:local .. && docker compose -f docker-compose-opentelemetry.yml up
 docker compose ls
 docker-compose down # or docker-compose down --volumes
 # chronos is now accessable on http://localhost:3001
 ```
+
 
 *Worker mode with redis queues for horizontal scalability of agent request processing:*
 

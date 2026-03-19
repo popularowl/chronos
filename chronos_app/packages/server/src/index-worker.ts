@@ -19,6 +19,7 @@ interface CustomListener extends QueueEventsListener {
 
 let predictionWorkerId: string
 let upsertionWorkerId: string
+let scheduleWorkerId: string
 
 async function prepareData() {
     // Init database
@@ -61,6 +62,11 @@ async function run() {
                 logger.info(`Shutting down Chronos Upsertion Worker ${upsertionWorkerId}...`)
                 await upsertWorker.close()
             }
+            if (scheduleWorkerId) {
+                const scheduleWorker = queueManager.getQueue('schedule').getWorker()
+                logger.info(`Shutting down Chronos Schedule Worker ${scheduleWorkerId}...`)
+                await scheduleWorker.close()
+            }
         } catch (error) {
             logger.error('There was an error shutting down Chronos Worker...', error)
             throw error
@@ -99,6 +105,14 @@ async function run() {
     const upsertionWorker = upsertionQueue.createWorker()
     upsertionWorkerId = upsertionWorker.id
     logger.info(`Upsertion Worker ${upsertionWorkerId} created`)
+
+    /** Schedule */
+    if (process.env.ENABLE_SCHEDULES === 'true') {
+        const scheduleQueue = queueManager.getQueue('schedule')
+        const scheduleWorker = scheduleQueue.createWorker()
+        scheduleWorkerId = scheduleWorker.id
+        logger.info(`Schedule Worker ${scheduleWorkerId} created`)
+    }
 }
 
 run().catch(async (error) => {

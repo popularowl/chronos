@@ -1,6 +1,7 @@
 import { BaseQueue } from './BaseQueue'
 import { PredictionQueue } from './PredictionQueue'
 import { UpsertQueue } from './UpsertQueue'
+import { ScheduleQueue } from './ScheduleQueue'
 import { IComponentNodes } from '../Interface'
 import { Telemetry } from '../utils/telemetry'
 import { CachePool } from '../CachePool'
@@ -12,10 +13,11 @@ import { BullMQAdapter } from '@bull-board/api/bullMQAdapter'
 import { Express } from 'express'
 import { UsageCacheManager } from '../UsageCacheManager'
 import { ExpressAdapter } from '@bull-board/express'
+import logger from '../utils/logger'
 
 const QUEUE_NAME = process.env.QUEUE_NAME || 'chronos-queue'
 
-type QUEUE_TYPE = 'prediction' | 'upsert'
+type QUEUE_TYPE = 'prediction' | 'upsert' | 'schedule'
 
 export class QueueManager {
     private static instance: QueueManager
@@ -102,6 +104,18 @@ export class QueueManager {
         return this.bullBoardRouter
     }
 
+    /**
+     * Create workers for all registered queues inside the main process.
+     * Used in single-container deployments where no separate worker process runs.
+     * Safe to call even when external workers exist — BullMQ handles distributed consumers.
+     */
+    public createInlineWorkers(): void {
+        for (const [name, queue] of this.queues) {
+            queue.createWorker()
+            logger.info(`[QueueManager] Inline worker created for queue "${name}"`)
+        }
+    }
+
     public async getAllJobCounts(): Promise<{ [queueName: string]: { [status: string]: number } }> {
         const counts: { [queueName: string]: { [status: string]: number } } = {}
 
@@ -154,9 +168,24 @@ export class QueueManager {
         })
         this.registerQueue('upsert', upsertionQueue)
 
+        const bullBoardQueues = [new BullMQAdapter(predictionQueue.getQueue()), new BullMQAdapter(upsertionQueue.getQueue())]
+
+        if (process.env.ENABLE_SCHEDULES === 'true') {
+            const scheduleQueueName = `${QUEUE_NAME}-schedule`
+            const scheduleQueue = new ScheduleQueue(scheduleQueueName, this.connection, {
+                componentNodes,
+                telemetry,
+                cachePool,
+                appDataSource,
+                usageCacheManager
+            })
+            this.registerQueue('schedule', scheduleQueue)
+            bullBoardQueues.push(new BullMQAdapter(scheduleQueue.getQueue()))
+        }
+
         if (serverAdapter) {
             createBullBoard({
-                queues: [new BullMQAdapter(predictionQueue.getQueue()), new BullMQAdapter(upsertionQueue.getQueue())],
+                queues: bullBoardQueues,
                 serverAdapter: serverAdapter
             })
             this.bullBoardRouter = serverAdapter.getRouter()

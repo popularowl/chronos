@@ -24,8 +24,8 @@ This project has started as a fork of [Flowise](https://github.com/FlowiseAI/Flo
 
 ## Chronos features
 
-- OpenAI API specification for cummunicating with deployed agentflows.
-- 
+- OpenAI API specification for deployed agentflows.
+- Scheduled agents. Run agents on the schedule for continuos work.
 
 ## Quick Start
 
@@ -49,9 +49,7 @@ Chronos allows configuration via set of supported environment variables. See exa
 
 ## Backlog
 
-- OpenAI API specification for cummunicating with agents.
 - Versioning and publishing for agents.
-- Scheduled Execution
 - SSO user logins
 - Agents with Webhooks
 - Cost & Performance Dashboard

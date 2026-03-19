@@ -65,6 +65,8 @@ import { usersRouteTest } from './routes/v1/users.route.test'
 import { usersCreateRouteTest } from './routes/v1/users-create.route.test'
 import { adminRouteTest } from './routes/v1/admin.route.test'
 import { adminAgentflowsRouteTest } from './routes/v1/admin-agentflows.route.test'
+import { schedulesRouteTest } from './routes/v1/schedules.route.test'
+import { schedulesServiceTest } from './services/schedules.service.test'
 import { agentflowsServiceTest } from './services/agentflows.service.test'
 import { agentflowv2GeneratorServiceTest } from './services/agentflowv2-generator.service.test'
 import { skillsServiceTest } from './services/skills.service.test'
@@ -133,6 +135,7 @@ import { internalChronosErrorTest } from './errors/internalChronosError.test'
 import { cachePoolTest } from './CachePool.test'
 import { abortControllerPoolTest } from './AbortControllerPool.test'
 import { simpleIdentityManagerTest } from './SimpleIdentityManager.test'
+import { schedulePollerTest } from './schedulers/schedule-poller.test'
 
 // extend test timeout to 6 minutes for long setups (increase as tests grow)
 jest.setTimeout(360000)
@@ -206,9 +209,11 @@ describe('Routes Test', () => {
     usersCreateRouteTest()
     adminRouteTest()
     adminAgentflowsRouteTest()
+    schedulesRouteTest()
 })
 
 describe('Services Test', () => {
+    schedulesServiceTest()
     agentflowsServiceTest()
     agentflowv2GeneratorServiceTest()
     skillsServiceTest()
@@ -290,4 +295,8 @@ describe('Pool Test', () => {
 
 describe('Identity Test', () => {
     simpleIdentityManagerTest()
+})
+
+describe('Schedulers Test', () => {
+    schedulePollerTest()
 })

@@ -181,9 +181,26 @@ export interface IExecution {
     sessionId: string
     isPublic?: boolean
     action?: string
+    scheduleId?: string
     createdDate: Date
     updatedDate: Date
     stoppedDate: Date
+}
+
+export interface ISchedule {
+    id: string
+    name: string
+    cronExpression: string
+    timezone: string
+    agentflowId: string
+    inputPayload?: string
+    enabled: boolean
+    lastRunDate?: Date
+    nextRunDate?: Date
+    lastRunStatus?: ExecutionState
+    userId?: string
+    createdDate: Date
+    updatedDate: Date
 }
 
 export interface IComponentNodes {
@@ -358,6 +375,8 @@ export enum AdminScope {
     CREDENTIALS_WRITE = 'credentials:write',
     APIKEYS_READ = 'apikeys:read',
     APIKEYS_WRITE = 'apikeys:write',
+    SCHEDULES_READ = 'schedules:read',
+    SCHEDULES_WRITE = 'schedules:write',
     ADMIN_FULL = 'admin:full'
 }
 

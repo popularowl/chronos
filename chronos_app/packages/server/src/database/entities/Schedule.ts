@@ -1,35 +1,42 @@
 import { Entity, Column, Index, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm'
-import { IExecution, ExecutionState } from '../../Interface'
+import { ISchedule, ExecutionState } from '../../Interface'
 import { AgentFlow } from './AgentFlow'
 
 @Entity()
-export class Execution implements IExecution {
+export class Schedule implements ISchedule {
     @PrimaryGeneratedColumn('uuid')
     id: string
 
-    @Column({ type: 'text' })
-    executionData: string
+    @Column({ type: 'varchar' })
+    name: string
 
-    @Column()
-    state: ExecutionState
+    @Column({ type: 'varchar' })
+    cronExpression: string
+
+    @Column({ type: 'varchar', default: 'UTC' })
+    timezone: string
 
     @Index()
     @Column({ type: 'uuid' })
     agentflowId: string
 
-    @Index()
-    @Column({ type: 'varchar' })
-    sessionId: string
-
     @Column({ nullable: true, type: 'text' })
-    action?: string
+    inputPayload?: string
+
+    @Column({ type: 'boolean', default: true })
+    enabled: boolean
 
     @Column({ nullable: true })
-    isPublic?: boolean
+    lastRunDate?: Date
 
-    @Index()
-    @Column({ nullable: true, type: 'uuid' })
-    scheduleId?: string
+    @Column({ nullable: true })
+    nextRunDate?: Date
+
+    @Column({ nullable: true, type: 'varchar' })
+    lastRunStatus?: ExecutionState
+
+    @Column({ nullable: true, type: 'varchar' })
+    userId?: string
 
     @Column({ type: 'timestamp' })
     @CreateDateColumn()
@@ -38,9 +45,6 @@ export class Execution implements IExecution {
     @Column({ type: 'timestamp' })
     @UpdateDateColumn()
     updatedDate: Date
-
-    @Column()
-    stoppedDate: Date
 
     @ManyToOne(() => AgentFlow)
     @JoinColumn({ name: 'agentflowId' })

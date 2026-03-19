@@ -20,6 +20,7 @@ import { Execution } from './Execution'
 import { User } from './User'
 import { OAuthClient } from './OAuthClient'
 import { Skill } from './Skill'
+import { Schedule } from './Schedule'
 
 export const entities = {
     AgentFlow,
@@ -43,5 +44,6 @@ export const entities = {
     Execution,
     User,
     OAuthClient,
-    Skill
+    Skill,
+    Schedule
 }

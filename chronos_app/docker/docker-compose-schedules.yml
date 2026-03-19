@@ -1,4 +1,7 @@
-services:  
+## Chronos with scheduled agent execution enabled.
+## Requires Redis for BullMQ repeatable jobs.
+##
+services:
     chronos:
       image: chronos:local
       environment:
@@ -10,15 +13,23 @@ services:
         DATABASE_PASSWORD: secret
         CHRONOS_INITIAL_USER: admin@admin.com:test1234:admin
         DEBUG: true
-        ENABLE_SCHEDULES: "true"
+        # ENABLE_EVALUATIONS: true ## enable evaluations section
         LOG_SANITIZE_HEADER_FIELDS: authorization,x-api-key,x-auth-token,cookie
         LOG_SANITIZE_BODY_FIELDS: password,pwd,pass,secret,token,apikey,api_key,accesstoken,access_token,refreshtoken
+        MODE: queue
+        ## ENABLE_SCHEDULES=true + MODE=queue => BullMQ + Redis will be used. for high throuput of jobs
+        ## ENABLE_SCHEDULES=true without MODE=queue => local scheduler in process is used. no need for Redis
+        ENABLE_SCHEDULES: "true"
+        ENABLE_BULLMQ_DASHBOARD: "true"
+        REDIS_HOST: redis
+        REDIS_PORT: 6379
       ports:
         - "3001:3000"
       volumes:
         - ./.chronos:/root/.chronos
       depends_on:
         - postgres
+        - redis
 
     postgres:
       image: postgres:15
@@ -30,3 +41,13 @@ services:
         POSTGRES_DB: chronos
         POSTGRES_USER: chronos
         POSTGRES_PASSWORD: secret
+
+    ## Redis database to enable BullMQ  
+    ## ENABLE_SCHEDULES=true + MODE=queue mode
+    redis:
+      image: redis:7-alpine
+      restart: unless-stopped
+      ports:
+        - "6379:6379"
+      volumes:
+        - ./.redis_data:/data

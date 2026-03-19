@@ -8,6 +8,7 @@ import { Divider, List, Typography } from '@mui/material'
 import NavItem from '../NavItem'
 import NavCollapse from '../NavCollapse'
 import { useAuth } from '@/hooks/useAuth'
+import { useConfig } from '@/store/context/ConfigContext'
 import { Available } from '@/ui-component/rbac/available'
 
 // ==============================|| SIDEBAR MENU LIST GROUP ||============================== //
@@ -15,6 +16,7 @@ import { Available } from '@/ui-component/rbac/available'
 const NavGroup = ({ item }) => {
     const theme = useTheme()
     const { hasPermission, hasDisplay } = useAuth()
+    const { schedulesEnabled, evaluationsEnabled } = useConfig()
 
     const listItems = (menu, level = 1) => {
         // Filter based on display and permission
@@ -41,6 +43,11 @@ const NavGroup = ({ item }) => {
             return false // Do not render if permission is lacking
         }
 
+        // Hide schedules when the feature is not enabled on the server
+        if (menu.id === 'schedules' && !schedulesEnabled) {
+            return false
+        }
+
         // If `display` is defined, check against cloud/enterprise conditions
         if (menu.display) {
             const shouldsiplay = hasDisplay(menu.display)
@@ -58,6 +65,10 @@ const NavGroup = ({ item }) => {
 
     const renderNonPrimaryGroups = () => {
         let nonprimaryGroups = item.children.filter((child) => child.id !== 'primary')
+        // Hide evaluations group when the feature is not enabled
+        if (!evaluationsEnabled) {
+            nonprimaryGroups = nonprimaryGroups.filter((group) => group.id !== 'evaluations')
+        }
         // Display children based on permission and display
         nonprimaryGroups = nonprimaryGroups.map((group) => {
             const children = group.children.filter((menu) => shouldDisplayMenu(menu))

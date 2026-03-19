@@ -31,7 +31,10 @@ import { IMetricsProvider } from './Interface.Metrics'
 import { Prometheus } from './metrics/Prometheus'
 import { OpenTelemetry } from './metrics/OpenTelemetry'
 import { QueueManager } from './queue/QueueManager'
+import { ScheduleQueue } from './queue/ScheduleQueue'
 import { RedisEventSubscriber } from './queue/RedisEventSubscriber'
+import { Schedule } from './database/entities/Schedule'
+import { SchedulePoller } from './schedulers/SchedulePoller'
 import 'global-agent/bootstrap'
 import { UsageCacheManager } from './UsageCacheManager'
 import { ExpressAdapter } from '@bull-board/express'
@@ -77,6 +80,7 @@ export class App {
     queueManager: QueueManager
     redisSubscriber: RedisEventSubscriber
     usageCacheManager: UsageCacheManager
+    schedulePoller: SchedulePoller
     sessionStore: any
 
     constructor() {
@@ -153,9 +157,37 @@ export class App {
                 })
                 logger.info('✅ [Queue]: All queues setup successfully')
 
+                // Create inline workers so a single container can both enqueue and process jobs.
+                // Safe alongside external workers — BullMQ distributes jobs via Redis locks.
+                this.queueManager.createInlineWorkers()
+
+                // Sync schedule repeatable jobs (only when scheduling is enabled)
+                if (process.env.ENABLE_SCHEDULES === 'true') {
+                    try {
+                        const scheduleQueue = this.queueManager.getQueue('schedule') as ScheduleQueue
+                        const enabledSchedules = await this.AppDataSource.getRepository(Schedule).find({ where: { enabled: true } })
+                        await scheduleQueue.syncRepeatableJobs(enabledSchedules)
+                        logger.info(`📅 [Queue]: Synced ${enabledSchedules.length} schedule(s)`)
+                    } catch (error) {
+                        logger.error('❌ [Queue]: Failed to sync schedule jobs:', error)
+                    }
+                }
+
                 this.redisSubscriber = new RedisEventSubscriber(this.sseStreamer)
                 await this.redisSubscriber.connect()
                 logger.info('🔗 [server]: Redis event subscriber connected successfully')
+            }
+
+            // DB polling scheduler — used when ENABLE_SCHEDULES=true without MODE=queue (no Redis)
+            if (process.env.ENABLE_SCHEDULES === 'true' && process.env.MODE !== MODE.QUEUE) {
+                this.schedulePoller = new SchedulePoller({
+                    appDataSource: this.AppDataSource,
+                    componentNodes: this.nodesPool.componentNodes,
+                    telemetry: this.telemetry,
+                    cachePool: this.cachePool,
+                    usageCacheManager: this.usageCacheManager
+                })
+                this.schedulePoller.start()
             }
 
             logger.info('🎉 [server]: All initialization steps completed successfully!')
@@ -319,6 +351,9 @@ export class App {
             removePromises.push(this.telemetry.flush())
             if (this.queueManager) {
                 removePromises.push(this.redisSubscriber.disconnect())
+            }
+            if (this.schedulePoller) {
+                this.schedulePoller.stop()
             }
             await Promise.all(removePromises)
         } catch (e) {

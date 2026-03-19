@@ -74,6 +74,7 @@
         "connect-sqlite3": "^0.9.15",
         "content-disposition": "0.5.4",
         "cookie-parser": "^1.4.6",
+        "cron-parser": "^4.9.0",
         "cors": "^2.8.5",
         "crypto-js": "^4.1.1",
         "csv-parser": "^3.0.0",
