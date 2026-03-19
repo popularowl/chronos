@@ -44,10 +44,13 @@ Chronos allows configuration via set of supported environment variables. See exa
 
 ## Backlog
 
-- OpenAI API specification for running agents.
-- Additional Chronos tutorials on Intelligex, covering agent skill catalogue, deep agents, research agents, data privacy.
-- Additional examples in the Teamplates section
-- `.http` file support for HTTP nodes
+- OpenAI API specification for deployed agents.
+- Versioning and publishing for agents.
+- Scheduled Execution
+- SSO user logins
+- Agents with Webhooks
+- Cost & Performance Dashboard
+- Additional Chronos tutorials on [intelligex.com](https://intelligex.com/) explaining skill catalogue, deep agents, data privacy.
 
 
 ## Tutorials

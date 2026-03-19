@@ -202,7 +202,7 @@ const CanvasHeader = ({ chatflow, isAgentCanvas, isAgentflowV2, handleSaveFlow, 
         }
 
         setAPIDialogProps({
-            title: 'Embed in website or use as API',
+            title: 'Use Chronos via API',
             chatflowid: chatflow.id,
             chatflowApiKeyId: chatflow.apikeyid,
             isFormDataRequired,

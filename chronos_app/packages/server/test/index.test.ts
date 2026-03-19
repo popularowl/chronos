@@ -60,6 +60,7 @@ import { chatflowsRouteTest } from './routes/v1/chatflows.route.test'
 import { internalChatMessagesRouteTest } from './routes/v1/internal-chat-messages.route.test'
 import { oauth2RouteTest } from './routes/v1/oauth2.route.test'
 import { openaiRealtimeRouteTest } from './routes/v1/openai-realtime.route.test'
+import { openaiRouteTest } from './routes/v1/openai.route.test'
 import { usersRouteTest } from './routes/v1/users.route.test'
 import { usersCreateRouteTest } from './routes/v1/users-create.route.test'
 import { adminRouteTest } from './routes/v1/admin.route.test'
@@ -99,6 +100,7 @@ import { predictionsServiceTest } from './services/predictions.service.test'
 import { evaluatorServiceTest } from './services/evaluator.service.test'
 import { documentstoreServiceTest } from './services/documentstore.service.test'
 import { oauthClientServiceTest } from './services/oauth-client.service.test'
+import { openaiServiceTest } from './services/openai.service.test'
 import { apiKeyTest } from './utils/api-key.util.test'
 import { sanitizeUtilTest } from './utils/sanitize.util.test'
 import { domainValidationUtilTest } from './utils/domain-validation.util.test'
@@ -198,6 +200,7 @@ describe('Routes Test', () => {
     internalChatMessagesRouteTest()
     oauth2RouteTest()
     openaiRealtimeRouteTest()
+    openaiRouteTest()
     usersRouteTest()
     usersCreateRouteTest()
     adminRouteTest()
@@ -237,6 +240,7 @@ describe('Services Test', () => {
     evaluatorServiceTest()
     documentstoreServiceTest()
     oauthClientServiceTest()
+    openaiServiceTest()
     userScopingServiceTest()
 })
 

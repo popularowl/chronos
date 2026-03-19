@@ -32,6 +32,7 @@ import nodeLoadMethodRouter from './node-load-methods'
 import nodesRouter from './nodes'
 import oauth2Router from './oauth2'
 import openaiRealtimeRouter from './openai-realtime'
+import openaiRouter from './openai'
 import pingRouter from './ping'
 import predictionRouter from './predictions'
 import promptListsRouter from './prompts-lists'
@@ -94,6 +95,7 @@ router.use('/node-load-method', nodeLoadMethodRouter)
 router.use('/nodes', nodesRouter)
 router.use('/oauth2-credential', oauth2Router)
 router.use('/openai-realtime', openaiRealtimeRouter)
+router.use('/openai', openaiRouter)
 router.use('/prediction', predictionRouter)
 router.use('/prompts-list', promptListsRouter)
 router.use('/public-executions', publicExecutionsRouter)
