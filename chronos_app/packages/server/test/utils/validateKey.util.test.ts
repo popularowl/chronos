@@ -7,56 +7,56 @@ import { validateFlowAPIKey, validateAPIKey } from '../../src/utils/validateKey'
 export function validateKeyUtilTest() {
     describe('ValidateKey Utilities', () => {
         describe('validateFlowAPIKey', () => {
-            it('should return true when chatflow has no apikeyid', async () => {
+            it('should return true when agentflow has no apikeyid', async () => {
                 const req = { headers: {} } as any
-                const chatflow = { apikeyid: null } as any
+                const agentflow = { apikeyid: null } as any
 
-                const result = await validateFlowAPIKey(req, chatflow)
+                const result = await validateFlowAPIKey(req, agentflow)
 
                 expect(result).toBe(true)
             })
 
-            it('should return true when chatflow apikeyid is undefined', async () => {
+            it('should return true when agentflow apikeyid is undefined', async () => {
                 const req = { headers: {} } as any
-                const chatflow = {} as any
+                const agentflow = {} as any
 
-                const result = await validateFlowAPIKey(req, chatflow)
+                const result = await validateFlowAPIKey(req, agentflow)
 
                 expect(result).toBe(true)
             })
 
-            it('should return false when chatflow has apikeyid but no authorization header', async () => {
+            it('should return false when agentflow has apikeyid but no authorization header', async () => {
                 const req = { headers: {} } as any
-                const chatflow = { apikeyid: 'key-123' } as any
+                const agentflow = { apikeyid: 'key-123' } as any
 
-                const result = await validateFlowAPIKey(req, chatflow)
+                const result = await validateFlowAPIKey(req, agentflow)
 
                 expect(result).toBe(false)
             })
 
             it('should return false when authorization header is empty', async () => {
                 const req = { headers: { authorization: '' } } as any
-                const chatflow = { apikeyid: 'key-123' } as any
+                const agentflow = { apikeyid: 'key-123' } as any
 
-                const result = await validateFlowAPIKey(req, chatflow)
+                const result = await validateFlowAPIKey(req, agentflow)
 
                 expect(result).toBe(false)
             })
 
             it('should return false when supplied key is empty after Bearer split', async () => {
                 const req = { headers: { authorization: 'Bearer ' } } as any
-                const chatflow = { apikeyid: 'key-123' } as any
+                const agentflow = { apikeyid: 'key-123' } as any
 
-                const result = await validateFlowAPIKey(req, chatflow)
+                const result = await validateFlowAPIKey(req, agentflow)
 
                 expect(result).toBe(false)
             })
 
             it('should return false for non-existent api key id', async () => {
                 const req = { headers: { authorization: 'Bearer some-invalid-key' } } as any
-                const chatflow = { apikeyid: 'non-existent-key-id' } as any
+                const agentflow = { apikeyid: 'non-existent-key-id' } as any
 
-                const result = await validateFlowAPIKey(req, chatflow)
+                const result = await validateFlowAPIKey(req, agentflow)
 
                 expect(result).toBe(false)
             })

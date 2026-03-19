@@ -47,24 +47,24 @@ const EvalsResultDialog = ({ show, dialogProps, onCancel, openDetailsDrawer }) =
         if (index === undefined) {
             return ''
         }
-        if (dialogProps.data?.additionalConfig?.chatflowTypes) {
-            switch (dialogProps.data.additionalConfig.chatflowTypes[index]) {
-                case 'Chatflow':
-                    return '/canvas/' + dialogProps.data.evaluation.chatflowId[index]
+        if (dialogProps.data?.additionalConfig?.agentflowTypes) {
+            switch (dialogProps.data.additionalConfig.agentflowTypes[index]) {
+                case 'Agentflow':
+                    return '/canvas/' + dialogProps.data.evaluation.agentflowId[index]
                 case 'Custom Assistant':
-                    return '/assistants/custom/' + dialogProps.data.evaluation.chatflowId[index]
+                    return '/assistants/custom/' + dialogProps.data.evaluation.agentflowId[index]
                 case 'Agentflow v2':
-                    return '/v2/agentcanvas/' + dialogProps.data.evaluation.chatflowId[index]
+                    return '/v2/agentcanvas/' + dialogProps.data.evaluation.agentflowId[index]
             }
         }
-        return '/canvas/' + dialogProps.data.evaluation.chatflowId[index]
+        return '/canvas/' + dialogProps.data.evaluation.agentflowId[index]
     }
 
     const component = show ? (
         <Dialog fullScreen open={show} onClose={onCancel} aria-labelledby='alert-dialog-title' aria-describedby='alert-dialog-description'>
             <DialogTitle id='alert-dialog-title'>
                 <Stack direction='row' justifyContent={'space-between'}>
-                    {dialogProps.data && dialogProps.data.evaluation.chatflowName?.length > 0 && (
+                    {dialogProps.data && dialogProps.data.evaluation.agentflowName?.length > 0 && (
                         <Stack flexDirection='row' sx={{ gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
                             <div
                                 style={{
@@ -82,7 +82,7 @@ const EvalsResultDialog = ({ show, dialogProps, onCancel, openDetailsDrawer }) =
                                 <IconVectorBezier2 style={{ marginRight: 5 }} size={17} />
                                 Flows Used:
                             </div>
-                            {(dialogProps.data.evaluation.chatflowName || []).map((chatflowUsed, index) => (
+                            {(dialogProps.data.evaluation.agentflowName || []).map((agentflowUsed, index) => (
                                 <Chip
                                     key={index}
                                     clickable
@@ -93,7 +93,7 @@ const EvalsResultDialog = ({ show, dialogProps, onCancel, openDetailsDrawer }) =
                                             ? '0 2px 14px 0 rgb(255 255 255 / 10%)'
                                             : '0 2px 14px 0 rgb(32 40 45 / 10%)'
                                     }}
-                                    label={chatflowUsed}
+                                    label={agentflowUsed}
                                     onClick={() => window.open(getOpenLink(index), '_blank')}
                                 ></Chip>
                             ))}
@@ -127,7 +127,7 @@ const EvalsResultDialog = ({ show, dialogProps, onCancel, openDetailsDrawer }) =
                                 <TableCell rowSpan='2'>Input</TableCell>
                                 <TableCell rowSpan='2'>Expected Output</TableCell>
                                 {dialogProps.data &&
-                                    dialogProps.data.evaluation.chatflowId?.map((chatflowId, index) => (
+                                    dialogProps.data.evaluation.agentflowId?.map((agentflowId, index) => (
                                         <React.Fragment key={index}>
                                             <TableCell
                                                 colSpan={getColSpan(
@@ -140,7 +140,7 @@ const EvalsResultDialog = ({ show, dialogProps, onCancel, openDetailsDrawer }) =
                                                     borderLeftWidth: 1
                                                 }}
                                             >
-                                                {dialogProps.data.evaluation.chatflowName[index]}
+                                                {dialogProps.data.evaluation.agentflowName[index]}
                                                 {dialogProps.data.rows.length > 0 && dialogProps.data.rows[0].metrics[index].model && (
                                                     <Chip
                                                         variant='outlined'
@@ -162,7 +162,7 @@ const EvalsResultDialog = ({ show, dialogProps, onCancel, openDetailsDrawer }) =
                             </TableRow>
                             <TableRow>
                                 {dialogProps.data &&
-                                    dialogProps.data.evaluation.chatflowId?.map((chatflowId, index) => (
+                                    dialogProps.data.evaluation.agentflowId?.map((agentflowId, index) => (
                                         <React.Fragment key={index}>
                                             <TableCell
                                                 style={{ borderLeftStyle: 'dashed', borderLeftColor: 'lightgrey', borderLeftWidth: 1 }}
@@ -191,7 +191,7 @@ const EvalsResultDialog = ({ show, dialogProps, onCancel, openDetailsDrawer }) =
                                             <StyledTableCell sx={{ width: 2 }}>{index + 1}</StyledTableCell>
                                             <StyledTableCell sx={{ minWidth: '250px' }}>{item.input}</StyledTableCell>
                                             <StyledTableCell sx={{ minWidth: '250px' }}>{item.expectedOutput}</StyledTableCell>
-                                            {dialogProps.data.evaluation.chatflowId?.map((_, index) => (
+                                            {dialogProps.data.evaluation.agentflowId?.map((_, index) => (
                                                 <React.Fragment key={index}>
                                                     <TableCell
                                                         style={{

@@ -6,69 +6,69 @@
 import { Request, Response, NextFunction } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { InternalChronosError } from '../../errors/internalChronosError'
-import { ChatflowType } from '../../Interface'
-import chatflowsService from '../../services/chatflows'
+import { AgentflowType } from '../../Interface'
+import agentflowsService from '../../services/agentflows'
 import credentialsService from '../../services/credentials'
 import apikeyService from '../../services/apikey'
 import oauthClientService from '../../services/oauth-client'
 
-// ─── Chatflows ───
+// ─── Agentflows ───
 
-/** List all chatflows, optionally filtered by type query param. */
-const getAllChatflows = async (req: Request, res: Response, next: NextFunction) => {
+/** List all agentflows, optionally filtered by type query param. */
+const getAllAgentflows = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const type = req.query.type as ChatflowType | undefined
-        const data = await chatflowsService.getAllChatflows(type)
+        const type = req.query.type as AgentflowType | undefined
+        const data = await agentflowsService.getAllAgentflows(type)
         return res.json({ success: true, data })
     } catch (error) {
         next(error)
     }
 }
 
-/** Get a single chatflow by ID. */
-const getChatflowById = async (req: Request, res: Response, next: NextFunction) => {
+/** Get a single agentflow by ID. */
+const getAgentflowById = async (req: Request, res: Response, next: NextFunction) => {
     try {
         if (!req.params.id) {
-            throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'Chatflow id is required')
+            throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'Agentflow id is required')
         }
-        const data = await chatflowsService.getChatflowById(req.params.id)
+        const data = await agentflowsService.getAgentflowById(req.params.id)
         return res.json({ success: true, data })
     } catch (error) {
         next(error)
     }
 }
 
-/** Create a new chatflow. */
-const createChatflow = async (req: Request, res: Response, next: NextFunction) => {
+/** Create a new agentflow. */
+const createAgentflow = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const data = await chatflowsService.saveChatflow(req.body)
+        const data = await agentflowsService.saveAgentflow(req.body)
         return res.status(StatusCodes.CREATED).json({ success: true, data })
     } catch (error) {
         next(error)
     }
 }
 
-/** Update an existing chatflow. */
-const updateChatflow = async (req: Request, res: Response, next: NextFunction) => {
+/** Update an existing agentflow. */
+const updateAgentflow = async (req: Request, res: Response, next: NextFunction) => {
     try {
         if (!req.params.id) {
-            throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'Chatflow id is required')
+            throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'Agentflow id is required')
         }
-        const existingChatflow = await chatflowsService.getChatflowById(req.params.id)
-        const data = await chatflowsService.updateChatflow(existingChatflow, req.body)
+        const existingAgentflow = await agentflowsService.getAgentflowById(req.params.id)
+        const data = await agentflowsService.updateAgentflow(existingAgentflow, req.body)
         return res.json({ success: true, data })
     } catch (error) {
         next(error)
     }
 }
 
-/** Delete a chatflow. */
-const deleteChatflow = async (req: Request, res: Response, next: NextFunction) => {
+/** Delete an agentflow. */
+const deleteAgentflow = async (req: Request, res: Response, next: NextFunction) => {
     try {
         if (!req.params.id) {
-            throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'Chatflow id is required')
+            throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'Agentflow id is required')
         }
-        const data = await chatflowsService.deleteChatflow(req.params.id)
+        const data = await agentflowsService.deleteAgentflow(req.params.id)
         return res.json({ success: true, data })
     } catch (error) {
         next(error)
@@ -240,11 +240,11 @@ const deleteOAuthClient = async (req: Request, res: Response, next: NextFunction
 }
 
 export default {
-    getAllChatflows,
-    getChatflowById,
-    createChatflow,
-    updateChatflow,
-    deleteChatflow,
+    getAllAgentflows,
+    getAgentflowById,
+    createAgentflow,
+    updateAgentflow,
+    deleteAgentflow,
     getAllCredentials,
     getCredentialById,
     createCredential,

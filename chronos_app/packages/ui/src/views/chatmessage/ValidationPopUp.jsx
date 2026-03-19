@@ -24,7 +24,7 @@ import { AGENTFLOW_ICONS } from '@/store/constant'
 
 // Utils
 
-const ValidationPopUp = ({ chatflowid, hidden }) => {
+const ValidationPopUp = ({ agentflowid, hidden }) => {
     const theme = useTheme()
     const dispatch = useDispatch()
     const customization = useSelector((state) => state.customization)
@@ -51,11 +51,11 @@ const ValidationPopUp = ({ chatflowid, hidden }) => {
     }
 
     const validateFlow = async () => {
-        if (!chatflowid) return
+        if (!agentflowid) return
 
         try {
             setLoading(true)
-            const response = await validationApi.checkValidation(chatflowid)
+            const response = await validationApi.checkValidation(agentflowid)
             setPreviews(response.data)
 
             if (response.data.length === 0) {
@@ -90,7 +90,7 @@ const ValidationPopUp = ({ chatflowid, hidden }) => {
         prevOpen.current = open
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, chatflowid])
+    }, [open, agentflowid])
 
     const getNodeIcon = (item) => {
         // Extract node name from the item
@@ -294,7 +294,7 @@ const ValidationPopUp = ({ chatflowid, hidden }) => {
 }
 
 ValidationPopUp.propTypes = {
-    chatflowid: PropTypes.string,
+    agentflowid: PropTypes.string,
     hidden: PropTypes.bool
 }
 

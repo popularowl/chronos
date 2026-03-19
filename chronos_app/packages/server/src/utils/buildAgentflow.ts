@@ -60,7 +60,7 @@ import {
     validateHistorySchema,
     LOOP_COUNT_VAR_PREFIX
 } from '.'
-import { ChatFlow } from '../database/entities/ChatFlow'
+import { AgentFlow } from '../database/entities/AgentFlow'
 import { Variable } from '../database/entities/Variable'
 import { replaceInputsWithConfig, constructGraphs, getAPIOverrideConfig } from '../utils'
 import logger from './logger'
@@ -127,7 +127,7 @@ interface IExecuteNodeParams {
     graph: INodeDirectedGraph
     reversedGraph: INodeDirectedGraph
     incomingInput: IncomingAgentflowInput
-    chatflow: ChatFlow
+    agentflow: AgentFlow
     chatId: string
     sessionId: string
     apiMessageId: string
@@ -1032,7 +1032,7 @@ const executeNode = async ({
     graph,
     reversedGraph,
     incomingInput,
-    chatflow,
+    agentflow,
     chatId,
     sessionId,
     apiMessageId,
@@ -1079,7 +1079,7 @@ const executeNode = async ({
                   'workflow.step.id': nodeId,
                   'workflow.step.name': reactFlowNode.data.label || '',
                   'workflow.step.type': reactFlowNode.data.name || '',
-                  'workflow.id': chatflow.id,
+                  'workflow.id': agentflow.id,
                   'workflow.execution.id': parentExecutionId || ''
               }
           })
@@ -1118,8 +1118,8 @@ const executeNode = async ({
         const runtimeChatHistory = agentflowRuntime.chatHistory || []
         const chatHistory = [...pastChatHistory, ...runtimeChatHistory]
         const flowConfig: IFlowConfig = {
-            chatflowid: chatflow.id,
-            chatflowId: chatflow.id,
+            agentflowid: agentflow.id,
+            agentflowId: agentflow.id,
             chatId,
             sessionId,
             apiMessageId,
@@ -1203,8 +1203,8 @@ const executeNode = async ({
             subscriptionId,
             chatId,
             sessionId,
-            chatflowid: chatflow.id,
-            chatflowId: chatflow.id,
+            agentflowid: agentflow.id,
+            agentflowId: agentflow.id,
             apiMessageId: flowConfig.apiMessageId,
             logger,
             appDataSource,
@@ -1212,7 +1212,7 @@ const executeNode = async ({
             usageCacheManager,
             componentNodes,
             cachePool,
-            analytic: chatflow.analytic,
+            analytic: agentflow.analytic,
             uploads: fileUploads,
             baseURL,
             isLastNode,
@@ -1273,9 +1273,9 @@ const executeNode = async ({
                     viewport: { x: 0, y: 0, zoom: 1 }
                 }
 
-                // Create a modified chatflow for this iteration
-                const iterationChatflow = {
-                    ...chatflow,
+                // Create a modified agentflow for this iteration
+                const iterationAgentflow = {
+                    ...agentflow,
                     flowData: JSON.stringify(iterationFlowData)
                 }
 
@@ -1301,7 +1301,7 @@ const executeNode = async ({
                         const subFlowResult = await executeAgentFlow({
                             componentNodes,
                             incomingInput,
-                            chatflow: iterationChatflow,
+                            agentflow: iterationAgentflow,
                             chatId,
                             evaluationRunId,
                             appDataSource,
@@ -1539,7 +1539,7 @@ export const parseFormStringToJson = (formString: string): Record<string, string
 export const executeAgentFlow = async ({
     componentNodes,
     incomingInput,
-    chatflow,
+    agentflow,
     chatId,
     evaluationRunId,
     appDataSource,
@@ -1566,8 +1566,8 @@ export const executeAgentFlow = async ({
     const rootSpan: Span | undefined = isTracingEnabled()
         ? agentflowTracer.startSpan('workflow.execute', {
               attributes: {
-                  'workflow.id': chatflow.id,
-                  'workflow.name': chatflow.name || '',
+                  'workflow.id': agentflow.id,
+                  'workflow.name': agentflow.name || '',
                   'workflow.type': 'agentflow',
                   'workflow.mode': process.env.MODE || 'main'
               }
@@ -1581,7 +1581,7 @@ export const executeAgentFlow = async ({
     let overrideConfig = incomingInput.overrideConfig ?? {}
     const uploads = incomingInput.uploads
     const userMessageDateTime = new Date()
-    const chatflowid = chatflow.id
+    const agentflowid = agentflow.id
     const sessionId = iterationContext?.sessionId || overrideConfig.sessionId || chatId
     const humanInput: IHumanInput | undefined = incomingInput.humanInput
 
@@ -1597,8 +1597,8 @@ export const executeAgentFlow = async ({
     const prependedChatHistory = incomingInput.history ?? []
     const apiMessageId = uuidv4()
 
-    /*** Get chatflows and prepare data  ***/
-    const flowData = chatflow.flowData
+    /*** Get agentflows and prepare data  ***/
+    const flowData = agentflow.flowData
     const parsedFlowData: IReactFlowObject = JSON.parse(flowData)
     const nodes = (parsedFlowData.nodes || []).filter((node) => node.data.name !== 'stickyNoteAgentflow')
     const edges = parsedFlowData.edges
@@ -1611,10 +1611,10 @@ export const executeAgentFlow = async ({
         throw new Error('Start input type not found')
     }
     // @ts-ignore
-    if (isTool) sseStreamer = undefined // If the request is from ChatflowTool, don't stream the response
+    if (isTool) sseStreamer = undefined // If the request is from AgentflowTool, don't stream the response
 
     /*** Get API Config ***/
-    const { nodeOverrides, variableOverrides, apiOverrideStatus } = getAPIOverrideConfig(chatflow)
+    const { nodeOverrides, variableOverrides, apiOverrideStatus } = getAPIOverrideConfig(agentflow)
 
     /*
     graph {
@@ -1660,7 +1660,7 @@ export const executeAgentFlow = async ({
         const previousExecutions = await appDataSource.getRepository(Execution).find({
             where: {
                 sessionId,
-                agentflowId: chatflowid
+                agentflowId: agentflowid
             },
             order: {
                 createdDate: 'DESC'
@@ -1855,7 +1855,7 @@ export const executeAgentFlow = async ({
             newExecution = parentExecution
         } else {
             logger.warn(`[Agentflow Engine] Parent execution ID ${parentExecutionId} not found, will create new execution`)
-            newExecution = await addExecution(appDataSource, chatflowid, agentFlowExecutedData, sessionId)
+            newExecution = await addExecution(appDataSource, agentflowid, agentFlowExecutedData, sessionId)
             parentExecutionId = newExecution.id
         }
     } else {
@@ -1864,7 +1864,7 @@ export const executeAgentFlow = async ({
         checkForMultipleStartNodes(startingNodeIds, isRecursive, nodes)
 
         // Only create a new execution if this is not a recursive call
-        newExecution = await addExecution(appDataSource, chatflowid, agentFlowExecutedData, sessionId)
+        newExecution = await addExecution(appDataSource, agentflowid, agentFlowExecutedData, sessionId)
         parentExecutionId = newExecution.id
     }
 
@@ -1884,7 +1884,7 @@ export const executeAgentFlow = async ({
         .getRepository(ChatMessage)
         .find({
             where: {
-                chatflowid,
+                agentflowid,
                 sessionId
             },
             order: {
@@ -1955,7 +1955,7 @@ export const executeAgentFlow = async ({
     let parentTraceIds: ICommonObject | undefined
 
     try {
-        if (chatflow.analytic) {
+        if (agentflow.analytic) {
             // Override config analytics
             let analyticInputs: ICommonObject = {}
             if (overrideConfig?.analytics && Object.keys(overrideConfig.analytics).length > 0) {
@@ -1969,7 +1969,7 @@ export const executeAgentFlow = async ({
                 appDataSource,
                 databaseEntities,
                 componentNodes,
-                analytic: chatflow.analytic,
+                analytic: agentflow.analytic,
                 chatId
             })
             await analyticHandlers.init()
@@ -2018,7 +2018,7 @@ export const executeAgentFlow = async ({
                 graph,
                 reversedGraph,
                 incomingInput,
-                chatflow,
+                agentflow,
                 chatId,
                 sessionId,
                 apiMessageId,
@@ -2214,18 +2214,18 @@ export const executeAgentFlow = async ({
     let content = (lastNodeOutput?.content as string) ?? ' '
 
     /* Check for post-processing settings */
-    let chatflowConfig: ICommonObject = {}
+    let agentflowConfig: ICommonObject = {}
     try {
-        if (chatflow.chatbotConfig) {
-            chatflowConfig = typeof chatflow.chatbotConfig === 'string' ? JSON.parse(chatflow.chatbotConfig) : chatflow.chatbotConfig
+        if (agentflow.chatbotConfig) {
+            agentflowConfig = typeof agentflow.chatbotConfig === 'string' ? JSON.parse(agentflow.chatbotConfig) : agentflow.chatbotConfig
         }
     } catch (e) {
-        logger.error(`[Agentflow Engine] Error parsing chatflow config: ${getErrorMessage(e)}`)
+        logger.error(`[Agentflow Engine] Error parsing agentflow config: ${getErrorMessage(e)}`)
     }
 
-    if (chatflowConfig?.postProcessing?.enabled === true && content) {
+    if (agentflowConfig?.postProcessing?.enabled === true && content) {
         try {
-            const postProcessingFunction = JSON.parse(chatflowConfig?.postProcessing?.customFunction)
+            const postProcessingFunction = JSON.parse(agentflowConfig?.postProcessing?.customFunction)
             const nodeInstanceFilePath = componentNodes['customFunctionAgentflow'].filePath as string
             const nodeModule = await import(nodeInstanceFilePath)
             //set the outputs.output to EndingNode to prevent json escaping of content...
@@ -2235,7 +2235,7 @@ export const executeAgentFlow = async ({
             const runtimeChatHistory = agentflowRuntime.chatHistory || []
             const chatHistory = [...pastChatHistory, ...runtimeChatHistory]
             const options: ICommonObject = {
-                chatflowid: chatflow.id,
+                agentflowid: agentflow.id,
                 sessionId,
                 chatId,
                 input: question || form,
@@ -2329,7 +2329,7 @@ export const executeAgentFlow = async ({
     const userMessage: Omit<IChatMessage, 'id'> = {
         role: 'userMessage',
         content: finalUserInput,
-        chatflowid,
+        agentflowid,
         chatType: evaluationRunId ? ChatType.EVALUATION : isInternal ? ChatType.INTERNAL : ChatType.EXTERNAL,
         chatId,
         sessionId,
@@ -2344,7 +2344,7 @@ export const executeAgentFlow = async ({
         id: apiMessageId,
         role: 'apiMessage',
         content: content,
-        chatflowid,
+        agentflowid,
         chatType: evaluationRunId ? ChatType.EVALUATION : isInternal ? ChatType.INTERNAL : ChatType.EXTERNAL,
         chatId,
         sessionId,
@@ -2354,13 +2354,13 @@ export const executeAgentFlow = async ({
     if (lastNodeOutput?.usedTools) apiMessage.usedTools = JSON.stringify(lastNodeOutput.usedTools)
     if (lastNodeOutput?.fileAnnotations) apiMessage.fileAnnotations = JSON.stringify(lastNodeOutput.fileAnnotations)
     if (lastNodeOutput?.artifacts) apiMessage.artifacts = JSON.stringify(lastNodeOutput.artifacts)
-    if (chatflow.followUpPrompts) {
-        const followUpPromptsConfig = JSON.parse(chatflow.followUpPrompts)
+    if (agentflow.followUpPrompts) {
+        const followUpPromptsConfig = JSON.parse(agentflow.followUpPrompts)
         const followUpPrompts = await generateFollowUpPrompts(followUpPromptsConfig, apiMessage.content, {
             orgId,
             workspaceId,
             chatId,
-            chatflowid,
+            agentflowid,
             appDataSource,
             databaseEntities
         })
@@ -2373,13 +2373,13 @@ export const executeAgentFlow = async ({
 
     const chatMessage = await utilAddChatMessage(apiMessage, appDataSource)
 
-    logger.debug(`[Agentflow Engine] Finished running agentflow ${chatflowid}`)
+    logger.debug(`[Agentflow Engine] Finished running agentflow ${agentflowid}`)
 
     await telemetry.sendTelemetry(
         'prediction_sent',
         {
             version: await getAppVersion(),
-            chatflowId: chatflowid,
+            agentflowId: agentflowid,
             chatId,
             type: evaluationRunId ? ChatType.EVALUATION : isInternal ? ChatType.INTERNAL : ChatType.EXTERNAL,
             flowGraph: getTelemetryFlowObj(nodes, edges),
@@ -2402,10 +2402,10 @@ export const executeAgentFlow = async ({
 
     if (sessionId) result.sessionId = sessionId
 
-    if (shouldAutoPlayTTS(chatflow.textToSpeech) && result.text) {
+    if (shouldAutoPlayTTS(agentflow.textToSpeech) && result.text) {
         const options = {
             orgId,
-            chatflowid,
+            agentflowid,
             chatId,
             appDataSource,
             databaseEntities
@@ -2414,7 +2414,7 @@ export const executeAgentFlow = async ({
         if (sseStreamer) {
             await generateTTSForResponseStream(
                 result.text,
-                chatflow.textToSpeech,
+                agentflow.textToSpeech,
                 options,
                 chatId,
                 chatMessage?.id,
@@ -2438,7 +2438,7 @@ export const executeAgentFlow = async ({
 export const executeFlow = async ({
     componentNodes,
     incomingInput,
-    chatflow,
+    agentflow,
     chatId,
     isEvaluation: _isEvaluation,
     evaluationRunId,
@@ -2466,7 +2466,7 @@ export const executeFlow = async ({
 
     let overrideConfig = incomingInput.overrideConfig ?? {}
     const uploads = incomingInput.uploads
-    const chatflowid = chatflow.id
+    const agentflowid = agentflow.id
 
     /* Process file uploads from the chat
      * - Images
@@ -2492,7 +2492,7 @@ export const executeFlow = async ({
                 // Validate file extension, MIME type, and content to prevent security vulnerabilities
                 validateFileMimeTypeAndExtensionMatch(filename, mime)
 
-                const { totalSize } = await addSingleFileToStorage(mime, bf, filename, orgId, chatflowid, chatId)
+                const { totalSize } = await addSingleFileToStorage(mime, bf, filename, orgId, agentflowid, chatId)
                 await updateStorageUsage(orgId, workspaceId, totalSize, usageCacheManager)
                 upload.type = 'stored-file'
                 // Omit upload.data since we don't store the content in database
@@ -2509,8 +2509,8 @@ export const executeFlow = async ({
             if (upload.mime === 'audio/webm' || upload.mime === 'audio/mp4' || upload.mime === 'audio/ogg') {
                 logger.debug(`[Agentflow Engine] Attempting speech to text conversion`)
                 let speechToTextConfig: ICommonObject = {}
-                if (chatflow.speechToText) {
-                    const speechToTextProviders = JSON.parse(chatflow.speechToText)
+                if (agentflow.speechToText) {
+                    const speechToTextProviders = JSON.parse(agentflow.speechToText)
                     for (const provider in speechToTextProviders) {
                         const providerObj = speechToTextProviders[provider]
                         if (providerObj.status) {
@@ -2524,7 +2524,7 @@ export const executeFlow = async ({
                     const options: ICommonObject = {
                         orgId,
                         chatId,
-                        chatflowid,
+                        agentflowid,
                         appDataSource,
                         databaseEntities: databaseEntities
                     }
@@ -2565,7 +2565,7 @@ export const executeFlow = async ({
                 file.originalname,
                 fileNames,
                 orgId,
-                chatflowid
+                agentflowid
             )
             await updateStorageUsage(orgId, workspaceId, totalSize, usageCacheManager)
 
@@ -2610,11 +2610,11 @@ export const executeFlow = async ({
     }
 
     // Only Agentflow V2 is supported
-    if (chatflow.type === 'AGENTFLOW') {
+    if (agentflow.type === 'AGENTFLOW') {
         return executeAgentFlow({
             componentNodes,
             incomingInput,
-            chatflow,
+            agentflow,
             chatId,
             evaluationRunId,
             appDataSource,
@@ -2634,7 +2634,7 @@ export const executeFlow = async ({
     // Deprecated flow types
     throw new InternalChronosError(
         StatusCodes.GONE,
-        `Flow type '${chatflow.type}' is deprecated. Only Agentflow V2 (type AGENTFLOW) is supported. Please migrate your flow.`
+        `Flow type '${agentflow.type}' is deprecated. Only Agentflow V2 (type AGENTFLOW) is supported. Please migrate your flow.`
     )
 }
 
@@ -2643,31 +2643,31 @@ export const executeFlow = async ({
  * @param {Request} req
  * @param {boolean} isInternal
  */
-export const utilBuildChatflow = async (req: Request, isInternal: boolean = false): Promise<any> => {
+export const utilBuildAgentflow = async (req: Request, isInternal: boolean = false): Promise<any> => {
     const appServer = getRunningExpressApp()
 
-    const chatflowid = req.params.id
+    const agentflowid = req.params.id
 
-    // Check if chatflow exists
-    const chatflow = await appServer.AppDataSource.getRepository(ChatFlow).findOneBy({
-        id: chatflowid
+    // Check if agentflow exists
+    const agentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({
+        id: agentflowid
     })
-    if (!chatflow) {
-        throw new InternalChronosError(StatusCodes.NOT_FOUND, `Chatflow ${chatflowid} not found`)
+    if (!agentflow) {
+        throw new InternalChronosError(StatusCodes.NOT_FOUND, `Agentflow ${agentflowid} not found`)
     }
 
-    const isAgentFlow = chatflow.type === 'AGENTFLOW'
+    const isAgentFlow = agentflow.type === 'AGENTFLOW'
     const httpProtocol = req.get('x-forwarded-proto') || req.protocol
     const baseURL = `${httpProtocol}://${req.get('host')}`
     const incomingInput: IncomingInput = req.body || {} // Ensure incomingInput is never undefined
     const chatId = incomingInput.chatId ?? incomingInput.overrideConfig?.sessionId ?? uuidv4()
     const files = (req.files as Express.Multer.File[]) || []
-    const abortControllerId = `${chatflow.id}_${chatId}`
+    const abortControllerId = `${agentflow.id}_${chatId}`
     const isTool = req.get('chronos-tool') === 'true'
     const isEvaluation: boolean = req.headers['X-Chronos-Evaluation'] || req.body.evaluation
     let evaluationRunId = ''
     evaluationRunId = req.body.evaluationRunId
-    if (isEvaluation && chatflow.type !== 'AGENTFLOW' && req.body.evaluationRunId) {
+    if (isEvaluation && agentflow.type !== 'AGENTFLOW' && req.body.evaluationRunId) {
         // this is needed for the collection of token metrics for non-agent flows,
         // for agentflows the execution trace has the info needed
         const newEval = {
@@ -2676,7 +2676,7 @@ export const utilBuildChatflow = async (req: Request, isInternal: boolean = fals
                 evaluationRunId
             }
         }
-        chatflow.analytic = JSON.stringify(newEval)
+        agentflow.analytic = JSON.stringify(newEval)
     }
 
     let _organizationId = ''
@@ -2684,7 +2684,7 @@ export const utilBuildChatflow = async (req: Request, isInternal: boolean = fals
     try {
         // Validate API Key if its external API request
         if (!isInternal) {
-            const isKeyValidated = await validateFlowAPIKey(req, chatflow)
+            const isKeyValidated = await validateFlowAPIKey(req, agentflow)
             if (!isKeyValidated) {
                 throw new InternalChronosError(StatusCodes.UNAUTHORIZED, `Unauthorized`)
             }
@@ -2698,7 +2698,7 @@ export const utilBuildChatflow = async (req: Request, isInternal: boolean = fals
 
         const executeData: IExecuteFlowParams = {
             incomingInput, // Use the defensively created incomingInput variable
-            chatflow,
+            agentflow,
             chatId,
             baseURL,
             isInternal,
@@ -2710,14 +2710,14 @@ export const utilBuildChatflow = async (req: Request, isInternal: boolean = fals
             telemetry: appServer.telemetry,
             cachePool: appServer.cachePool,
             componentNodes: appServer.nodesPool.componentNodes,
-            isTool, // used to disable streaming if incoming request its from ChatflowTool
+            isTool, // used to disable streaming if incoming request its from AgentflowTool
             usageCacheManager: appServer.usageCacheManager
         }
 
         if (process.env.MODE === MODE.QUEUE) {
             const predictionQueue = appServer.queueManager.getQueue('prediction')
             const job = await predictionQueue.addJob(omit(executeData, OMIT_QUEUE_JOB_DATA))
-            logger.debug(`[Agentflow Engine] Job added to queue: ${job.id} (chatflow: ${chatflow.id}, chatId: ${chatId})`)
+            logger.debug(`[Agentflow Engine] Job added to queue: ${job.id} (agentflow: ${agentflow.id}, chatId: ${chatId})`)
 
             const queueEvents = predictionQueue.getQueueEvents()
             const result = await job.waitUntilFinished(queueEvents)
@@ -2742,8 +2742,8 @@ export const utilBuildChatflow = async (req: Request, isInternal: boolean = fals
             return result
         }
     } catch (e) {
-        logger.error(`[Agentflow Engine] Error in chatflow ${chatflow.id} (chatId: ${chatId}): ${getErrorMessage(e)}`)
-        appServer.abortControllerPool.remove(`${chatflow.id}_${chatId}`)
+        logger.error(`[Agentflow Engine] Error in agentflow ${agentflow.id} (chatId: ${chatId}): ${getErrorMessage(e)}`)
+        appServer.abortControllerPool.remove(`${agentflow.id}_${chatId}`)
         incrementFailedMetricCounter(appServer.metricsProvider, isInternal, isAgentFlow)
         if (e instanceof InternalChronosError && e.statusCode === StatusCodes.UNAUTHORIZED) {
             throw e

@@ -32,7 +32,7 @@ const getVoicesForProvider = async (provider: string, credentialId?: string): Pr
         const appServer = getRunningExpressApp()
         const options = {
             orgId: '',
-            chatflowid: '',
+            agentflowid: '',
             chatId: '',
             appDataSource: appServer.AppDataSource,
             databaseEntities: databaseEntities

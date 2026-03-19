@@ -4,7 +4,7 @@ import Skeleton from '@mui/material/Skeleton'
 
 // ==============================|| SKELETON - BRIDGE CARD ||============================== //
 
-const ChatflowCard = () => (
+const AgentflowCard = () => (
     <Card>
         <CardContent>
             <Grid container direction='column'>
@@ -29,4 +29,4 @@ const ChatflowCard = () => (
     </Card>
 )
 
-export default ChatflowCard
+export default AgentflowCard

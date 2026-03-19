@@ -12,7 +12,7 @@ import {
 } from '../../utils'
 import { checkStorage, updateStorageUsage } from '../../utils/quotaUsage'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
-import { ChatFlow } from '../../database/entities/ChatFlow'
+import { AgentFlow } from '../../database/entities/AgentFlow'
 import { IDepthQueue, IReactFlowNode } from '../../Interface'
 import { ICommonObject, INodeData } from 'chronos-components'
 import { convertToOpenAIFunction } from '@langchain/core/utils/function_calling'
@@ -23,18 +23,18 @@ const SOURCE_DOCUMENTS_PREFIX = '\n\n----CHRONOS_SOURCE_DOCUMENTS----\n\n'
 const ARTIFACTS_PREFIX = '\n\n----CHRONOS_ARTIFACTS----\n\n'
 const TOOL_ARGS_PREFIX = '\n\n----CHRONOS_TOOL_ARGS----\n\n'
 
-const buildAndInitTool = async (chatflowid: string, _chatId?: string, _apiMessageId?: string) => {
+const buildAndInitTool = async (agentflowid: string, _chatId?: string, _apiMessageId?: string) => {
     const appServer = getRunningExpressApp()
-    const chatflow = await appServer.AppDataSource.getRepository(ChatFlow).findOneBy({
-        id: chatflowid
+    const agentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({
+        id: agentflowid
     })
-    if (!chatflow) {
-        throw new InternalChronosError(StatusCodes.NOT_FOUND, `Chatflow ${chatflowid} not found`)
+    if (!agentflow) {
+        throw new InternalChronosError(StatusCodes.NOT_FOUND, `Agentflow ${agentflowid} not found`)
     }
 
     const chatId = _chatId || uuidv4()
     const apiMessageId = _apiMessageId || uuidv4()
-    const flowData = JSON.parse(chatflow.flowData)
+    const flowData = JSON.parse(agentflow.flowData)
     const nodes = flowData.nodes
     const edges = flowData.edges
 
@@ -42,7 +42,7 @@ const buildAndInitTool = async (chatflowid: string, _chatId?: string, _apiMessag
         (node: IReactFlowNode) => node.data.inputAnchors.find((acr) => acr.type === 'Tool') && node.data.category === 'Agents'
     )
     if (!toolAgentNode) {
-        throw new InternalChronosError(StatusCodes.NOT_FOUND, `Agent with tools not found in chatflow ${chatflowid}`)
+        throw new InternalChronosError(StatusCodes.NOT_FOUND, `Agent with tools not found in agentflow ${agentflowid}`)
     }
 
     const { graph, nodeDependencies } = constructGraphs(nodes, edges)
@@ -64,7 +64,7 @@ const buildAndInitTool = async (chatflowid: string, _chatId?: string, _apiMessag
 
     /*** Get API Config ***/
     const availableVariables = await appServer.AppDataSource.getRepository(Variable).find()
-    const { nodeOverrides, variableOverrides, apiOverrideStatus } = getAPIOverrideConfig(chatflow)
+    const { nodeOverrides, variableOverrides, apiOverrideStatus } = getAPIOverrideConfig(agentflow)
 
     // Open source: No workspace/organization lookup needed
     const workspaceId = ''
@@ -82,7 +82,7 @@ const buildAndInitTool = async (chatflowid: string, _chatId?: string, _apiMessag
         chatHistory: [],
         chatId: chatId,
         sessionId: chatId,
-        chatflowid,
+        agentflowid: agentflowid,
         apiMessageId,
         appDataSource: appServer.AppDataSource,
         usageCacheManager: appServer.usageCacheManager,
@@ -107,7 +107,7 @@ const buildAndInitTool = async (chatflowid: string, _chatId?: string, _apiMessag
         throw new InternalChronosError(StatusCodes.NOT_FOUND, `Node not found`)
     }
 
-    const flowDataObj: ICommonObject = { chatflowid, chatId }
+    const flowDataObj: ICommonObject = { agentflowid: agentflowid, chatId }
 
     const reactFlowNodeData: INodeData = await resolveVariables(
         nodeToExecute.data,
@@ -126,21 +126,21 @@ const buildAndInitTool = async (chatflowid: string, _chatId?: string, _apiMessag
     const nodeInstance = new nodeModule.nodeClass()
 
     const agent = await nodeInstance.init(nodeToExecuteData, '', {
-        chatflowid,
+        agentflowid: agentflowid,
         chatId,
         orgId,
         workspaceId,
         appDataSource: appServer.AppDataSource,
         databaseEntities,
-        analytic: chatflow.analytic
+        analytic: agentflow.analytic
     })
 
     return agent
 }
 
-const getAgentTools = async (chatflowid: string): Promise<any> => {
+const getAgentTools = async (agentflowid: string): Promise<any> => {
     try {
-        const agent = await buildAndInitTool(chatflowid)
+        const agent = await buildAndInitTool(agentflowid)
         const tools = agent.tools
         return tools.map(convertToOpenAIFunction)
     } catch (error) {
@@ -152,14 +152,14 @@ const getAgentTools = async (chatflowid: string): Promise<any> => {
 }
 
 const executeAgentTool = async (
-    chatflowid: string,
+    agentflowid: string,
     chatId: string,
     toolName: string,
     inputArgs: string,
     apiMessageId?: string
 ): Promise<any> => {
     try {
-        const agent = await buildAndInitTool(chatflowid, chatId, apiMessageId)
+        const agent = await buildAndInitTool(agentflowid, chatId, apiMessageId)
         const tools = agent.tools
         const tool = tools.find((tool: any) => tool.name === toolName)
 

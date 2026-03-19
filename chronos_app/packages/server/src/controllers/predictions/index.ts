@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import { RateLimiterManager } from '../../utils/rateLimit'
-import chatflowsService from '../../services/chatflows'
+import agentflowsService from '../../services/agentflows'
 import logger from '../../utils/logger'
 import predictionsServices from '../../services/predictions'
 import { InternalChronosError } from '../../errors/internalChronosError'
@@ -26,15 +26,15 @@ const createPrediction = async (req: Request, res: Response, next: NextFunction)
             )
         }
 
-        const chatflow = await chatflowsService.getChatflowById(req.params.id)
-        if (!chatflow) {
-            throw new InternalChronosError(StatusCodes.NOT_FOUND, `Chatflow ${req.params.id} not found`)
+        const agentflow = await agentflowsService.getAgentflowById(req.params.id)
+        if (!agentflow) {
+            throw new InternalChronosError(StatusCodes.NOT_FOUND, `Agentflow ${req.params.id} not found`)
         }
         let isDomainAllowed = true
         let unauthorizedOriginError = 'This site is not allowed to access this chatbot'
         logger.info(`[server]: Request originated from ${req.headers.origin || 'UNKNOWN ORIGIN'}`)
-        if (chatflow.chatbotConfig) {
-            const parsedConfig = JSON.parse(chatflow.chatbotConfig)
+        if (agentflow.chatbotConfig) {
+            const parsedConfig = JSON.parse(agentflow.chatbotConfig)
             // check whether the first one is not empty. if it is empty that means the user set a value and then removed it.
             const isValidAllowedOrigins = parsedConfig.allowedOrigins?.length && parsedConfig.allowedOrigins[0] !== ''
             unauthorizedOriginError = parsedConfig.allowedOriginsError || 'This site is not allowed to access this chatbot'
@@ -53,7 +53,7 @@ const createPrediction = async (req: Request, res: Response, next: NextFunction)
             }
         }
         if (isDomainAllowed) {
-            const streamable = await chatflowsService.checkIfChatflowIsValidForStreaming(req.params.id)
+            const streamable = await agentflowsService.checkIfAgentflowIsValidForStreaming(req.params.id)
             const isStreamingRequested = req.body.streaming === 'true' || req.body.streaming === true
             if (streamable?.isStreaming && isStreamingRequested) {
                 const sseStreamer = getRunningExpressApp().sseStreamer
@@ -75,7 +75,7 @@ const createPrediction = async (req: Request, res: Response, next: NextFunction)
                         getRunningExpressApp().redisSubscriber.subscribe(chatId)
                     }
 
-                    const apiResponse = await predictionsServices.buildChatflow(req)
+                    const apiResponse = await predictionsServices.buildAgentflow(req)
                     sseStreamer.streamMetadataEvent(apiResponse.chatId, apiResponse)
                 } catch (error) {
                     if (chatId) {
@@ -86,7 +86,7 @@ const createPrediction = async (req: Request, res: Response, next: NextFunction)
                     sseStreamer.removeClient(chatId)
                 }
             } else {
-                const apiResponse = await predictionsServices.buildChatflow(req)
+                const apiResponse = await predictionsServices.buildAgentflow(req)
                 return res.json(apiResponse)
             }
         } else {

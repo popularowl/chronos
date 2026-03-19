@@ -14,7 +14,7 @@ import {
 import { isValidUUID, isValidURL } from '../../../src/validator'
 import { v4 as uuidv4 } from 'uuid'
 
-class ChatflowTool_Tools implements INode {
+class AgentflowTool_Tools implements INode {
     label: string
     name: string
     version: number
@@ -27,27 +27,27 @@ class ChatflowTool_Tools implements INode {
     inputs: INodeParams[]
 
     constructor() {
-        this.label = 'Chatflow Tool'
-        this.name = 'ChatflowTool'
+        this.label = 'Agentflow Tool'
+        this.name = 'AgentflowTool'
         this.version = 5.1
-        this.type = 'ChatflowTool'
-        this.icon = 'chatflowTool.svg'
+        this.type = 'AgentflowTool'
+        this.icon = 'agentflowTool.svg'
         this.category = 'Tools'
-        this.description = 'Use as a tool to execute another chatflow'
+        this.description = 'Use as a tool to execute another agentflow'
         this.baseClasses = [this.type, 'Tool']
         this.credential = {
             label: 'Connect Credential',
             name: 'credential',
             type: 'credential',
-            credentialNames: ['chatflowApi'],
+            credentialNames: ['agentflowApi'],
             optional: true
         }
         this.inputs = [
             {
-                label: 'Select Chatflow',
-                name: 'selectedChatflow',
+                label: 'Select Agentflow',
+                name: 'selectedAgentflow',
                 type: 'asyncOptions',
-                loadMethod: 'listChatflows'
+                loadMethod: 'listAgentflows'
             },
             {
                 label: 'Tool Name',
@@ -72,7 +72,7 @@ class ChatflowTool_Tools implements INode {
             {
                 label: 'Override Config',
                 name: 'overrideConfig',
-                description: 'Override the config passed to the Chatflow.',
+                description: 'Override the config passed to the Agentflow.',
                 type: 'json',
                 optional: true,
                 additionalParams: true,
@@ -83,7 +83,7 @@ class ChatflowTool_Tools implements INode {
                 name: 'baseURL',
                 type: 'string',
                 description:
-                    'Base URL to Chronos. By default, it is the URL of the incoming request. Useful when you need to execute the Chatflow through an alternative route.',
+                    'Base URL to Chronos. By default, it is the URL of the incoming request. Useful when you need to execute the Agentflow through an alternative route.',
                 placeholder: 'http://localhost:3000',
                 optional: true,
                 additionalParams: true
@@ -93,7 +93,7 @@ class ChatflowTool_Tools implements INode {
                 name: 'startNewSession',
                 type: 'boolean',
                 description:
-                    'Whether to continue the session with the Chatflow tool or start a new one with each interaction. Useful for Chatflows with memory if you want to avoid it.',
+                    'Whether to continue the session with the Agentflow tool or start a new one with each interaction. Useful for Agentflows with memory if you want to avoid it.',
                 default: false,
                 optional: true,
                 additionalParams: true
@@ -103,7 +103,7 @@ class ChatflowTool_Tools implements INode {
                 name: 'useQuestionFromChat',
                 type: 'boolean',
                 description:
-                    'Whether to use the question from the chat as input to the chatflow. If turned on, this will override the custom input.',
+                    'Whether to use the question from the chat as input to the agentflow. If turned on, this will override the custom input.',
                 optional: true,
                 additionalParams: true
             },
@@ -111,7 +111,7 @@ class ChatflowTool_Tools implements INode {
                 label: 'Custom Input',
                 name: 'customInput',
                 type: 'string',
-                description: 'Custom input to be passed to the chatflow. Leave empty to let LLM decides the input.',
+                description: 'Custom input to be passed to the agentflow. Leave empty to let LLM decides the input.',
                 optional: true,
                 additionalParams: true,
                 show: {
@@ -123,7 +123,7 @@ class ChatflowTool_Tools implements INode {
 
     //@ts-ignore
     loadMethods = {
-        async listChatflows(_: INodeData, options: ICommonObject): Promise<INodeOptionsValue[]> {
+        async listAgentflows(_: INodeData, options: ICommonObject): Promise<INodeOptionsValue[]> {
             const returnData: INodeOptionsValue[] = []
 
             const appDataSource = options.appDataSource as DataSource
@@ -133,13 +133,13 @@ class ChatflowTool_Tools implements INode {
             }
 
             const searchOptions = options.searchOptions || {}
-            const chatflows = await appDataSource.getRepository(databaseEntities['ChatFlow']).findBy(searchOptions)
+            const agentflows = await appDataSource.getRepository(databaseEntities['AgentFlow']).findBy(searchOptions)
 
-            for (let i = 0; i < chatflows.length; i += 1) {
-                const type = chatflows[i].type === 'ASSISTANT' ? 'Assistant' : 'Agentflow'
+            for (let i = 0; i < agentflows.length; i += 1) {
+                const type = agentflows[i].type === 'ASSISTANT' ? 'Assistant' : 'Agentflow'
                 const data = {
-                    label: chatflows[i].name,
-                    name: chatflows[i].id,
+                    label: agentflows[i].name,
+                    name: agentflows[i].id,
                     description: type
                 } as INodeOptionsValue
                 returnData.push(data)
@@ -149,7 +149,7 @@ class ChatflowTool_Tools implements INode {
     }
 
     async init(nodeData: INodeData, input: string, options: ICommonObject): Promise<any> {
-        const selectedChatflowId = nodeData.inputs?.selectedChatflow as string
+        const selectedAgentflowId = nodeData.inputs?.selectedAgentflow as string
         const _name = nodeData.inputs?.name as string
         const description = nodeData.inputs?.description as string
         const useQuestionFromChat = nodeData.inputs?.useQuestionFromChat as boolean
@@ -166,9 +166,9 @@ class ChatflowTool_Tools implements INode {
 
         const baseURL = (nodeData.inputs?.baseURL as string) || (options.baseURL as string)
 
-        // Validate selectedChatflowId is a valid UUID
-        if (!selectedChatflowId || !isValidUUID(selectedChatflowId)) {
-            throw new Error('Invalid chatflow ID: must be a valid UUID')
+        // Validate selectedAgentflowId is a valid UUID
+        if (!selectedAgentflowId || !isValidUUID(selectedAgentflowId)) {
+            throw new Error('Invalid agentflow ID: must be a valid UUID')
         }
 
         // Validate baseURL is a valid URL
@@ -177,12 +177,12 @@ class ChatflowTool_Tools implements INode {
         }
 
         const credentialData = await getCredentialData(nodeData.credential ?? '', options)
-        const chatflowApiKey = getCredentialParam('chatflowApiKey', credentialData, nodeData)
+        const agentflowApiKey = getCredentialParam('agentflowApiKey', credentialData, nodeData)
 
-        if (selectedChatflowId === options.chatflowid) throw new Error('Cannot call the same chatflow!')
+        if (selectedAgentflowId === options.agentflowid) throw new Error('Cannot call the same agentflow!')
 
         let headers = {}
-        if (chatflowApiKey) headers = { Authorization: `Bearer ${chatflowApiKey}` }
+        if (agentflowApiKey) headers = { Authorization: `Bearer ${agentflowApiKey}` }
 
         let toolInput = ''
         if (useQuestionFromChat) {
@@ -191,14 +191,14 @@ class ChatflowTool_Tools implements INode {
             toolInput = customInput
         }
 
-        let name = _name || 'chatflow_tool'
+        let name = _name || 'agentflow_tool'
 
-        return new ChatflowTool({
+        return new AgentflowTool({
             name,
             baseURL,
             description,
             returnDirect,
-            chatflowid: selectedChatflowId,
+            agentflowid: selectedAgentflowId,
             startNewSession,
             headers,
             input: toolInput,
@@ -207,18 +207,18 @@ class ChatflowTool_Tools implements INode {
     }
 }
 
-class ChatflowTool extends StructuredTool {
+class AgentflowTool extends StructuredTool {
     static lc_name() {
-        return 'ChatflowTool'
+        return 'AgentflowTool'
     }
 
-    name = 'chatflow_tool'
+    name = 'agentflow_tool'
 
-    description = 'Execute another chatflow'
+    description = 'Execute another agentflow'
 
     input = ''
 
-    chatflowid = ''
+    agentflowid = ''
 
     startNewSession = false
 
@@ -238,7 +238,7 @@ class ChatflowTool extends StructuredTool {
         description,
         returnDirect,
         input,
-        chatflowid,
+        agentflowid,
         startNewSession,
         baseURL,
         headers,
@@ -248,7 +248,7 @@ class ChatflowTool extends StructuredTool {
         description: string
         returnDirect: boolean
         input: string
-        chatflowid: string
+        agentflowid: string
         startNewSession: boolean
         baseURL: string
         headers: ICommonObject
@@ -261,7 +261,7 @@ class ChatflowTool extends StructuredTool {
         this.baseURL = baseURL
         this.startNewSession = startNewSession
         this.headers = headers
-        this.chatflowid = chatflowid
+        this.agentflowid = agentflowid
         this.overrideConfig = overrideConfig
         this.returnDirect = returnDirect
     }
@@ -344,7 +344,7 @@ class ChatflowTool extends StructuredTool {
 
         const code = `
 const fetch = require('node-fetch');
-const url = "${this.baseURL}/api/v1/prediction/${this.chatflowid}";
+const url = "${this.baseURL}/api/v1/prediction/${this.agentflowid}";
 
 const body = $callBody;
 
@@ -380,4 +380,4 @@ try {
     }
 }
 
-module.exports = { nodeClass: ChatflowTool_Tools }
+module.exports = { nodeClass: AgentflowTool_Tools }

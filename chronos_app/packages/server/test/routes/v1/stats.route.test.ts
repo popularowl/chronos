@@ -46,16 +46,16 @@ export function statsRouteTest() {
         })
 
         describe('GET /api/v1/stats/:id', () => {
-            it('should return stats for specific chatflow', async () => {
+            it('should return stats for specific agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/stats/test-chatflow-id')
+                    .get('/api/v1/stats/test-agentflow-id')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
                 expect([200, 404, 412]).toContain(response.status)
             })
 
-            it('should handle non-existent chatflow', async () => {
+            it('should handle non-existent agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/stats/non-existent-id')
                     .set('Authorization', `Bearer ${authToken}`)

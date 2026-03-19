@@ -85,7 +85,7 @@ export const suggestionOptions = (
             },
             { id: '$flow.sessionId', mentionLabel: '$flow.sessionId', description: 'Current session ID', category: 'Flow Variables' },
             { id: '$flow.chatId', mentionLabel: '$flow.chatId', description: 'Current chat ID', category: 'Flow Variables' },
-            { id: '$flow.chatflowId', mentionLabel: '$flow.chatflowId', description: 'Current chatflow ID', category: 'Flow Variables' }
+            { id: '$flow.agentflowId', mentionLabel: '$flow.agentflowId', description: 'Current agentflow ID', category: 'Flow Variables' }
         ]
 
         const stateItems = (availableState || []).map((state) => ({

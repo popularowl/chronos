@@ -46,7 +46,7 @@ const agent_settings = {
             icon: icons.IconUsers
         },
         {
-            id: 'chatflowConfiguration',
+            id: 'agentflowConfiguration',
             title: 'Configuration',
             type: 'item',
             url: '',
@@ -62,7 +62,7 @@ const agent_settings = {
             permission: 'templates:flowexport'
         },
         {
-            id: 'duplicateChatflow',
+            id: 'duplicateAgentflow',
             title: 'Duplicate Agents',
             type: 'item',
             url: '',
@@ -70,7 +70,7 @@ const agent_settings = {
             permission: 'agentflows:duplicate'
         },
         {
-            id: 'loadChatflow',
+            id: 'loadAgentflow',
             title: 'Load Agents',
             type: 'item',
             url: '',
@@ -78,7 +78,7 @@ const agent_settings = {
             permission: 'agentflows:import'
         },
         {
-            id: 'exportChatflow',
+            id: 'exportAgentflow',
             title: 'Export Agents',
             type: 'item',
             url: '',
@@ -86,7 +86,7 @@ const agent_settings = {
             permission: 'agentflows:export'
         },
         {
-            id: 'deleteChatflow',
+            id: 'deleteAgentflow',
             title: 'Delete Agents',
             type: 'item',
             url: '',

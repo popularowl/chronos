@@ -60,7 +60,7 @@ export function feedbackValidationServiceTest() {
                 const mockMessage = {
                     id: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1',
+                    agentflowid: 'flow-1',
                     content: 'Test message'
                 }
                 mockChatMessageRepository.findOne.mockResolvedValue(mockMessage)
@@ -113,7 +113,7 @@ export function feedbackValidationServiceTest() {
                 const mockMessage = {
                     id: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 mockChatMessageRepository.findOne.mockResolvedValue(mockMessage)
 
@@ -121,14 +121,14 @@ export function feedbackValidationServiceTest() {
                 const result = await validateFeedbackForCreation(feedback)
 
                 expect(result.chatId).toBe('chat-1')
-                expect(result.chatflowid).toBe('flow-1')
+                expect(result.agentflowid).toBe('flow-1')
             })
 
             it('should use provided chatId if it matches message', async () => {
                 const mockMessage = {
                     id: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 mockChatMessageRepository.findOne.mockResolvedValue(mockMessage)
 
@@ -142,7 +142,7 @@ export function feedbackValidationServiceTest() {
                 const mockMessage = {
                     id: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 mockChatMessageRepository.findOne.mockResolvedValue(mockMessage)
 
@@ -151,17 +151,17 @@ export function feedbackValidationServiceTest() {
                 await expect(validateFeedbackForCreation(feedback)).rejects.toThrow('Inconsistent chat ID')
             })
 
-            it('should throw BAD_REQUEST when chatflowid does not match message', async () => {
+            it('should throw BAD_REQUEST when agentflowid does not match message', async () => {
                 const mockMessage = {
                     id: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 mockChatMessageRepository.findOne.mockResolvedValue(mockMessage)
 
-                const feedback = { messageId: 'msg-1', chatflowid: 'different-flow' }
+                const feedback = { messageId: 'msg-1', agentflowid: 'different-flow' }
 
-                await expect(validateFeedbackForCreation(feedback)).rejects.toThrow('Inconsistent chatflow ID')
+                await expect(validateFeedbackForCreation(feedback)).rejects.toThrow('Inconsistent agentflow ID')
             })
         })
 
@@ -171,12 +171,12 @@ export function feedbackValidationServiceTest() {
                     id: 'fb-1',
                     messageId: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 const mockMessage = {
                     id: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 mockFeedbackRepository.findOne.mockResolvedValue(existingFeedback)
                 mockChatMessageRepository.findOne.mockResolvedValue(mockMessage)
@@ -185,7 +185,7 @@ export function feedbackValidationServiceTest() {
 
                 expect(result.messageId).toBe('msg-1')
                 expect(result.chatId).toBe('chat-1')
-                expect(result.chatflowid).toBe('flow-1')
+                expect(result.agentflowid).toBe('flow-1')
             })
 
             it('should throw NOT_FOUND when feedback does not exist', async () => {
@@ -199,12 +199,12 @@ export function feedbackValidationServiceTest() {
                     id: 'fb-1',
                     messageId: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 const mockMessage = {
                     id: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 mockFeedbackRepository.findOne.mockResolvedValue(existingFeedback)
                 mockChatMessageRepository.findOne.mockResolvedValue(mockMessage)
@@ -213,7 +213,7 @@ export function feedbackValidationServiceTest() {
 
                 expect(result.messageId).toBe('msg-1')
                 expect(result.chatId).toBe('chat-1')
-                expect(result.chatflowid).toBe('flow-1')
+                expect(result.agentflowid).toBe('flow-1')
             })
 
             it('should throw BAD_REQUEST when chatId in update does not match message', async () => {
@@ -221,12 +221,12 @@ export function feedbackValidationServiceTest() {
                     id: 'fb-1',
                     messageId: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 const mockMessage = {
                     id: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 mockFeedbackRepository.findOne.mockResolvedValue(existingFeedback)
                 mockChatMessageRepository.findOne.mockResolvedValue(mockMessage)
@@ -234,23 +234,23 @@ export function feedbackValidationServiceTest() {
                 await expect(validateFeedbackForUpdate('fb-1', { chatId: 'different-chat' })).rejects.toThrow('Inconsistent chat ID')
             })
 
-            it('should throw BAD_REQUEST when chatflowid in update does not match message', async () => {
+            it('should throw BAD_REQUEST when agentflowid in update does not match message', async () => {
                 const existingFeedback = {
                     id: 'fb-1',
                     messageId: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 const mockMessage = {
                     id: 'msg-1',
                     chatId: 'chat-1',
-                    chatflowid: 'flow-1'
+                    agentflowid: 'flow-1'
                 }
                 mockFeedbackRepository.findOne.mockResolvedValue(existingFeedback)
                 mockChatMessageRepository.findOne.mockResolvedValue(mockMessage)
 
-                await expect(validateFeedbackForUpdate('fb-1', { chatflowid: 'different-flow' })).rejects.toThrow(
-                    'Inconsistent chatflow ID'
+                await expect(validateFeedbackForUpdate('fb-1', { agentflowid: 'different-flow' })).rejects.toThrow(
+                    'Inconsistent agentflow ID'
                 )
             })
         })

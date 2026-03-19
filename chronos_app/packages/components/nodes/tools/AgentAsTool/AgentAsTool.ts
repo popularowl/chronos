@@ -133,7 +133,7 @@ class AgentAsTool_Tools implements INode {
             }
 
             const searchOptions = options.searchOptions || {}
-            const agentflows = await appDataSource.getRepository(databaseEntities['ChatFlow']).findBy({
+            const agentflows = await appDataSource.getRepository(databaseEntities['AgentFlow']).findBy({
                 ...searchOptions,
                 type: 'AGENTFLOW'
             })
@@ -180,7 +180,7 @@ class AgentAsTool_Tools implements INode {
         const credentialData = await getCredentialData(nodeData.credential ?? '', options)
         const agentflowApiKey = getCredentialParam('agentflowApiKey', credentialData, nodeData)
 
-        if (selectedAgentflowId === options.chatflowid) throw new Error('Cannot call the same agentflow!')
+        if (selectedAgentflowId === options.agentflowid) throw new Error('Cannot call the same agentflow!')
 
         let headers = {}
         if (agentflowApiKey) headers = { Authorization: `Bearer ${agentflowApiKey}` }

@@ -61,19 +61,19 @@ export function validationRouteTest() {
             })
         })
 
-        describe('Flow Validation with Real Chatflows', () => {
-            let validChatflowId: string
-            let chatflowWithMissingInputsId: string
-            let chatflowWithUnconnectedNodesId: string
+        describe('Flow Validation with Real Agentflows', () => {
+            let validAgentflowId: string
+            let agentflowWithMissingInputsId: string
+            let agentflowWithUnconnectedNodesId: string
 
             beforeAll(async () => {
-                // Create a valid chatflow (empty but valid structure)
-                const validChatflowResponse = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                // Create a valid agentflow (empty but valid structure)
+                const validAgentflowResponse = await supertest(getRunningExpressApp().app)
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
-                        name: `Valid Chatflow ${Date.now()}`,
+                        name: `Valid Agentflow ${Date.now()}`,
                         flowData: JSON.stringify({
                             nodes: [
                                 {
@@ -91,17 +91,17 @@ export function validationRouteTest() {
                         type: 'AGENTFLOW'
                     })
 
-                if (validChatflowResponse.status === 200 || validChatflowResponse.status === 201) {
-                    validChatflowId = validChatflowResponse.body.id
+                if (validAgentflowResponse.status === 200 || validAgentflowResponse.status === 201) {
+                    validAgentflowId = validAgentflowResponse.body.id
                 }
 
-                // Create a chatflow with missing required inputs
-                const chatflowMissingInputsResponse = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                // Create a agentflow with missing required inputs
+                const agentflowMissingInputsResponse = await supertest(getRunningExpressApp().app)
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
-                        name: `Chatflow Missing Inputs ${Date.now()}`,
+                        name: `Agentflow Missing Inputs ${Date.now()}`,
                         flowData: JSON.stringify({
                             nodes: [
                                 {
@@ -128,17 +128,17 @@ export function validationRouteTest() {
                         type: 'AGENTFLOW'
                     })
 
-                if (chatflowMissingInputsResponse.status === 200 || chatflowMissingInputsResponse.status === 201) {
-                    chatflowWithMissingInputsId = chatflowMissingInputsResponse.body.id
+                if (agentflowMissingInputsResponse.status === 200 || agentflowMissingInputsResponse.status === 201) {
+                    agentflowWithMissingInputsId = agentflowMissingInputsResponse.body.id
                 }
 
-                // Create a chatflow with unconnected nodes
-                const chatflowUnconnectedResponse = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                // Create a agentflow with unconnected nodes
+                const agentflowUnconnectedResponse = await supertest(getRunningExpressApp().app)
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
-                        name: `Chatflow Unconnected ${Date.now()}`,
+                        name: `Agentflow Unconnected ${Date.now()}`,
                         flowData: JSON.stringify({
                             nodes: [
                                 {
@@ -165,38 +165,38 @@ export function validationRouteTest() {
                         type: 'AGENTFLOW'
                     })
 
-                if (chatflowUnconnectedResponse.status === 200 || chatflowUnconnectedResponse.status === 201) {
-                    chatflowWithUnconnectedNodesId = chatflowUnconnectedResponse.body.id
+                if (agentflowUnconnectedResponse.status === 200 || agentflowUnconnectedResponse.status === 201) {
+                    agentflowWithUnconnectedNodesId = agentflowUnconnectedResponse.body.id
                 }
             })
 
             afterAll(async () => {
                 // Cleanup
-                if (validChatflowId) {
+                if (validAgentflowId) {
                     await supertest(getRunningExpressApp().app)
-                        .delete(`/api/v1/chatflows/${validChatflowId}`)
+                        .delete(`/api/v1/agentflows/${validAgentflowId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
                 }
-                if (chatflowWithMissingInputsId) {
+                if (agentflowWithMissingInputsId) {
                     await supertest(getRunningExpressApp().app)
-                        .delete(`/api/v1/chatflows/${chatflowWithMissingInputsId}`)
+                        .delete(`/api/v1/agentflows/${agentflowWithMissingInputsId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
                 }
-                if (chatflowWithUnconnectedNodesId) {
+                if (agentflowWithUnconnectedNodesId) {
                     await supertest(getRunningExpressApp().app)
-                        .delete(`/api/v1/chatflows/${chatflowWithUnconnectedNodesId}`)
+                        .delete(`/api/v1/agentflows/${agentflowWithUnconnectedNodesId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
                 }
             })
 
-            it('should validate a valid chatflow successfully', async () => {
-                if (!validChatflowId) return
+            it('should validate a valid agentflow successfully', async () => {
+                if (!validAgentflowId) return
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .get(`/api/v1/validation/${validChatflowId}`)
+                    .get(`/api/v1/validation/${validAgentflowId}`)
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -205,11 +205,11 @@ export function validationRouteTest() {
                 expect(Array.isArray(response.body)).toBe(true)
             })
 
-            it('should detect missing required inputs in chatflow', async () => {
-                if (!chatflowWithMissingInputsId) return
+            it('should detect missing required inputs in agentflow', async () => {
+                if (!agentflowWithMissingInputsId) return
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .get(`/api/v1/validation/${chatflowWithMissingInputsId}`)
+                    .get(`/api/v1/validation/${agentflowWithMissingInputsId}`)
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -218,11 +218,11 @@ export function validationRouteTest() {
                 // Should have validation issues
             })
 
-            it('should detect unconnected nodes in chatflow', async () => {
-                if (!chatflowWithUnconnectedNodesId) return
+            it('should detect unconnected nodes in agentflow', async () => {
+                if (!agentflowWithUnconnectedNodesId) return
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .get(`/api/v1/validation/${chatflowWithUnconnectedNodesId}`)
+                    .get(`/api/v1/validation/${agentflowWithUnconnectedNodesId}`)
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -233,21 +233,21 @@ export function validationRouteTest() {
         })
 
         describe('Flow Validation Edge Cases', () => {
-            let edgeCaseChatflowId: string
+            let edgeCaseAgentflowId: string
 
             afterEach(async () => {
-                if (edgeCaseChatflowId) {
+                if (edgeCaseAgentflowId) {
                     await supertest(getRunningExpressApp().app)
-                        .delete(`/api/v1/chatflows/${edgeCaseChatflowId}`)
+                        .delete(`/api/v1/agentflows/${edgeCaseAgentflowId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
-                    edgeCaseChatflowId = ''
+                    edgeCaseAgentflowId = ''
                 }
             })
 
-            it('should handle chatflow with hanging edges', async () => {
+            it('should handle agentflow with hanging edges', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
@@ -265,10 +265,10 @@ export function validationRouteTest() {
                     })
 
                 if (response.status === 200 || response.status === 201) {
-                    edgeCaseChatflowId = response.body.id
+                    edgeCaseAgentflowId = response.body.id
 
                     const validationResponse = await supertest(getRunningExpressApp().app)
-                        .get(`/api/v1/validation/${edgeCaseChatflowId}`)
+                        .get(`/api/v1/validation/${edgeCaseAgentflowId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
 
@@ -277,9 +277,9 @@ export function validationRouteTest() {
                 }
             })
 
-            it('should handle chatflow with stickyNote nodes', async () => {
+            it('should handle agentflow with stickyNote nodes', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
@@ -306,10 +306,10 @@ export function validationRouteTest() {
                     })
 
                 if (response.status === 200 || response.status === 201) {
-                    edgeCaseChatflowId = response.body.id
+                    edgeCaseAgentflowId = response.body.id
 
                     const validationResponse = await supertest(getRunningExpressApp().app)
-                        .get(`/api/v1/validation/${edgeCaseChatflowId}`)
+                        .get(`/api/v1/validation/${edgeCaseAgentflowId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
 
@@ -317,9 +317,9 @@ export function validationRouteTest() {
                 }
             })
 
-            it('should handle chatflow with conditional show/hide fields', async () => {
+            it('should handle agentflow with conditional show/hide fields', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
@@ -349,10 +349,10 @@ export function validationRouteTest() {
                     })
 
                 if (response.status === 200 || response.status === 201) {
-                    edgeCaseChatflowId = response.body.id
+                    edgeCaseAgentflowId = response.body.id
 
                     const validationResponse = await supertest(getRunningExpressApp().app)
-                        .get(`/api/v1/validation/${edgeCaseChatflowId}`)
+                        .get(`/api/v1/validation/${edgeCaseAgentflowId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
 
@@ -360,9 +360,9 @@ export function validationRouteTest() {
                 }
             })
 
-            it('should handle chatflow with array type parameters', async () => {
+            it('should handle agentflow with array type parameters', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
@@ -395,10 +395,10 @@ export function validationRouteTest() {
                     })
 
                 if (response.status === 200 || response.status === 201) {
-                    edgeCaseChatflowId = response.body.id
+                    edgeCaseAgentflowId = response.body.id
 
                     const validationResponse = await supertest(getRunningExpressApp().app)
-                        .get(`/api/v1/validation/${edgeCaseChatflowId}`)
+                        .get(`/api/v1/validation/${edgeCaseAgentflowId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
 
@@ -406,9 +406,9 @@ export function validationRouteTest() {
                 }
             })
 
-            it('should handle chatflow with nested config parameters', async () => {
+            it('should handle agentflow with nested config parameters', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
@@ -434,10 +434,10 @@ export function validationRouteTest() {
                     })
 
                 if (response.status === 200 || response.status === 201) {
-                    edgeCaseChatflowId = response.body.id
+                    edgeCaseAgentflowId = response.body.id
 
                     const validationResponse = await supertest(getRunningExpressApp().app)
-                        .get(`/api/v1/validation/${edgeCaseChatflowId}`)
+                        .get(`/api/v1/validation/${edgeCaseAgentflowId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
 
@@ -447,7 +447,7 @@ export function validationRouteTest() {
 
             it('should handle empty flowData', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
@@ -457,10 +457,10 @@ export function validationRouteTest() {
                     })
 
                 if (response.status === 200 || response.status === 201) {
-                    edgeCaseChatflowId = response.body.id
+                    edgeCaseAgentflowId = response.body.id
 
                     const validationResponse = await supertest(getRunningExpressApp().app)
-                        .get(`/api/v1/validation/${edgeCaseChatflowId}`)
+                        .get(`/api/v1/validation/${edgeCaseAgentflowId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
 

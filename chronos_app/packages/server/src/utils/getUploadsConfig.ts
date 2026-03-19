@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { INodeParams } from 'chronos-components'
-import { ChatFlow } from '../database/entities/ChatFlow'
+import { AgentFlow } from '../database/entities/AgentFlow'
 import { getRunningExpressApp } from '../utils/getRunningExpressApp'
 import { IUploadFileSizeAndTypes, IReactFlowNode, IReactFlowEdge } from '../Interface'
 import { InternalChronosError } from '../errors/internalChronosError'
@@ -14,19 +14,19 @@ type IUploadConfig = {
 }
 
 /**
- * Method that checks if uploads are enabled in the chatflow
- * @param {string} chatflowid
+ * Method that checks if uploads are enabled in the agentflow
+ * @param {string} agentflowid
  */
-export const utilGetUploadsConfig = async (chatflowid: string): Promise<IUploadConfig> => {
+export const utilGetUploadsConfig = async (agentflowid: string): Promise<IUploadConfig> => {
     const appServer = getRunningExpressApp()
-    const chatflow = await appServer.AppDataSource.getRepository(ChatFlow).findOneBy({
-        id: chatflowid
+    const agentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({
+        id: agentflowid
     })
-    if (!chatflow) {
-        throw new InternalChronosError(StatusCodes.NOT_FOUND, `Chatflow ${chatflowid} not found`)
+    if (!agentflow) {
+        throw new InternalChronosError(StatusCodes.NOT_FOUND, `Agentflow ${agentflowid} not found`)
     }
 
-    const flowObj = JSON.parse(chatflow.flowData)
+    const flowObj = JSON.parse(agentflow.flowData)
     const nodes: IReactFlowNode[] = flowObj.nodes
     const edges: IReactFlowEdge[] = flowObj.edges
 
@@ -37,8 +37,8 @@ export const utilGetUploadsConfig = async (chatflowid: string): Promise<IUploadC
     /*
      * Check for STT
      */
-    if (chatflow.speechToText) {
-        const speechToTextProviders = JSON.parse(chatflow.speechToText)
+    if (agentflow.speechToText) {
+        const speechToTextProviders = JSON.parse(agentflow.speechToText)
         for (const provider in speechToTextProviders) {
             if (provider !== 'none') {
                 const providerObj = speechToTextProviders[provider]

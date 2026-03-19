@@ -1,9 +1,9 @@
-import { ChatFlow } from '../database/entities/ChatFlow'
+import { AgentFlow } from '../database/entities/AgentFlow'
 import { IReactFlowObject } from '../Interface'
 import { addBase64FilesToStorage } from 'chronos-components'
 
-export const containsBase64File = (chatflow: ChatFlow) => {
-    const parsedFlowData: IReactFlowObject = JSON.parse(chatflow.flowData)
+export const containsBase64File = (agentflow: AgentFlow) => {
+    const parsedFlowData: IReactFlowObject = JSON.parse(agentflow.flowData)
     const re = new RegExp('^data.*;base64', 'i')
     let found = false
     const nodes = parsedFlowData.nodes
@@ -46,7 +46,7 @@ export const containsBase64File = (chatflow: ChatFlow) => {
     return found
 }
 
-export const updateFlowDataWithFilePaths = async (chatflowid: string, flowData: string) => {
+export const updateFlowDataWithFilePaths = async (agentflowid: string, flowData: string) => {
     try {
         const parsedFlowData: IReactFlowObject = JSON.parse(flowData)
         const re = new RegExp('^data.*;base64', 'i')
@@ -77,7 +77,7 @@ export const updateFlowDataWithFilePaths = async (chatflowid: string, flowData: 
                             for (let j = 0; j < files.length; j++) {
                                 const file = files[j]
                                 if (re.test(file)) {
-                                    const { path } = await addBase64FilesToStorage(file, chatflowid, fileNames, orgId)
+                                    const { path } = await addBase64FilesToStorage(file, agentflowid, fileNames, orgId)
                                     node.data.inputs[key] = path
                                 }
                             }
@@ -85,7 +85,7 @@ export const updateFlowDataWithFilePaths = async (chatflowid: string, flowData: 
                             continue
                         }
                     } else if (re.test(input)) {
-                        const { path } = await addBase64FilesToStorage(input, chatflowid, fileNames, orgId)
+                        const { path } = await addBase64FilesToStorage(input, agentflowid, fileNames, orgId)
                         node.data.inputs[key] = path
                     }
                 }

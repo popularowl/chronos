@@ -58,9 +58,9 @@ export function executionsRouteTest() {
                 expect([200, 412]).toContain(response.status)
             })
 
-            it('should handle chatflowId filter', async () => {
+            it('should handle agentflowId filter', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/executions?chatflowId=test-flow-id')
+                    .get('/api/v1/executions?agentflowId=test-flow-id')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -114,7 +114,7 @@ export function executionsRouteTest() {
 
             it('should handle combined filters', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/executions?chatflowId=test&state=FINISHED&page=1&limit=5&sortOrder=DESC')
+                    .get('/api/v1/executions?agentflowId=test&state=FINISHED&page=1&limit=5&sortOrder=DESC')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -133,10 +133,10 @@ export function executionsRouteTest() {
             })
         })
 
-        describe('GET /api/v1/executions/chatflow/:chatflowId', () => {
-            it('should handle execution retrieval by chatflow', async () => {
+        describe('GET /api/v1/executions/agentflow/:agentflowId', () => {
+            it('should handle execution retrieval by agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/executions/chatflow/test-flow-id')
+                    .get('/api/v1/executions/agentflow/test-flow-id')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 

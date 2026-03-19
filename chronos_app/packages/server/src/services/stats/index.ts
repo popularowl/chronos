@@ -6,9 +6,9 @@ import { ChatMessageFeedback } from '../../database/entities/ChatMessageFeedback
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 
-// get stats for showing in chatflow
-const getChatflowStats = async (
-    chatflowid: string,
+// get stats for showing in agentflow
+const getAgentflowStats = async (
+    agentflowid: string,
     chatTypes: ChatType[] | undefined,
     startDate?: string,
     endDate?: string,
@@ -18,7 +18,7 @@ const getChatflowStats = async (
 ): Promise<any> => {
     try {
         const chatmessages = (await utilGetChatMessage({
-            chatflowid,
+            agentflowid: agentflowid,
             chatTypes,
             startDate,
             endDate,
@@ -43,11 +43,11 @@ const getChatflowStats = async (
     } catch (error) {
         throw new InternalChronosError(
             StatusCodes.INTERNAL_SERVER_ERROR,
-            `Error: statsService.getChatflowStats - ${getErrorMessage(error)}`
+            `Error: statsService.getAgentflowStats - ${getErrorMessage(error)}`
         )
     }
 }
 
 export default {
-    getChatflowStats
+    getAgentflowStats
 }

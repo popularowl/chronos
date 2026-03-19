@@ -1,14 +1,14 @@
 /* eslint-disable */
 import { Entity, Column, CreateDateColumn, UpdateDateColumn, PrimaryGeneratedColumn } from 'typeorm'
-import { ChatflowType, IChatFlow } from '../../Interface'
+import { AgentflowType, IAgentFlow } from '../../Interface'
 
-export enum EnumChatflowType {
+export enum EnumAgentflowType {
     AGENTFLOW = 'AGENTFLOW',
     ASSISTANT = 'ASSISTANT'
 }
 
 @Entity()
-export class ChatFlow implements IChatFlow {
+export class AgentFlow implements IAgentFlow {
     @PrimaryGeneratedColumn('uuid')
     id: string
 
@@ -48,8 +48,8 @@ export class ChatFlow implements IChatFlow {
     @Column({ nullable: true, type: 'text' })
     category?: string
 
-    @Column({ type: 'varchar', length: 20, default: EnumChatflowType.AGENTFLOW })
-    type?: ChatflowType
+    @Column({ type: 'varchar', length: 20, default: EnumAgentflowType.AGENTFLOW })
+    type?: AgentflowType
 
     @Column({ nullable: true })
     userId?: string

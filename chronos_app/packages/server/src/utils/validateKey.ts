@@ -1,5 +1,5 @@
 import { Request } from 'express'
-import { ChatFlow } from '../database/entities/ChatFlow'
+import { AgentFlow } from '../database/entities/AgentFlow'
 import { ApiKey } from '../database/entities/ApiKey'
 import { compareKeys } from './apiKey'
 import apikeyService from '../services/apikey'
@@ -7,20 +7,20 @@ import apikeyService from '../services/apikey'
 /**
  * Validate flow API Key, this is needed because Prediction/Upsert API is public
  * @param {Request} req
- * @param {ChatFlow} chatflow
+ * @param {AgentFlow} agentflow
  */
-export const validateFlowAPIKey = async (req: Request, chatflow: ChatFlow): Promise<boolean> => {
-    const chatFlowApiKeyId = chatflow?.apikeyid
-    if (!chatFlowApiKeyId) return true
+export const validateFlowAPIKey = async (req: Request, agentflow: AgentFlow): Promise<boolean> => {
+    const agentFlowApiKeyId = agentflow?.apikeyid
+    if (!agentFlowApiKeyId) return true
 
     const authorizationHeader = (req.headers['Authorization'] as string) ?? (req.headers['authorization'] as string) ?? ''
-    if (chatFlowApiKeyId && !authorizationHeader) return false
+    if (agentFlowApiKeyId && !authorizationHeader) return false
 
     const suppliedKey = authorizationHeader.split(`Bearer `).pop()
     if (!suppliedKey) return false
 
     try {
-        const apiKey = await apikeyService.getApiKeyById(chatFlowApiKeyId)
+        const apiKey = await apikeyService.getApiKeyById(agentFlowApiKeyId)
         if (!apiKey) return false
 
         const apiSecret = apiKey.apiSecret

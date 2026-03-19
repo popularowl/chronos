@@ -245,7 +245,7 @@ export function openaiServiceTest() {
                 await expect(openaiService.getModel('nonexistent')).rejects.toThrow("Model 'nonexistent' not found")
             })
 
-            it('should throw when chatflow is not AGENTFLOW type', async () => {
+            it('should throw when agentflow is not AGENTFLOW type', async () => {
                 mockRepository.findOneBy.mockResolvedValue({ id: 'af-1', type: 'ASSISTANT' })
 
                 await expect(openaiService.getModel('af-1')).rejects.toThrow('not an agentflow')

@@ -730,7 +730,7 @@ export const mapChatMessageToBaseMessage = async (chatmessages: any[] = [], orgI
                     const imageContents: MessageContentImageUrl[] = []
                     for (const upload of uploads) {
                         if (upload.type === 'stored-file' && upload.mime.startsWith('image/')) {
-                            const fileData = await getFileFromStorage(upload.name, orgId, message.chatflowid, message.chatId)
+                            const fileData = await getFileFromStorage(upload.name, orgId, message.agentflowid, message.chatId)
                             // as the image is stored in the server, read the file and convert it to base64
                             const bf = 'data:' + upload.mime + ';base64,' + fileData.toString('base64')
 
@@ -753,7 +753,7 @@ export const mapChatMessageToBaseMessage = async (chatmessages: any[] = [], orgI
                             const fileLoaderNodeInstance = new fileLoaderNodeModule.nodeClass()
                             const options = {
                                 retrieveAttachmentChatId: true,
-                                chatflowid: message.chatflowid,
+                                agentflowid: message.agentflowid,
                                 chatId: message.chatId,
                                 orgId
                             }
@@ -1745,7 +1745,7 @@ export const executeJavaScriptCode = async (
  * Create a standard sandbox object for code execution
  * @param {string} input - The input string
  * @param {ICommonObject} variables - Variables from getVars
- * @param {ICommonObject} flow - Flow object with chatflowId, sessionId, etc.
+ * @param {ICommonObject} flow - Flow object with agentflowId, sessionId, etc.
  * @param {ICommonObject} additionalSandbox - Additional sandbox variables
  * @returns {ICommonObject} - The sandbox object
  */

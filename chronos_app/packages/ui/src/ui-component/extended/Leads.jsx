@@ -11,11 +11,11 @@ import { StyledButton } from '@/ui-component/button/StyledButton'
 import { SwitchInput } from '@/ui-component/switch/Switch'
 
 // store
-import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_CHATFLOW } from '@/store/actions'
+import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_AGENTFLOW } from '@/store/actions'
 import useNotifier from '@/utils/useNotifier'
 
 // API
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 const formTitle = `Hey 👋 thanks for your interest!
 Let us know where we can reach you`
@@ -47,7 +47,7 @@ const Leads = ({ dialogProps }) => {
                 leads: leadsConfig
             }
             chatbotConfig.leads = value.leads
-            const saveResp = await chatflowsApi.updateChatflow(dialogProps.chatflow.id, {
+            const saveResp = await agentflowsApi.updateAgentflow(dialogProps.agentflow.id, {
                 chatbotConfig: JSON.stringify(chatbotConfig)
             })
             if (saveResp.data) {
@@ -63,7 +63,7 @@ const Leads = ({ dialogProps }) => {
                         )
                     }
                 })
-                dispatch({ type: SET_CHATFLOW, chatflow: saveResp.data })
+                dispatch({ type: SET_AGENTFLOW, agentflow: saveResp.data })
             }
         } catch (error) {
             const errorData = error.response.data || `${error.response.status}: ${error.response.statusText}`
@@ -84,8 +84,8 @@ const Leads = ({ dialogProps }) => {
     }
 
     useEffect(() => {
-        if (dialogProps.chatflow && dialogProps.chatflow.chatbotConfig) {
-            let chatbotConfig = JSON.parse(dialogProps.chatflow.chatbotConfig)
+        if (dialogProps.agentflow && dialogProps.agentflow.chatbotConfig) {
+            let chatbotConfig = JSON.parse(dialogProps.agentflow.chatbotConfig)
             setChatbotConfig(chatbotConfig || {})
             if (chatbotConfig.leads) {
                 setLeadsConfig(chatbotConfig.leads)

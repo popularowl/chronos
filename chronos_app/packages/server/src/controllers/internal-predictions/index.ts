@@ -3,23 +3,23 @@ import { StatusCodes } from 'http-status-codes'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { MODE } from '../../Interface'
-import chatflowService from '../../services/chatflows'
-import { utilBuildChatflow } from '../../utils/buildAgentflow'
+import agentflowService from '../../services/agentflows'
+import { utilBuildAgentflow } from '../../utils/buildAgentflow'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 
 // Send input message and get prediction result (Internal)
 const createInternalPrediction = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const chatflow = await chatflowService.getChatflowById(req.params.id)
-        if (!chatflow) {
-            throw new InternalChronosError(StatusCodes.NOT_FOUND, `Chatflow ${req.params.id} not found`)
+        const agentflow = await agentflowService.getAgentflowById(req.params.id)
+        if (!agentflow) {
+            throw new InternalChronosError(StatusCodes.NOT_FOUND, `Agentflow ${req.params.id} not found`)
         }
 
         if (req.body.streaming || req.body.streaming === 'true') {
             createAndStreamInternalPrediction(req, res, next)
             return
         } else {
-            const apiResponse = await utilBuildChatflow(req, true)
+            const apiResponse = await utilBuildAgentflow(req, true)
             if (apiResponse) return res.json(apiResponse)
         }
     } catch (error) {
@@ -44,7 +44,7 @@ const createAndStreamInternalPrediction = async (req: Request, res: Response, ne
             getRunningExpressApp().redisSubscriber.subscribe(chatId)
         }
 
-        const apiResponse = await utilBuildChatflow(req, true)
+        const apiResponse = await utilBuildAgentflow(req, true)
         sseStreamer.streamMetadataEvent(apiResponse.chatId, apiResponse)
     } catch (error) {
         if (chatId) {

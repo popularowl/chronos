@@ -26,15 +26,15 @@ import { chatMessagesRouteTest } from './routes/v1/chat-messages.route.test'
 import { documentstoreRouteTest } from './routes/v1/documentstore.route.test'
 import { upsertHistoryRouteTest } from './routes/v1/upsert-history.route.test'
 import { templatesRouteTest } from './routes/v1/templates.route.test'
-import { chatflowsExtendedRouteTest } from './routes/v1/chatflows-extended.route.test'
+import { agentflowsExtendedRouteTest } from './routes/v1/agentflows-extended.route.test'
 import { flowConfigRouteTest } from './routes/v1/flow-config.route.test'
 import { internalPredictionsRouteTest } from './routes/v1/internal-predictions.route.test'
 import { datasetRouteTest } from './routes/v1/dataset.route.test'
 import { leadsRouteTest } from './routes/v1/leads.route.test'
 import { exportImportRouteTest } from './routes/v1/export-import.route.test'
 import { logRouteTest } from './routes/v1/log.route.test'
-import { chatflowsStreamingRouteTest } from './routes/v1/chatflows-streaming.route.test'
-import { chatflowsUploadsRouteTest } from './routes/v1/chatflows-uploads.route.test'
+import { agentflowsStreamingRouteTest } from './routes/v1/agentflows-streaming.route.test'
+import { agentflowsUploadsRouteTest } from './routes/v1/agentflows-uploads.route.test'
 
 import { verifyRouteTest } from './routes/v1/verify.route.test'
 import { loadPromptsRouteTest } from './routes/v1/load-prompts.route.test'
@@ -56,7 +56,7 @@ import { componentsCredentialsIconRouteTest } from './routes/v1/components-crede
 import { filesRouteTest } from './routes/v1/files.route.test'
 import { validationRouteTest } from './routes/v1/validation.route.test'
 import { textToSpeechRouteTest } from './routes/v1/text-to-speech.route.test'
-import { chatflowsRouteTest } from './routes/v1/chatflows.route.test'
+import { agentflowsRouteTest } from './routes/v1/agentflows.route.test'
 import { internalChatMessagesRouteTest } from './routes/v1/internal-chat-messages.route.test'
 import { oauth2RouteTest } from './routes/v1/oauth2.route.test'
 import { openaiRealtimeRouteTest } from './routes/v1/openai-realtime.route.test'
@@ -64,7 +64,8 @@ import { openaiRouteTest } from './routes/v1/openai.route.test'
 import { usersRouteTest } from './routes/v1/users.route.test'
 import { usersCreateRouteTest } from './routes/v1/users-create.route.test'
 import { adminRouteTest } from './routes/v1/admin.route.test'
-import { chatflowsServiceTest } from './services/chatflows.service.test'
+import { adminAgentflowsRouteTest } from './routes/v1/admin-agentflows.route.test'
+import { agentflowsServiceTest } from './services/agentflows.service.test'
 import { agentflowv2GeneratorServiceTest } from './services/agentflowv2-generator.service.test'
 import { skillsServiceTest } from './services/skills.service.test'
 import { toolsServiceTest } from './services/tools.service.test'
@@ -123,7 +124,7 @@ import { updateChatMessageFeedbackUtilTest } from './utils/updateChatMessageFeed
 import { getUploadsConfigUtilTest } from './utils/getUploadsConfig.util.test'
 import { initializeUserUtilTest } from './utils/initializeUser.util.test'
 import { getChatMessageUtilTest } from './utils/getChatMessage.util.test'
-import { addChatflowsCountUtilTest } from './utils/addChatflowsCount.util.test'
+import { addAgentflowsCountUtilTest } from './utils/addAgentflowsCount.util.test'
 import { validateKeyExtraUtilTest } from './utils/validateKeyExtra.util.test'
 import { addChatMessageFeedbackUtilTest } from './utils/addChatMessageFeedback.util.test'
 import { interfaceDocumentStoreUtilTest } from './utils/interfaceDocumentStore.util.test'
@@ -168,15 +169,15 @@ describe('Routes Test', () => {
     documentstoreRouteTest()
     upsertHistoryRouteTest()
     templatesRouteTest()
-    chatflowsExtendedRouteTest()
+    agentflowsExtendedRouteTest()
     flowConfigRouteTest()
     internalPredictionsRouteTest()
     datasetRouteTest()
     leadsRouteTest()
     exportImportRouteTest()
     logRouteTest()
-    chatflowsStreamingRouteTest()
-    chatflowsUploadsRouteTest()
+    agentflowsStreamingRouteTest()
+    agentflowsUploadsRouteTest()
     verifyRouteTest()
     loadPromptsRouteTest()
     vectorsRouteTest()
@@ -196,7 +197,7 @@ describe('Routes Test', () => {
     filesRouteTest()
     validationRouteTest()
     textToSpeechRouteTest()
-    chatflowsRouteTest()
+    agentflowsRouteTest()
     internalChatMessagesRouteTest()
     oauth2RouteTest()
     openaiRealtimeRouteTest()
@@ -204,10 +205,11 @@ describe('Routes Test', () => {
     usersRouteTest()
     usersCreateRouteTest()
     adminRouteTest()
+    adminAgentflowsRouteTest()
 })
 
 describe('Services Test', () => {
-    chatflowsServiceTest()
+    agentflowsServiceTest()
     agentflowv2GeneratorServiceTest()
     skillsServiceTest()
     toolsServiceTest()
@@ -267,7 +269,7 @@ describe('Utils Test', () => {
     getUploadsConfigUtilTest()
     initializeUserUtilTest()
     getChatMessageUtilTest()
-    addChatflowsCountUtilTest()
+    addAgentflowsCountUtilTest()
     validateKeyExtraUtilTest()
     addChatMessageFeedbackUtilTest()
     interfaceDocumentStoreUtilTest()

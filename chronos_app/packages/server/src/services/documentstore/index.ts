@@ -39,7 +39,7 @@ import {
     MODE
 } from '../../Interface'
 import { UsageCacheManager } from '../../UsageCacheManager'
-import { ChatFlow } from '../../database/entities/ChatFlow'
+import { AgentFlow } from '../../database/entities/AgentFlow'
 import { DocumentStore } from '../../database/entities/DocumentStore'
 import { DocumentStoreFileChunk } from '../../database/entities/DocumentStoreFileChunk'
 import { UpsertHistory } from '../../database/entities/UpsertHistory'
@@ -198,21 +198,21 @@ const getDocumentStoreById = async (storeId: string, _workspaceId: string, userC
     }
 }
 
-const getUsedChatflowNames = async (entity: DocumentStore, _workspaceId: string) => {
+const getUsedAgentflowNames = async (entity: DocumentStore, _workspaceId: string) => {
     try {
         const appServer = getRunningExpressApp()
         if (entity.whereUsed) {
             const whereUsed = JSON.parse(entity.whereUsed)
             const updatedWhereUsed: IDocumentStoreWhereUsed[] = []
             for (let i = 0; i < whereUsed.length; i++) {
-                const associatedChatflow = await appServer.AppDataSource.getRepository(ChatFlow).findOne({
+                const associatedAgentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOne({
                     where: { id: whereUsed[i] },
                     select: ['id', 'name']
                 })
-                if (associatedChatflow) {
+                if (associatedAgentflow) {
                     updatedWhereUsed.push({
                         id: whereUsed[i],
-                        name: associatedChatflow.name
+                        name: associatedAgentflow.name
                     })
                 }
             }
@@ -222,7 +222,7 @@ const getUsedChatflowNames = async (entity: DocumentStore, _workspaceId: string)
     } catch (error) {
         throw new InternalChronosError(
             StatusCodes.INTERNAL_SERVER_ERROR,
-            `Error: documentStoreServices.getUsedChatflowNames - ${getErrorMessage(error)}`
+            `Error: documentStoreServices.getUsedAgentflowNames - ${getErrorMessage(error)}`
         )
     }
 }
@@ -348,7 +348,7 @@ const deleteDocumentStore = async (
 
         // delete upsert history
         await appServer.AppDataSource.getRepository(UpsertHistory).delete({
-            chatflowid: storeId
+            agentflowid: storeId
         })
 
         // now delete the store
@@ -428,7 +428,7 @@ const deleteVectorStoreFromStore = async (storeId: string, workspaceId: string, 
         }
 
         const options: ICommonObject = {
-            chatflowid: storeId,
+            agentflowid: storeId,
             appDataSource: appServer.AppDataSource,
             databaseEntities,
             logger
@@ -599,7 +599,7 @@ const _splitIntoChunks = async (
             outputs: { output: 'document' }
         }
         const options: ICommonObject = {
-            chatflowid: uuidv4(),
+            agentflowid: uuidv4(),
             appDataSource,
             databaseEntities,
             logger,
@@ -1315,10 +1315,10 @@ const _insertIntoVectorStoreWorkerThread = async (
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `Document store ${data.storeId} not found`)
         }
         let upsertHistory: Record<string, any> = {}
-        const chatflowid = data.storeId // fake chatflowid because this is not tied to any chatflow
+        const agentflowid = data.storeId // fake agentflowid because this is not tied to any agentflow
 
         const options: ICommonObject = {
-            chatflowid,
+            agentflowid,
             appDataSource,
             databaseEntities,
             logger
@@ -1367,7 +1367,7 @@ const _insertIntoVectorStoreWorkerThread = async (
             const result = cloneDeep(upsertHistory)
             result['flowData'] = JSON.stringify(result['flowData'])
             result['result'] = JSON.stringify(omit(indexResult, ['totalKeys', 'addedDocs']))
-            result.chatflowid = chatflowid
+            result.agentflowid = agentflowid
             const newUpsertHistory = new UpsertHistory()
             Object.assign(newUpsertHistory, result)
             const upsertHistoryItem = appDataSource.getRepository(UpsertHistory).create(newUpsertHistory)
@@ -1378,7 +1378,7 @@ const _insertIntoVectorStoreWorkerThread = async (
             'vector_upserted',
             {
                 version: await getAppVersion(),
-                chatlowId: chatflowid,
+                agentflowId: agentflowid,
                 type: ChatType.INTERNAL,
                 flowGraph: omit(indexResult['result'], ['totalKeys', 'addedDocs'])
             },
@@ -1449,7 +1449,7 @@ const queryVectorStore = async (data: ICommonObject) => {
             throw new InternalChronosError(StatusCodes.INTERNAL_SERVER_ERROR, `Document store ${data.storeId} not found`)
         }
         const options: ICommonObject = {
-            chatflowid: uuidv4(),
+            agentflowid: uuidv4(),
             appDataSource: appServer.AppDataSource,
             databaseEntities,
             logger
@@ -2482,7 +2482,7 @@ export default {
     getAllDocumentStores,
     getAllDocumentFileChunksByDocumentStoreIds,
     getDocumentStoreById,
-    getUsedChatflowNames,
+    getUsedAgentflowNames,
     getDocumentStoreFileChunks,
     updateDocumentStore,
     previewChunksMiddleware,

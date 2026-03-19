@@ -14,7 +14,7 @@ import FollowUpPrompts from '@/ui-component/extended/FollowUpPrompts'
 import FileUpload from '@/ui-component/extended/FileUpload'
 import PostProcessing from '@/ui-component/extended/PostProcessing'
 
-const CHATFLOW_CONFIGURATION_TABS = [
+const AGENTFLOW_CONFIGURATION_TABS = [
     {
         label: 'Security',
         id: 'security'
@@ -40,8 +40,8 @@ const CHATFLOW_CONFIGURATION_TABS = [
         id: 'chatFeedback'
     },
     {
-        label: 'Analyse Chatflow',
-        id: 'analyseChatflow'
+        label: 'Analyse Agentflow',
+        id: 'analyseAgentflow'
     },
     {
         label: 'Leads',
@@ -63,8 +63,8 @@ function TabPanel(props) {
         <div
             role='tabpanel'
             hidden={value !== index}
-            id={`chatflow-config-tabpanel-${index}`}
-            aria-labelledby={`chatflow-config-tab-${index}`}
+            id={`agentflow-config-tabpanel-${index}`}
+            aria-labelledby={`agentflow-config-tab-${index}`}
             style={{ width: '100%', paddingTop: '1rem' }}
             {...other}
         >
@@ -81,16 +81,16 @@ TabPanel.propTypes = {
 
 function a11yProps(index) {
     return {
-        id: `chatflow-config-tab-${index}`,
-        'aria-controls': `chatflow-config-tabpanel-${index}`
+        id: `agentflow-config-tab-${index}`,
+        'aria-controls': `agentflow-config-tabpanel-${index}`
     }
 }
 
-const ChatflowConfigurationDialog = ({ show, isAgentCanvas, dialogProps, onCancel }) => {
+const AgentflowConfigurationDialog = ({ show, isAgentCanvas, dialogProps, onCancel }) => {
     const portalElement = document.getElementById('portal')
     const [tabValue, setTabValue] = useState(0)
 
-    const filteredTabs = CHATFLOW_CONFIGURATION_TABS.filter((tab) => !isAgentCanvas || !tab.hideInAgentFlow)
+    const filteredTabs = AGENTFLOW_CONFIGURATION_TABS.filter((tab) => !isAgentCanvas || !tab.hideInAgentFlow)
 
     const component = show ? (
         <Dialog
@@ -143,7 +143,7 @@ const ChatflowConfigurationDialog = ({ show, isAgentCanvas, dialogProps, onCance
                         {item.id === 'speechToText' ? <SpeechToText dialogProps={dialogProps} /> : null}
                         {item.id === 'textToSpeech' ? <TextToSpeech dialogProps={dialogProps} /> : null}
                         {item.id === 'chatFeedback' ? <ChatFeedback dialogProps={dialogProps} /> : null}
-                        {item.id === 'analyseChatflow' ? <AnalyseFlow dialogProps={dialogProps} /> : null}
+                        {item.id === 'analyseAgentflow' ? <AnalyseFlow dialogProps={dialogProps} /> : null}
                         {item.id === 'leads' ? <Leads dialogProps={dialogProps} /> : null}
                         {item.id === 'fileUpload' ? <FileUpload dialogProps={dialogProps} /> : null}
                         {item.id === 'postProcessing' ? <PostProcessing dialogProps={dialogProps} /> : null}
@@ -156,11 +156,11 @@ const ChatflowConfigurationDialog = ({ show, isAgentCanvas, dialogProps, onCance
     return createPortal(component, portalElement)
 }
 
-ChatflowConfigurationDialog.propTypes = {
+AgentflowConfigurationDialog.propTypes = {
     show: PropTypes.bool,
     isAgentCanvas: PropTypes.bool,
     dialogProps: PropTypes.object,
     onCancel: PropTypes.func
 }
 
-export default ChatflowConfigurationDialog
+export default AgentflowConfigurationDialog

@@ -5,14 +5,14 @@ import { streamStorageFile } from 'chronos-components'
 import { StatusCodes } from 'http-status-codes'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
-import { ChatFlow } from '../../database/entities/ChatFlow'
+import { AgentFlow } from '../../database/entities/AgentFlow'
 
 const streamUploadedFile = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        if (!req.query.chatflowId || !req.query.chatId || !req.query.fileName) {
+        if (!req.query.agentflowId || !req.query.chatId || !req.query.fileName) {
             return res.status(500).send(`Invalid file path`)
         }
-        const chatflowId = req.query.chatflowId as string
+        const agentflowId = req.query.agentflowId as string
         const chatId = req.query.chatId as string
         const fileName = req.query.fileName as string
         const download = req.query.download === 'true' // Check if download parameter is set
@@ -20,11 +20,11 @@ const streamUploadedFile = async (req: Request, res: Response, next: NextFunctio
         const appServer = getRunningExpressApp()
 
         // Open source: No workspace/org lookup needed
-        const chatflow = await appServer.AppDataSource.getRepository(ChatFlow).findOneBy({
-            id: chatflowId
+        const agentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({
+            id: agentflowId
         })
-        if (!chatflow) {
-            throw new InternalChronosError(StatusCodes.NOT_FOUND, `Chatflow ${chatflowId} not found`)
+        if (!agentflow) {
+            throw new InternalChronosError(StatusCodes.NOT_FOUND, `Agentflow ${agentflowId} not found`)
         }
         const orgId = ''
 
@@ -34,7 +34,7 @@ const streamUploadedFile = async (req: Request, res: Response, next: NextFunctio
         } else {
             res.setHeader('Content-Disposition', contentDisposition(fileName))
         }
-        const fileStream = await streamStorageFile(chatflowId, chatId, fileName, orgId)
+        const fileStream = await streamStorageFile(agentflowId, chatId, fileName, orgId)
 
         if (!fileStream) throw new InternalChronosError(StatusCodes.INTERNAL_SERVER_ERROR, `Error: streamStorageFile`)
 

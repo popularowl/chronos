@@ -47,7 +47,7 @@ const StyledTableRow = styled(TableRow)(() => ({
 }))
 
 const getLocalStorageKeyName = (name, isAgentCanvas) => {
-    return (isAgentCanvas ? 'agentcanvas' : 'chatflowcanvas') + '_' + name
+    return (isAgentCanvas ? 'agentcanvas' : 'agentflowcanvas') + '_' + name
 }
 
 export const FlowListTable = ({
@@ -66,7 +66,7 @@ export const FlowListTable = ({
     const { hasPermission } = useAuth()
     const isActionsAvailable = isAgentCanvas
         ? hasPermission('agentflows:update,agentflows:delete,agentflows:config,agentflows:domains,templates:flowexport,agentflows:export')
-        : hasPermission('chatflows:update,chatflows:delete,chatflows:config,chatflows:domains,templates:flowexport,chatflows:export')
+        : hasPermission('agentflows:update,agentflows:delete,agentflows:config,agentflows:domains,templates:flowexport,agentflows:export')
     const theme = useTheme()
     const customization = useSelector((state) => state.customization)
 
@@ -330,7 +330,7 @@ export const FlowListTable = ({
                                                     <FlowListMenu
                                                         isAgentCanvas={isAgentCanvas}
                                                         isAgentflowV2={isAgentflowV2}
-                                                        chatflow={row}
+                                                        agentflow={row}
                                                         setError={setError}
                                                         updateFlowsApi={updateFlowsApi}
                                                         currentPage={currentPage}

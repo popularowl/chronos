@@ -19,7 +19,7 @@ import { StyledPermissionButton } from '@/ui-component/button/RBACButtons'
 import TablePagination, { DEFAULT_ITEMS_PER_PAGE } from '@/ui-component/pagination/TablePagination'
 
 // API
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 // Hooks
 import useApi from '@/hooks/useApi'
@@ -44,7 +44,7 @@ const Agentflows = () => {
     const [search, setSearch] = useState('')
     const { error, setError } = useError()
 
-    const getAllAgentflows = useApi(chatflowsApi.getAllAgentflows)
+    const getAllAgentflows = useApi(agentflowsApi.getAllAgentflows)
     const [view, setView] = useState(localStorage.getItem('flowDisplayStyle') || 'card')
 
     /* Table Pagination */

@@ -1,5 +1,5 @@
 /**
- * This pool is to keep track of abort controllers mapped to chatflowid_chatid
+ * This pool is to keep track of abort controllers mapped to agentflowid_chatid
  */
 export class AbortControllerPool {
     abortControllers: Record<string, AbortController> = {}

@@ -48,7 +48,7 @@ const NavItem = ({ item, level, navType, onClick, onUploadFile }) => {
     if (item?.external) {
         listItemProps = { component: 'a', href: item.url, target: itemTarget }
     }
-    if (item?.id === 'loadChatflow') {
+    if (item?.id === 'loadAgentflow') {
         listItemProps.component = 'label'
     }
 
@@ -69,7 +69,7 @@ const NavItem = ({ item, level, navType, onClick, onUploadFile }) => {
     }
 
     const itemHandler = (id) => {
-        if (navType === 'SETTINGS' && id !== 'loadChatflow') {
+        if (navType === 'SETTINGS' && id !== 'loadAgentflow') {
             onClick(id)
         } else {
             dispatch({ type: MENU_OPEN, id })
@@ -88,7 +88,7 @@ const NavItem = ({ item, level, navType, onClick, onUploadFile }) => {
                 dispatch({ type: MENU_OPEN, id: item.id })
             }
             if (!document.location.pathname.toString().split('/')[1]) {
-                itemHandler('chatflows')
+                itemHandler('agentflows')
             }
         }
 
@@ -109,7 +109,7 @@ const NavItem = ({ item, level, navType, onClick, onUploadFile }) => {
             selected={customization.isOpen.findIndex((id) => id === item.id) > -1}
             onClick={() => itemHandler(item.id)}
         >
-            {item.id === 'loadChatflow' && <input type='file' hidden accept='.json' onChange={(e) => handleFileUpload(e)} />}
+            {item.id === 'loadAgentflow' && <input type='file' hidden accept='.json' onChange={(e) => handleFileUpload(e)} />}
             <ListItemIcon sx={{ my: 'auto', minWidth: !item?.icon ? 18 : 36 }}>{itemIcon}</ListItemIcon>
             <ListItemText
                 primary={

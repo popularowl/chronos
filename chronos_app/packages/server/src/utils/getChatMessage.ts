@@ -6,7 +6,7 @@ import { getRunningExpressApp } from '../utils/getRunningExpressApp'
 
 /**
  * Method that get chat messages.
- * @param {string} chatflowid
+ * @param {string} agentflowid
  * @param {ChatType[]} chatTypes
  * @param {string} sortOrder
  * @param {string} chatId
@@ -19,7 +19,7 @@ import { getRunningExpressApp } from '../utils/getRunningExpressApp'
  */
 
 interface GetChatMessageParams {
-    chatflowid: string
+    agentflowid: string
     chatTypes?: ChatType[]
     sortOrder?: string
     chatId?: string
@@ -35,7 +35,7 @@ interface GetChatMessageParams {
 }
 
 export const utilGetChatMessage = async ({
-    chatflowid,
+    agentflowid,
     chatTypes,
     sortOrder = 'ASC',
     chatId,
@@ -57,7 +57,7 @@ export const utilGetChatMessage = async ({
     if (feedback) {
         // Handle feedback queries with improved efficiency
         return await handleFeedbackQuery({
-            chatflowid,
+            agentflowid,
             chatTypes,
             sortOrder,
             chatId,
@@ -86,7 +86,7 @@ export const utilGetChatMessage = async ({
 
     const messages = await appServer.AppDataSource.getRepository(ChatMessage).find({
         where: {
-            chatflowid,
+            agentflowid,
             chatType: chatTypes?.length ? In(chatTypes) : undefined,
             chatId,
             memoryType: memoryType ?? undefined,
@@ -106,7 +106,7 @@ export const utilGetChatMessage = async ({
 }
 
 async function handleFeedbackQuery(params: {
-    chatflowid: string
+    agentflowid: string
     chatTypes?: ChatType[]
     sortOrder: string
     chatId?: string
@@ -120,7 +120,7 @@ async function handleFeedbackQuery(params: {
     pageSize: number
 }): Promise<ChatMessage[]> {
     const {
-        chatflowid,
+        agentflowid,
         chatTypes,
         sortOrder,
         chatId,
@@ -147,7 +147,7 @@ async function handleFeedbackQuery(params: {
         const sessionQuery = appServer.AppDataSource.getRepository(ChatMessage)
             .createQueryBuilder('chat_message')
             .select('chat_message.sessionId', 'sessionId')
-            .where('chat_message.chatflowid = :chatflowid', { chatflowid })
+            .where('chat_message.agentflowid = :agentflowid', { agentflowid })
 
         // Apply basic filters
         if (chatTypes && chatTypes.length > 0) {
@@ -207,7 +207,7 @@ async function handleFeedbackQuery(params: {
 
 async function getMessagesWithFeedback(
     params: {
-        chatflowid: string
+        agentflowid: string
         chatTypes?: ChatType[]
         sortOrder: string
         chatId?: string
@@ -221,7 +221,7 @@ async function getMessagesWithFeedback(
     useSessionList: boolean = false,
     sessionIdList?: string[]
 ): Promise<ChatMessage[]> {
-    const { chatflowid, chatTypes, sortOrder, chatId, memoryType, sessionId, startDate, endDate, messageId, feedbackTypes } = params
+    const { agentflowid, chatTypes, sortOrder, chatId, memoryType, sessionId, startDate, endDate, messageId, feedbackTypes } = params
 
     const appServer = getRunningExpressApp()
     const query = appServer.AppDataSource.getRepository(ChatMessage).createQueryBuilder('chat_message')
@@ -229,7 +229,7 @@ async function getMessagesWithFeedback(
     query
         .leftJoinAndSelect('chat_message.execution', 'execution')
         .leftJoinAndMapOne('chat_message.feedback', ChatMessageFeedback, 'feedback', 'feedback.messageId = chat_message.id')
-        .where('chat_message.chatflowid = :chatflowid', { chatflowid })
+        .where('chat_message.agentflowid = :agentflowid', { agentflowid })
 
     // Apply filters
     if (useSessionList && sessionIdList && sessionIdList.length > 0) {

@@ -82,12 +82,12 @@ export class EvaluationRunner {
         this.baseURL = baseURL
     }
 
-    getChatflowApiKey(chatflowId: string, apiKeys: { chatflowId: string; apiKey: string }[] = []) {
-        return apiKeys.find((item) => item.chatflowId === chatflowId)?.apiKey || ''
+    getAgentflowApiKey(agentflowId: string, apiKeys: { agentflowId: string; apiKey: string }[] = []) {
+        return apiKeys.find((item) => item.agentflowId === agentflowId)?.apiKey || ''
     }
 
     public async runEvaluations(data: ICommonObject) {
-        const chatflowIds = JSON.parse(data.chatflowId)
+        const agentflowIds = JSON.parse(data.agentflowId)
         const returnData: ICommonObject = {}
         returnData.evaluationId = data.evaluationId
         returnData.runDate = new Date()
@@ -101,14 +101,14 @@ export class EvaluationRunner {
                 status: 'pending'
             })
         }
-        for (let i = 0; i < chatflowIds.length; i++) {
-            const chatflowId = chatflowIds[i]
-            await this.evaluateChatflow(chatflowId, this.getChatflowApiKey(chatflowId, data.apiKeys), data, returnData)
+        for (let i = 0; i < agentflowIds.length; i++) {
+            const agentflowId = agentflowIds[i]
+            await this.evaluateAgentflow(agentflowId, this.getAgentflowApiKey(agentflowId, data.apiKeys), data, returnData)
         }
         return returnData
     }
 
-    async evaluateChatflow(chatflowId: string, apiKey: string, data: any, returnData: any) {
+    async evaluateAgentflow(agentflowId: string, apiKey: string, data: any, returnData: any) {
         for (let i = 0; i < data.dataset.rows.length; i++) {
             const item = data.dataset.rows[i]
             const uuid = uuidv4()
@@ -125,14 +125,14 @@ export class EvaluationRunner {
             }
             let startTime = performance.now()
             const runData: any = {}
-            runData.chatflowId = chatflowId
+            runData.agentflowId = agentflowId
             runData.startTime = startTime
             const postData: any = { question: item.input, evaluationRunId: uuid, evaluation: true }
             if (data.sessionId) {
                 postData.overrideConfig = { sessionId: data.sessionId }
             }
             try {
-                let response = await axios.post(`${this.baseURL}/api/v1/prediction/${chatflowId}`, postData, axiosConfig)
+                let response = await axios.post(`${this.baseURL}/api/v1/prediction/${agentflowId}`, postData, axiosConfig)
                 let agentFlowMetrics: any[] = []
                 if (response?.data?.agentFlowExecutedData) {
                     for (let i = 0; i < response.data.agentFlowExecutedData.length; i++) {

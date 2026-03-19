@@ -53,11 +53,11 @@ const settings = {
             icon: icons.IconDatabaseExport
         },
         {
-            id: 'chatflowConfiguration',
+            id: 'agentflowConfiguration',
             title: 'Configuration',
             type: 'item',
             url: '',
-            permission: 'chatflows:config',
+            permission: 'agentflows:config',
             icon: icons.IconAdjustmentsHorizontal
         },
         {
@@ -69,36 +69,36 @@ const settings = {
             permission: 'templates:flowexport'
         },
         {
-            id: 'duplicateChatflow',
-            title: 'Duplicate Chatflow',
+            id: 'duplicateAgentflow',
+            title: 'Duplicate Agentflow',
             type: 'item',
             url: '',
             icon: icons.IconCopy,
-            permission: 'chatflows:duplicate'
+            permission: 'agentflows:duplicate'
         },
         {
-            id: 'loadChatflow',
-            title: 'Load Chatflow',
+            id: 'loadAgentflow',
+            title: 'Load Agentflow',
             type: 'item',
             url: '',
             icon: icons.IconFileUpload,
-            permission: 'chatflows:import'
+            permission: 'agentflows:import'
         },
         {
-            id: 'exportChatflow',
-            title: 'Export Chatflow',
+            id: 'exportAgentflow',
+            title: 'Export Agentflow',
             type: 'item',
             url: '',
             icon: icons.IconFileExport,
-            permission: 'chatflows:export'
+            permission: 'agentflows:export'
         },
         {
-            id: 'deleteChatflow',
-            title: 'Delete Chatflow',
+            id: 'deleteAgentflow',
+            title: 'Delete Agentflow',
             type: 'item',
             url: '',
             icon: icons.IconTrash,
-            permission: 'chatflows:delete'
+            permission: 'agentflows:delete'
         }
     ]
 }

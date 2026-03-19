@@ -4,12 +4,12 @@ import statsService from '../../services/stats'
 import { ChatMessageRatingType, ChatType } from '../../Interface'
 import { InternalChronosError } from '../../errors/internalChronosError'
 
-const getChatflowStats = async (req: Request, res: Response, next: NextFunction) => {
+const getAgentflowStats = async (req: Request, res: Response, next: NextFunction) => {
     try {
         if (typeof req.params === 'undefined' || !req.params.id) {
-            throw new InternalChronosError(StatusCodes.PRECONDITION_FAILED, `Error: statsController.getChatflowStats - id not provided!`)
+            throw new InternalChronosError(StatusCodes.PRECONDITION_FAILED, `Error: statsController.getAgentflowStats - id not provided!`)
         }
-        const chatflowid = req.params.id
+        const agentflowid = req.params.id
         const _chatTypes = req.query?.chatType as string | undefined
         let chatTypes: ChatType[] | undefined
         if (_chatTypes) {
@@ -45,7 +45,7 @@ const getChatflowStats = async (req: Request, res: Response, next: NextFunction)
                 return res.status(500).send(e)
             }
         }
-        const apiResponse = await statsService.getChatflowStats(chatflowid, chatTypes, startDate, endDate, '', true, feedbackTypeFilters)
+        const apiResponse = await statsService.getAgentflowStats(agentflowid, chatTypes, startDate, endDate, '', true, feedbackTypeFilters)
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -53,5 +53,5 @@ const getChatflowStats = async (req: Request, res: Response, next: NextFunction)
 }
 
 export default {
-    getChatflowStats
+    getAgentflowStats
 }

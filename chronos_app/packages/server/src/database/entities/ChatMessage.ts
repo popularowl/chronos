@@ -13,7 +13,7 @@ export class ChatMessage implements IChatMessage {
 
     @Index()
     @Column({ type: 'uuid' })
-    chatflowid: string
+    agentflowid: string
 
     @Column({ nullable: true, type: 'uuid' })
     executionId?: string

@@ -42,14 +42,12 @@ const ExportAsTemplateDialog = ({ show, dialogProps, onCancel }) => {
     useNotifier()
 
     useEffect(() => {
-        if (dialogProps.chatflow) {
-            setName(dialogProps.chatflow.name)
-            if (dialogProps.chatflow.type === 'AGENTFLOW') {
+        if (dialogProps.agentflow) {
+            setName(dialogProps.agentflow.name)
+            if (dialogProps.agentflow.type === 'AGENTFLOW') {
                 setFlowType('AgentflowV2')
-            } else if (dialogProps.chatflow.type === 'MULTIAGENT') {
+            } else if (dialogProps.agentflow.type === 'MULTIAGENT') {
                 setFlowType('Agentflow')
-            } else if (dialogProps.chatflow.type === 'CHATFLOW') {
-                setFlowType('Chatflow')
             }
         }
 
@@ -120,8 +118,8 @@ const ExportAsTemplateDialog = ({ show, dialogProps, onCancel }) => {
             usecases,
             type: flowType
         }
-        if (dialogProps.chatflow) {
-            template.chatflowId = dialogProps.chatflow.id
+        if (dialogProps.agentflow) {
+            template.agentflowId = dialogProps.agentflow.id
         }
         if (dialogProps.tool) {
             template.tool = {

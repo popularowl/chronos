@@ -15,9 +15,9 @@ async function getAuthToken(): Promise<string> {
 }
 
 /**
- * Helper to create a test chatflow with TTS config
+ * Helper to create a test agentflow with TTS config
  */
-async function createTestChatflowWithTTS(authToken: string): Promise<string> {
+async function createTestAgentflowWithTTS(authToken: string): Promise<string> {
     const ttsConfig = {
         openai: {
             status: true,
@@ -26,15 +26,15 @@ async function createTestChatflowWithTTS(authToken: string): Promise<string> {
             model: 'tts-1'
         }
     }
-    const chatflowData = {
-        name: `TTS Test Chatflow ${Date.now()}`,
+    const agentflowData = {
+        name: `TTS Test Agentflow ${Date.now()}`,
         flowData: JSON.stringify({ nodes: [], edges: [] }),
         type: 'AGENTFLOW',
         textToSpeech: JSON.stringify(ttsConfig)
     }
     const response = await supertest(getRunningExpressApp().app)
-        .post('/api/v1/chatflows')
-        .send(chatflowData)
+        .post('/api/v1/agentflows')
+        .send(agentflowData)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-request-from', 'internal')
 
@@ -70,7 +70,7 @@ export function textToSpeechRouteTest() {
                 expect([200, 400, 500]).toContain(response.status)
             })
 
-            it('should return error when provider is not provided without chatflowId', async () => {
+            it('should return error when provider is not provided without agentflowId', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/tts/generate')
                     .send({ text: 'Hello world' })
@@ -90,12 +90,12 @@ export function textToSpeechRouteTest() {
                 expect([200, 400, 500]).toContain(response.status)
             })
 
-            it('should handle request with chatflowId', async () => {
+            it('should handle request with agentflowId', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/tts/generate')
                     .send({
                         text: 'Hello world',
-                        chatflowId: 'test-chatflow-id',
+                        agentflowId: 'test-agentflow-id',
                         chatId: 'test-chat-id',
                         chatMessageId: 'msg-123'
                     })
@@ -137,14 +137,14 @@ export function textToSpeechRouteTest() {
                 expect([200, 400, 404, 500]).toContain(response.status)
             })
 
-            it('should handle request with valid chatflow containing TTS config', async () => {
-                const chatflowId = await createTestChatflowWithTTS(authToken)
-                if (chatflowId) {
+            it('should handle request with valid agentflow containing TTS config', async () => {
+                const agentflowId = await createTestAgentflowWithTTS(authToken)
+                if (agentflowId) {
                     const response = await supertest(getRunningExpressApp().app)
                         .post('/api/v1/tts/generate')
                         .send({
                             text: 'Hello world',
-                            chatflowId: chatflowId,
+                            agentflowId: agentflowId,
                             chatId: 'test-chat-id',
                             chatMessageId: 'msg-123'
                         })
@@ -156,7 +156,7 @@ export function textToSpeechRouteTest() {
 
                     // Cleanup
                     await supertest(getRunningExpressApp().app)
-                        .delete(`/api/v1/chatflows/${chatflowId}`)
+                        .delete(`/api/v1/agentflows/${agentflowId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
                 }
@@ -197,7 +197,7 @@ export function textToSpeechRouteTest() {
                     .post('/api/v1/tts/generate')
                     .send({
                         text: 'Hello world',
-                        chatflowId: 'test-chatflow-id',
+                        agentflowId: 'test-agentflow-id',
                         chatId: 'test-chat-id',
                         chatMessageId: 'msg-123',
                         provider: 'openai',
@@ -230,7 +230,7 @@ export function textToSpeechRouteTest() {
             it('should require authentication', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/tts/abort')
-                    .send({ chatId: 'test-chat', chatMessageId: 'msg-123', chatflowId: 'test-flow' })
+                    .send({ chatId: 'test-chat', chatMessageId: 'msg-123', agentflowId: 'test-flow' })
 
                 expect([401, 403]).toContain(response.status)
             })
@@ -255,7 +255,7 @@ export function textToSpeechRouteTest() {
                 expect([200, 400, 500]).toContain(response.status)
             })
 
-            it('should return error when chatflowId is not provided', async () => {
+            it('should return error when agentflowId is not provided', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/tts/abort')
                     .send({ chatId: 'test-chat', chatMessageId: 'msg-123' })
@@ -268,7 +268,7 @@ export function textToSpeechRouteTest() {
             it('should handle abort with all required params', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/tts/abort')
-                    .send({ chatId: 'test-chat', chatMessageId: 'msg-123', chatflowId: 'test-flow' })
+                    .send({ chatId: 'test-chat', chatMessageId: 'msg-123', agentflowId: 'test-flow' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -281,7 +281,7 @@ export function textToSpeechRouteTest() {
                     .send({
                         chatId: `non-existent-${Date.now()}`,
                         chatMessageId: `msg-${Date.now()}`,
-                        chatflowId: `flow-${Date.now()}`
+                        agentflowId: `flow-${Date.now()}`
                     })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
@@ -293,7 +293,7 @@ export function textToSpeechRouteTest() {
             it('should handle abort with empty string chatId', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/tts/abort')
-                    .send({ chatId: '', chatMessageId: 'msg-123', chatflowId: 'test-flow' })
+                    .send({ chatId: '', chatMessageId: 'msg-123', agentflowId: 'test-flow' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -306,7 +306,7 @@ export function textToSpeechRouteTest() {
                     .send({
                         chatId: 'test-chat-@#$%',
                         chatMessageId: 'msg-123-special',
-                        chatflowId: 'test-flow-uuid-format'
+                        agentflowId: 'test-flow-uuid-format'
                     })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')

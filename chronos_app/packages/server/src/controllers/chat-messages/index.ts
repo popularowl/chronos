@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
 import logger from '../../utils/logger'
 import { ChatMessageRatingType, ChatType, IReactFlowObject } from '../../Interface'
-import chatflowsService from '../../services/chatflows'
+import agentflowsService from '../../services/agentflows'
 import chatMessagesService from '../../services/chat-messages'
 import { aMonthAgo, clearSessionMemory } from '../../utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
@@ -149,12 +149,12 @@ const removeAllChatMessages = async (req: Request, res: Response, next: NextFunc
             )
         }
         const orgId = ''
-        const chatflowid = req.params.id
-        const chatflow = await chatflowsService.getChatflowById(req.params.id)
-        if (!chatflow) {
-            return res.status(404).send(`Chatflow ${req.params.id} not found`)
+        const agentflowid = req.params.id
+        const agentflow = await agentflowsService.getAgentflowById(req.params.id)
+        if (!agentflow) {
+            return res.status(404).send(`Agentflow ${req.params.id} not found`)
         }
-        const flowData = chatflow.flowData
+        const flowData = agentflow.flowData
         const parsedFlowData: IReactFlowObject = JSON.parse(flowData)
         const nodes = parsedFlowData.nodes
         const chatId = req.query?.chatId as string
@@ -186,7 +186,7 @@ const removeAllChatMessages = async (req: Request, res: Response, next: NextFunc
             const hardDelete = req.query?.hardDelete as boolean | undefined
 
             const messages = await utilGetChatMessage({
-                chatflowid,
+                agentflowid: agentflowid,
                 chatTypes,
                 sessionId,
                 startDate,
@@ -236,7 +236,7 @@ const removeAllChatMessages = async (req: Request, res: Response, next: NextFunc
             }
 
             const apiResponse = await chatMessagesService.removeChatMessagesByMessageIds(
-                chatflowid,
+                agentflowid,
                 chatIdMap,
                 messageIds,
                 appServer.usageCacheManager
@@ -258,7 +258,7 @@ const removeAllChatMessages = async (req: Request, res: Response, next: NextFunc
                 return res.status(500).send('Error clearing chat messages')
             }
 
-            const deleteOptions: FindOptionsWhere<ChatMessage> = { chatflowid }
+            const deleteOptions: FindOptionsWhere<ChatMessage> = { agentflowid: agentflowid }
             if (chatId) deleteOptions.chatId = chatId
             if (memoryType) deleteOptions.memoryType = memoryType
             if (sessionId) deleteOptions.sessionId = sessionId
@@ -272,7 +272,7 @@ const removeAllChatMessages = async (req: Request, res: Response, next: NextFunc
             }
             const apiResponse = await chatMessagesService.removeAllChatMessages(
                 chatId,
-                chatflowid,
+                agentflowid,
                 deleteOptions,
                 appServer.usageCacheManager
             )
@@ -285,13 +285,13 @@ const removeAllChatMessages = async (req: Request, res: Response, next: NextFunc
 
 const abortChatMessage = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        if (typeof req.params === 'undefined' || !req.params.chatflowid || !req.params.chatid) {
+        if (typeof req.params === 'undefined' || !req.params.agentflowid || !req.params.chatid) {
             throw new InternalChronosError(
                 StatusCodes.PRECONDITION_FAILED,
-                `Error: chatMessagesController.abortChatMessage - chatflowid or chatid not provided!`
+                `Error: chatMessagesController.abortChatMessage - agentflowid or chatid not provided!`
             )
         }
-        await chatMessagesService.abortChatMessage(req.params.chatid, req.params.chatflowid)
+        await chatMessagesService.abortChatMessage(req.params.chatid, req.params.agentflowid)
         return res.json({ status: 200, message: 'Chat message aborted' })
     } catch (error) {
         next(error)

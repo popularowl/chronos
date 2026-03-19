@@ -28,7 +28,7 @@ export function upsertHistoryServiceTest() {
         describe('getAllUpsertHistory', () => {
             it('should return all upsert history', async () => {
                 mockRepository.find.mockResolvedValue([
-                    { id: '1', chatflowid: 'flow-1', result: '{"status":"OK"}', flowData: '{"nodes":[]}', date: new Date() }
+                    { id: '1', agentflowid: 'flow-1', result: '{"status":"OK"}', flowData: '{"nodes":[]}', date: new Date() }
                 ])
 
                 const result = await service.getAllUpsertHistory('ASC', 'flow-1', undefined, undefined)
@@ -45,7 +45,7 @@ export function upsertHistoryServiceTest() {
 
                 expect(mockRepository.find).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        where: expect.objectContaining({ chatflowid: 'flow-1', date: expect.anything() }),
+                        where: expect.objectContaining({ agentflowid: 'flow-1', date: expect.anything() }),
                         order: expect.objectContaining({ date: 'DESC' })
                     })
                 )

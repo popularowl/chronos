@@ -12,7 +12,7 @@ import { utilGetChatMessage } from '../../utils/getChatMessage'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 import { updateStorageUsage } from '../../utils/quotaUsage'
 
-// Add chatmessages for chatflowid
+// Add chatmessages for agentflowid
 const createChatMessage = async (chatMessage: Partial<IChatMessage>) => {
     try {
         const dbResponse = await utilAddChatMessage(chatMessage)
@@ -25,9 +25,9 @@ const createChatMessage = async (chatMessage: Partial<IChatMessage>) => {
     }
 }
 
-// Get all chatmessages from chatflowid
+// Get all chatmessages from agentflowid
 const getAllChatMessages = async (
-    chatflowId: string,
+    agentflowId: string,
     chatTypes: ChatType[] | undefined,
     sortOrder: string = 'ASC',
     chatId?: string,
@@ -43,7 +43,7 @@ const getAllChatMessages = async (
 ): Promise<ChatMessage[]> => {
     try {
         const dbResponse = await utilGetChatMessage({
-            chatflowid: chatflowId,
+            agentflowid: agentflowId,
             chatTypes,
             sortOrder,
             chatId,
@@ -66,9 +66,9 @@ const getAllChatMessages = async (
     }
 }
 
-// Get internal chatmessages from chatflowid
+// Get internal chatmessages from agentflowid
 const getAllInternalChatMessages = async (
-    chatflowId: string,
+    agentflowId: string,
     chatTypes: ChatType[] | undefined,
     sortOrder: string = 'ASC',
     chatId?: string,
@@ -82,7 +82,7 @@ const getAllInternalChatMessages = async (
 ): Promise<ChatMessage[]> => {
     try {
         const dbResponse = await utilGetChatMessage({
-            chatflowid: chatflowId,
+            agentflowid: agentflowId,
             chatTypes,
             sortOrder,
             chatId,
@@ -105,7 +105,7 @@ const getAllInternalChatMessages = async (
 
 const removeAllChatMessages = async (
     chatId: string,
-    chatflowid: string,
+    agentflowid: string,
     deleteOptions: FindOptionsWhere<ChatMessage>,
     usageCacheManager: UsageCacheManager
 ): Promise<DeleteResult> => {
@@ -117,10 +117,10 @@ const removeAllChatMessages = async (
         const feedbackDeleteOptions: FindOptionsWhere<ChatMessageFeedback> = { chatId }
         await appServer.AppDataSource.getRepository(ChatMessageFeedback).delete(feedbackDeleteOptions)
 
-        // Delete all uploads corresponding to this chatflow/chatId
+        // Delete all uploads corresponding to this agentflow/chatId
         if (chatId) {
             try {
-                const { totalSize } = await removeFilesFromStorage(orgId, chatflowid, chatId)
+                const { totalSize } = await removeFilesFromStorage(orgId, agentflowid, chatId)
                 await updateStorageUsage(orgId, '', totalSize, usageCacheManager)
             } catch (e) {
                 // Don't throw error if file deletion fails because file might not exist
@@ -137,7 +137,7 @@ const removeAllChatMessages = async (
 }
 
 const removeChatMessagesByMessageIds = async (
-    chatflowid: string,
+    agentflowid: string,
     chatIdMap: Map<string, ChatMessage[]>,
     messageIds: string[],
     usageCacheManager: UsageCacheManager
@@ -157,9 +157,9 @@ const removeChatMessagesByMessageIds = async (
             const feedbackDeleteOptions: FindOptionsWhere<ChatMessageFeedback> = { chatId }
             await appServer.AppDataSource.getRepository(ChatMessageFeedback).delete(feedbackDeleteOptions)
 
-            // Delete all uploads corresponding to this chatflow/chatId
+            // Delete all uploads corresponding to this agentflow/chatId
             try {
-                const { totalSize } = await removeFilesFromStorage(orgId, chatflowid, chatId)
+                const { totalSize } = await removeFilesFromStorage(orgId, agentflowid, chatId)
                 await updateStorageUsage(orgId, '', totalSize, usageCacheManager)
             } catch (e) {
                 // Don't throw error if file deletion fails because file might not exist
@@ -181,10 +181,10 @@ const removeChatMessagesByMessageIds = async (
     }
 }
 
-const abortChatMessage = async (chatId: string, chatflowid: string) => {
+const abortChatMessage = async (chatId: string, agentflowid: string) => {
     try {
         const appServer = getRunningExpressApp()
-        const id = `${chatflowid}_${chatId}`
+        const id = `${agentflowid}_${chatId}`
 
         if (process.env.MODE === MODE.QUEUE) {
             await appServer.queueManager.getPredictionQueueEventsProducer().publishEvent({
@@ -202,14 +202,14 @@ const abortChatMessage = async (chatId: string, chatflowid: string) => {
     }
 }
 
-async function getMessagesByChatflowIds(chatflowIds: string[]): Promise<ChatMessage[]> {
+async function getMessagesByAgentflowIds(agentflowIds: string[]): Promise<ChatMessage[]> {
     const appServer = getRunningExpressApp()
-    return await appServer.AppDataSource.getRepository(ChatMessage).find({ where: { chatflowid: In(chatflowIds) } })
+    return await appServer.AppDataSource.getRepository(ChatMessage).find({ where: { agentflowid: In(agentflowIds) } })
 }
 
-async function getMessagesFeedbackByChatflowIds(chatflowIds: string[]): Promise<ChatMessageFeedback[]> {
+async function getMessagesFeedbackByAgentflowIds(agentflowIds: string[]): Promise<ChatMessageFeedback[]> {
     const appServer = getRunningExpressApp()
-    return await appServer.AppDataSource.getRepository(ChatMessageFeedback).find({ where: { chatflowid: In(chatflowIds) } })
+    return await appServer.AppDataSource.getRepository(ChatMessageFeedback).find({ where: { agentflowid: In(agentflowIds) } })
 }
 
 export default {
@@ -219,6 +219,6 @@ export default {
     removeAllChatMessages,
     removeChatMessagesByMessageIds,
     abortChatMessage,
-    getMessagesByChatflowIds,
-    getMessagesFeedbackByChatflowIds
+    getMessagesByAgentflowIds,
+    getMessagesFeedbackByAgentflowIds
 }

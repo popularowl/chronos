@@ -26,7 +26,7 @@ async function createTestAgentflow(authToken: string): Promise<string> {
     }
 
     const response = await supertest(getRunningExpressApp().app)
-        .post('/api/v1/chatflows')
+        .post('/api/v1/agentflows')
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-request-from', 'internal')
         .send(newAgentflow)
@@ -39,7 +39,7 @@ async function createTestAgentflow(authToken: string): Promise<string> {
  */
 async function deleteTestAgentflow(authToken: string, agentflowId: string): Promise<void> {
     await supertest(getRunningExpressApp().app)
-        .delete(`/api/v1/chatflows/${agentflowId}`)
+        .delete(`/api/v1/agentflows/${agentflowId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-request-from', 'internal')
 }

@@ -845,16 +845,16 @@ export function indexUtilTest() {
         })
 
         describe('getAPIOverrideConfig', () => {
-            it('should return defaults when chatflow has no apiConfig', () => {
-                const chatflow = {} as any
-                const result = getAPIOverrideConfig(chatflow)
+            it('should return defaults when agentflow has no apiConfig', () => {
+                const agentflow = {} as any
+                const result = getAPIOverrideConfig(agentflow)
                 expect(result.nodeOverrides).toEqual({})
                 expect(result.variableOverrides).toEqual([])
                 expect(result.apiOverrideStatus).toBe(false)
             })
 
             it('should parse apiConfig JSON', () => {
-                const chatflow = {
+                const agentflow = {
                     apiConfig: JSON.stringify({
                         overrideConfig: {
                             status: true,
@@ -863,23 +863,23 @@ export function indexUtilTest() {
                         }
                     })
                 } as any
-                const result = getAPIOverrideConfig(chatflow)
+                const result = getAPIOverrideConfig(agentflow)
                 expect(result.apiOverrideStatus).toBe(true)
                 expect(result.nodeOverrides).toHaveProperty('TestNode')
                 expect(result.variableOverrides).toHaveLength(1)
             })
 
             it('should return defaults when apiConfig has no overrideConfig', () => {
-                const chatflow = { apiConfig: JSON.stringify({}) } as any
-                const result = getAPIOverrideConfig(chatflow)
+                const agentflow = { apiConfig: JSON.stringify({}) } as any
+                const result = getAPIOverrideConfig(agentflow)
                 expect(result.nodeOverrides).toEqual({})
                 expect(result.variableOverrides).toEqual([])
                 expect(result.apiOverrideStatus).toBe(false)
             })
 
             it('should return defaults on invalid JSON', () => {
-                const chatflow = { apiConfig: 'not-json' } as any
-                const result = getAPIOverrideConfig(chatflow)
+                const agentflow = { apiConfig: 'not-json' } as any
+                const result = getAPIOverrideConfig(agentflow)
                 expect(result.nodeOverrides).toEqual({})
                 expect(result.variableOverrides).toEqual([])
                 expect(result.apiOverrideStatus).toBe(false)

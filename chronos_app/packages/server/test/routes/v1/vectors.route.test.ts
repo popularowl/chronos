@@ -54,7 +54,7 @@ export function vectorsRouteTest() {
 
             it('should handle upsert with valid id and data', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/vector/upsert/test-chatflow-id')
+                    .post('/api/v1/vector/upsert/test-agentflow-id')
                     .send({
                         overrideConfig: {},
                         stopNodeId: null
@@ -67,7 +67,7 @@ export function vectorsRouteTest() {
 
             it('should handle upsert with form data', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/vector/upsert/test-chatflow-id')
+                    .post('/api/v1/vector/upsert/test-agentflow-id')
                     .field('data', JSON.stringify({ test: 'value' }))
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
@@ -104,7 +104,7 @@ export function vectorsRouteTest() {
 
             it('should handle internal upsert with valid id and data', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/vector/internal-upsert/test-chatflow-id')
+                    .post('/api/v1/vector/internal-upsert/test-agentflow-id')
                     .send({
                         overrideConfig: {},
                         stopNodeId: null

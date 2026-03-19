@@ -1427,7 +1427,7 @@ class Agent_Agentflow implements INode {
 
             // Replace sandbox links with proper download URLs. Example: [Download the script](sandbox:/mnt/data/dummy_bar_graph.py)
             if (finalResponse.includes('sandbox:/')) {
-                finalResponse = await this.processSandboxLinks(finalResponse, options.baseURL, options.chatflowid, chatId)
+                finalResponse = await this.processSandboxLinks(finalResponse, options.baseURL, options.agentflowid, chatId)
             }
 
             // If is structured output, then invoke LLM again with structured output at the very end after all tool calls
@@ -2145,7 +2145,7 @@ class Agent_Agentflow implements INode {
                     (selectedTool as any).requiresHumanInput && (!iterationContext || Object.keys(iterationContext).length === 0)
 
                 const flowConfig = {
-                    chatflowId: options.chatflowid,
+                    agentflowId: options.agentflowid,
                     sessionId: options.sessionId,
                     chatId: options.chatId,
                     input: input,
@@ -2471,7 +2471,7 @@ class Agent_Agentflow implements INode {
                 let parsedArtifacts
 
                 const flowConfig = {
-                    chatflowId: options.chatflowid,
+                    agentflowId: options.agentflowid,
                     sessionId: options.sessionId,
                     chatId: options.chatId,
                     input: input,
@@ -2694,7 +2694,7 @@ class Agent_Agentflow implements INode {
     /**
      * Processes sandbox links in the response text and converts them to file annotations
      */
-    private async processSandboxLinks(text: string, baseURL: string, chatflowId: string, chatId: string): Promise<string> {
+    private async processSandboxLinks(text: string, baseURL: string, agentflowId: string, chatId: string): Promise<string> {
         let processedResponse = text
 
         // Regex to match sandbox links: [text](sandbox:/path/to/file)
@@ -2711,7 +2711,7 @@ class Agent_Agentflow implements INode {
                 const fileName = filePath.split('/').pop() || filePath
 
                 // Replace sandbox link with proper download URL
-                const downloadUrl = `${baseURL}/api/v1/get-upload-file?chatflowId=${chatflowId}&chatId=${chatId}&fileName=${fileName}&download=true`
+                const downloadUrl = `${baseURL}/api/v1/get-upload-file?agentflowId=${agentflowId}&chatId=${chatId}&fileName=${fileName}&download=true`
                 const newLink = `[${linkText}](${downloadUrl})`
 
                 processedResponse = processedResponse.replace(fullMatch, newLink)

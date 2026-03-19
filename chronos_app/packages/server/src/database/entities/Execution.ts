@@ -1,6 +1,6 @@
 import { Entity, Column, Index, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm'
 import { IExecution, ExecutionState } from '../../Interface'
-import { ChatFlow } from './ChatFlow'
+import { AgentFlow } from './AgentFlow'
 
 @Entity()
 export class Execution implements IExecution {
@@ -38,7 +38,7 @@ export class Execution implements IExecution {
     @Column()
     stoppedDate: Date
 
-    @ManyToOne(() => ChatFlow)
+    @ManyToOne(() => AgentFlow)
     @JoinColumn({ name: 'agentflowId' })
-    agentflow: ChatFlow
+    agentflow: AgentFlow
 }

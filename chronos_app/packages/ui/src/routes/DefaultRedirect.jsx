@@ -16,7 +16,7 @@ export const DefaultRedirect = () => {
     // Define the order of routes to check (based on the menu order in dashboard.js)
     const routesToCheck = [
         { path: '/agentflows', permission: 'agentflows:view' },
-        { path: '/chatflows', permission: 'chatflows:view' },
+        { path: '/agentflows', permission: 'agentflows:view' },
         { path: '/executions', permission: 'executions:view' },
         { path: '/templates', permission: 'templates:marketplace,templates:custom' },
         { path: '/tools', permission: 'tools:view' },

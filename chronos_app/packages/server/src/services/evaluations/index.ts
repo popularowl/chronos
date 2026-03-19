@@ -11,7 +11,7 @@ import { EvaluationStatus, IEvaluationResult } from '../../Interface'
 import { EvaluationRun } from '../../database/entities/EvaluationRun'
 import { Credential } from '../../database/entities/Credential'
 import { ApiKey } from '../../database/entities/ApiKey'
-import { ChatFlow } from '../../database/entities/ChatFlow'
+import { AgentFlow } from '../../database/entities/AgentFlow'
 import { getAppVersion } from '../../utils'
 import { In } from 'typeorm'
 import { v4 as uuidv4 } from 'uuid'
@@ -30,14 +30,14 @@ const runAgain = async (id: string, baseURL: string, orgId: string) => {
         if (!evaluation) throw new Error(`Evaluation ${id} not found`)
         const additionalConfig = evaluation.additionalConfig ? JSON.parse(evaluation.additionalConfig) : {}
         const data: ICommonObject = {
-            chatflowId: evaluation.chatflowId,
-            chatflowName: evaluation.chatflowName,
+            agentflowId: evaluation.agentflowId,
+            agentflowName: evaluation.agentflowName,
             datasetName: evaluation.datasetName,
             datasetId: evaluation.datasetId,
             evaluationType: evaluation.evaluationType,
             selectedSimpleEvaluators: JSON.stringify(additionalConfig.simpleEvaluators),
             datasetAsOneConversation: additionalConfig.datasetAsOneConversation,
-            chatflowType: JSON.stringify(additionalConfig.chatflowTypes ? additionalConfig.chatflowTypes : [])
+            agentflowType: JSON.stringify(additionalConfig.agentflowTypes ? additionalConfig.agentflowTypes : [])
         }
         data.name = evaluation.name
         if (evaluation.evaluationType === 'llm') {
@@ -71,7 +71,7 @@ const createEvaluation = async (body: ICommonObject, baseURL: string, orgId: str
         row.average_metrics = JSON.stringify({})
 
         const additionalConfig: ICommonObject = {
-            chatflowTypes: body.chatflowType ? JSON.parse(body.chatflowType) : [],
+            agentflowTypes: body.agentflowType ? JSON.parse(body.agentflowType) : [],
             datasetAsOneConversation: body.datasetAsOneConversation,
             simpleEvaluators: body.selectedSimpleEvaluators.length > 0 ? JSON.parse(body.selectedSimpleEvaluators) : []
         }
@@ -107,7 +107,7 @@ const createEvaluation = async (body: ICommonObject, baseURL: string, orgId: str
         ;(dataset as any).rows = items
 
         const data: ICommonObject = {
-            chatflowId: body.chatflowId,
+            agentflowId: body.agentflowId,
             dataset: dataset,
             evaluationType: body.evaluationType,
             evaluationId: newEvaluation.id,
@@ -117,13 +117,13 @@ const createEvaluation = async (body: ICommonObject, baseURL: string, orgId: str
             data.sessionId = uuidv4()
         }
 
-        // When chatflow has an APIKey
-        const apiKeys: { chatflowId: string; apiKey: string }[] = []
-        const chatflowIds = JSON.parse(body.chatflowId)
-        for (let i = 0; i < chatflowIds.length; i++) {
-            const chatflowId = chatflowIds[i]
-            const cFlow = await appServer.AppDataSource.getRepository(ChatFlow).findOneBy({
-                id: chatflowId
+        // When agentflow has an APIKey
+        const apiKeys: { agentflowId: string; apiKey: string }[] = []
+        const agentflowIds = JSON.parse(body.agentflowId)
+        for (let i = 0; i < agentflowIds.length; i++) {
+            const agentflowId = agentflowIds[i]
+            const cFlow = await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({
+                id: agentflowId
             })
             if (cFlow && cFlow.apikeyid) {
                 const apikeyObj = await appServer.AppDataSource.getRepository(ApiKey).findOneBy({
@@ -131,7 +131,7 @@ const createEvaluation = async (body: ICommonObject, baseURL: string, orgId: str
                 })
                 if (apikeyObj) {
                     apiKeys.push({
-                        chatflowId: chatflowId,
+                        agentflowId: agentflowId,
                         apiKey: apikeyObj.apiKey
                     })
                 }
@@ -444,13 +444,13 @@ const isOutdated = async (id: string) => {
         let isOutdated = false
         const returnObj: ICommonObject = {
             isOutdated: false,
-            chatflows: [],
+            agentflows: [],
             dataset: '',
             errors: []
         }
 
         // check if the evaluation is outdated by extracting the runTime and then check with the dataset last updated time as well
-        // as the chatflows last updated time. If the evaluation is outdated, then return true else return false
+        // as the agentflows last updated time. If the evaluation is outdated, then return true else return false
         const dataset = await appServer.AppDataSource.getRepository(Dataset).findOneBy({
             id: evaluation.datasetId
         })
@@ -467,62 +467,62 @@ const isOutdated = async (id: string) => {
             })
             isOutdated = true
         }
-        const chatflowIds = evaluation.chatflowId ? JSON.parse(evaluation.chatflowId) : []
-        const chatflowNames = evaluation.chatflowName ? JSON.parse(evaluation.chatflowName) : []
-        const chatflowTypes = evaluation.additionalConfig ? JSON.parse(evaluation.additionalConfig).chatflowTypes : []
-        for (let i = 0; i < chatflowIds.length; i++) {
+        const agentflowIds = evaluation.agentflowId ? JSON.parse(evaluation.agentflowId) : []
+        const agentflowNames = evaluation.agentflowName ? JSON.parse(evaluation.agentflowName) : []
+        const agentflowTypes = evaluation.additionalConfig ? JSON.parse(evaluation.additionalConfig).agentflowTypes : []
+        for (let i = 0; i < agentflowIds.length; i++) {
             // check for backward compatibility, as previous versions did not the types in additionalConfig
-            if (chatflowTypes && chatflowTypes.length >= 0) {
-                if (chatflowTypes[i] === 'Custom Assistant') {
-                    // if the chatflow type is custom assistant, then we should NOT check in the chatflows table
+            if (agentflowTypes && agentflowTypes.length >= 0) {
+                if (agentflowTypes[i] === 'Custom Assistant') {
+                    // if the agentflow type is custom assistant, then we should NOT check in the agentflows table
                     continue
                 }
             }
-            const chatflow = await appServer.AppDataSource.getRepository(ChatFlow).findOneBy({
-                id: chatflowIds[i]
+            const agentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({
+                id: agentflowIds[i]
             })
-            if (!chatflow) {
+            if (!agentflow) {
                 returnObj.errors.push({
-                    message: `Chatflow ${chatflowNames[i]} not found`,
-                    id: chatflowIds[i]
+                    message: `Agentflow ${agentflowNames[i]} not found`,
+                    id: agentflowIds[i]
                 })
                 isOutdated = true
             } else {
-                const chatflowLastUpdated = chatflow.updatedDate.getTime()
-                if (chatflowLastUpdated > evaluationRunDate) {
+                const agentflowLastUpdated = agentflow.updatedDate.getTime()
+                if (agentflowLastUpdated > evaluationRunDate) {
                     isOutdated = true
-                    returnObj.chatflows.push({
-                        chatflowName: chatflowNames[i],
-                        chatflowId: chatflowIds[i],
-                        chatflowType: chatflow.type === 'AGENTFLOW' ? 'Agentflow v2' : 'Chatflow',
+                    returnObj.agentflows.push({
+                        agentflowName: agentflowNames[i],
+                        agentflowId: agentflowIds[i],
+                        agentflowType: agentflow.type === 'AGENTFLOW' ? 'Agentflow v2' : 'Agentflow',
                         isOutdated: true
                     })
                 }
             }
         }
-        if (chatflowTypes && chatflowTypes.length > 0) {
-            for (let i = 0; i < chatflowIds.length; i++) {
-                if (chatflowTypes[i] !== 'Custom Assistant') {
-                    // if the chatflow type is NOT custom assistant, then bail out for this item
+        if (agentflowTypes && agentflowTypes.length > 0) {
+            for (let i = 0; i < agentflowIds.length; i++) {
+                if (agentflowTypes[i] !== 'Custom Assistant') {
+                    // if the agentflow type is NOT custom assistant, then bail out for this item
                     continue
                 }
                 const assistant = await appServer.AppDataSource.getRepository(Assistant).findOneBy({
-                    id: chatflowIds[i]
+                    id: agentflowIds[i]
                 })
                 if (!assistant) {
                     returnObj.errors.push({
-                        message: `Custom Assistant ${chatflowNames[i]} not found`,
-                        id: chatflowIds[i]
+                        message: `Custom Assistant ${agentflowNames[i]} not found`,
+                        id: agentflowIds[i]
                     })
                     isOutdated = true
                 } else {
-                    const chatflowLastUpdated = assistant.updatedDate.getTime()
-                    if (chatflowLastUpdated > evaluationRunDate) {
+                    const assistantLastUpdated = assistant.updatedDate.getTime()
+                    if (assistantLastUpdated > evaluationRunDate) {
                         isOutdated = true
-                        returnObj.chatflows.push({
-                            chatflowName: chatflowNames[i],
-                            chatflowId: chatflowIds[i],
-                            chatflowType: 'Custom Assistant',
+                        returnObj.agentflows.push({
+                            agentflowName: agentflowNames[i],
+                            agentflowId: agentflowIds[i],
+                            agentflowType: 'Custom Assistant',
                             isOutdated: true
                         })
                     }

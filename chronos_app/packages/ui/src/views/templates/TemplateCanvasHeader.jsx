@@ -12,7 +12,7 @@ import { Available } from '@/ui-component/rbac/available'
 
 // ==============================|| CANVAS HEADER ||============================== //
 
-const TemplateCanvasHeader = ({ flowName, flowData, onChatflowCopy }) => {
+const TemplateCanvasHeader = ({ flowName, flowData, onAgentflowCopy }) => {
     const theme = useTheme()
     const navigate = useNavigate()
 
@@ -53,13 +53,13 @@ const TemplateCanvasHeader = ({ flowName, flowData, onChatflowCopy }) => {
                     </Typography>
                 </Stack>
             </Box>
-            <Available permission={'chatflows:create,agentflows.create'}>
+            <Available permission={'agentflows:create'}>
                 <Box>
                     <StyledButton
                         color='secondary'
                         variant='contained'
-                        title='Use Chatflow'
-                        onClick={() => onChatflowCopy(flowData)}
+                        title='Use Agentflow'
+                        onClick={() => onAgentflowCopy(flowData)}
                         startIcon={<IconCopy />}
                     >
                         Use Template
@@ -73,7 +73,7 @@ const TemplateCanvasHeader = ({ flowName, flowData, onChatflowCopy }) => {
 TemplateCanvasHeader.propTypes = {
     flowName: PropTypes.string,
     flowData: PropTypes.object,
-    onChatflowCopy: PropTypes.func
+    onAgentflowCopy: PropTypes.func
 }
 
 export default TemplateCanvasHeader

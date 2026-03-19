@@ -7,8 +7,8 @@ import { useTheme } from '@mui/material/styles'
 // Project Imports
 import { StyledButton } from '@/ui-component/button/StyledButton'
 import { SwitchInput } from '@/ui-component/switch/Switch'
-import chatflowsApi from '@/api/chatflows'
-import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction, SET_CHATFLOW } from '@/store/actions'
+import agentflowsApi from '@/api/agentflows'
+import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction, SET_AGENTFLOW } from '@/store/actions'
 import useNotifier from '@/utils/useNotifier'
 import anthropicIcon from '@/assets/images/anthropic.svg'
 import azureOpenAiIcon from '@/assets/images/azure_openai.svg'
@@ -374,7 +374,7 @@ const FollowUpPrompts = ({ dialogProps }) => {
                 }
             }
 
-            const saveResp = await chatflowsApi.updateChatflow(dialogProps.chatflow.id, {
+            const saveResp = await agentflowsApi.updateAgentflow(dialogProps.agentflow.id, {
                 chatbotConfig: JSON.stringify(chatbotConfig),
                 followUpPrompts: JSON.stringify(followUpPromptsConfig)
             })
@@ -391,7 +391,7 @@ const FollowUpPrompts = ({ dialogProps }) => {
                         )
                     }
                 })
-                dispatch({ type: SET_CHATFLOW, chatflow: saveResp.data })
+                dispatch({ type: SET_AGENTFLOW, agentflow: saveResp.data })
             }
         } catch (error) {
             const errorData = error.response.data || `${error.response.status}: ${error.response.statusText}`
@@ -412,9 +412,9 @@ const FollowUpPrompts = ({ dialogProps }) => {
     }
 
     useEffect(() => {
-        if (dialogProps.chatflow && dialogProps.chatflow.followUpPrompts) {
-            let chatbotConfig = JSON.parse(dialogProps.chatflow.chatbotConfig)
-            let followUpPromptsConfig = JSON.parse(dialogProps.chatflow.followUpPrompts)
+        if (dialogProps.agentflow && dialogProps.agentflow.followUpPrompts) {
+            let chatbotConfig = JSON.parse(dialogProps.agentflow.chatbotConfig)
+            let followUpPromptsConfig = JSON.parse(dialogProps.agentflow.followUpPrompts)
             setChatbotConfig(chatbotConfig || {})
             if (followUpPromptsConfig) {
                 setFollowUpPromptsConfig(followUpPromptsConfig)

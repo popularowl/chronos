@@ -102,7 +102,7 @@ export const convertTextToSpeechStream = async (
                         }
                     }
                 } else {
-                    reject(new Error('Text to speech is not selected. Please configure TTS in the chatflow.'))
+                    reject(new Error('Text to speech is not selected. Please configure TTS in the agentflow.'))
                 }
             } catch (error) {
                 reject(error)

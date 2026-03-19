@@ -1,4 +1,4 @@
-import { ChatFlow } from './ChatFlow'
+import { AgentFlow } from './AgentFlow'
 import { ChatMessage } from './ChatMessage'
 import { ChatMessageFeedback } from './ChatMessageFeedback'
 import { Credential } from './Credential'
@@ -22,7 +22,7 @@ import { OAuthClient } from './OAuthClient'
 import { Skill } from './Skill'
 
 export const entities = {
-    ChatFlow,
+    AgentFlow,
     ChatMessage,
     ChatMessageFeedback,
     Credential,

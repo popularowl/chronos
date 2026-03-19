@@ -38,7 +38,7 @@ import { MultiDropdown } from '@/ui-component/dropdown/MultiDropdown'
 import { IconArrowLeft, IconAlertTriangle, IconTestPipe2 } from '@tabler/icons-react'
 
 // API
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 import useApi from '@/hooks/useApi'
 import datasetsApi from '@/api/dataset'
 import evaluatorsApi from '@/api/evaluators'
@@ -57,14 +57,14 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const theme = useTheme()
     useNotifier()
 
-    const getAllChatflowsApi = useApi(chatflowsApi.getAllChatflows)
-    const getAllAgentflowsApi = useApi(chatflowsApi.getAllAgentflows)
+    const getAllAgentflowsV2Api = useApi(agentflowsApi.getAllAgentflows)
+    const getAllAgentflowsApi = useApi(agentflowsApi.getAllAgentflows)
 
     const getAllDatasetsApi = useApi(datasetsApi.getAllDatasets)
     const getAllEvaluatorsApi = useApi(evaluatorsApi.getAllEvaluators)
     const getNodesByCategoryApi = useApi(nodesApi.getNodesByCategory)
     const getModelsApi = useApi(nodesApi.executeNodeLoadMethod)
-    const [chatflow, setChatflow] = useState([])
+    const [agentflow, setAgentflow] = useState([])
     const [dataset, setDataset] = useState('')
     const [datasetAsOneConversation, setDatasetAsOneConversation] = useState(false)
     const [flowTypes, setFlowTypes] = useState([])
@@ -91,11 +91,11 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     useEffect(() => {
         if (dialogProps.type === 'NEW' && dialogProps.data) {
             const evaluation = dialogProps.data
-            const evalChatFlows = []
-            JSON.parse(evaluation.chatflowId).map((f) => {
-                evalChatFlows.push(f)
+            const evalAgentFlows = []
+            JSON.parse(evaluation.agentflowId).map((f) => {
+                evalAgentFlows.push(f)
             })
-            setChatflow(evalChatFlows)
+            setAgentflow(evalAgentFlows)
             setDataset(evaluation.datasetId)
             setCredentialId('')
             setSelectedModel('')
@@ -122,7 +122,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
         setSelectedSimpleEvaluators([])
         setSelectedLLMEvaluators([])
         setActiveStep(0)
-        setChatflow([])
+        setAgentflow([])
         setSelectedModel('')
         setSelectedLLM('no_grading')
         setUseLLM(false)
@@ -131,7 +131,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
 
     const validate = () => {
         if (activeStep === 0) {
-            return evaluationName && dataset && chatflow.length > 0
+            return evaluationName && dataset && agentflow.length > 0
         } else if (activeStep === 1) {
             return true
         } else if (activeStep === 2) {
@@ -161,16 +161,16 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     }
 
     const createNewEvaluation = async () => {
-        const selectedChatflows = JSON.parse(chatflow)
-        const selectedChatflowNames = []
-        for (let i = 0; i < selectedChatflows.length; i += 1) {
-            selectedChatflowNames.push(flows.find((f) => f.name === selectedChatflows[i])?.label)
+        const selectedAgentflows = JSON.parse(agentflow)
+        const selectedAgentflowNames = []
+        for (let i = 0; i < selectedAgentflows.length; i += 1) {
+            selectedAgentflowNames.push(flows.find((f) => f.name === selectedAgentflows[i])?.label)
         }
-        const selectedChatflowTypes = []
-        for (let i = 0; i < selectedChatflows.length; i += 1) {
-            selectedChatflowTypes.push(flows.find((f) => f.name === selectedChatflows[i])?.type)
+        const selectedAgentflowTypes = []
+        for (let i = 0; i < selectedAgentflows.length; i += 1) {
+            selectedAgentflowTypes.push(flows.find((f) => f.name === selectedAgentflows[i])?.type)
         }
-        const chatflowName = JSON.stringify(selectedChatflowNames)
+        const agentflowName = JSON.stringify(selectedAgentflowNames)
         const datasetName = datasets.find((f) => f.name === dataset)?.label
         const obj = {
             name: evaluationName,
@@ -178,9 +178,9 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             credentialId: credentialId,
             datasetId: dataset,
             datasetName: datasetName,
-            chatflowId: chatflow,
-            chatflowName: chatflowName,
-            chatflowType: JSON.stringify(selectedChatflowTypes),
+            agentflowId: agentflow,
+            agentflowName: agentflowName,
+            agentflowType: JSON.stringify(selectedAgentflowTypes),
             selectedSimpleEvaluators: selectedSimpleEvaluators,
             selectedLLMEvaluators: selectedLLMEvaluators,
             model: selectedModel,
@@ -192,7 +192,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
 
     const disableButton = () => {
         if (activeStep === 0) {
-            return !evaluationName || !dataset || chatflow.length === 0
+            return !evaluationName || !dataset || agentflow.length === 0
         } else if (activeStep === 2) {
             if (useLLM) {
                 if (!selectedModel || !selectedLLM || selectedLLMEvaluators.length === 0) {
@@ -223,7 +223,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     useEffect(() => {
         getNodesByCategoryApi.request('Chat Models')
         if (flows.length === 0) {
-            getAllChatflowsApi.request()
+            getAllAgentflowsV2Api.request()
             getAllAgentflowsApi.request('AGENTFLOW')
         }
         if (datasets.length === 0) {
@@ -234,17 +234,17 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     }, [])
 
     useEffect(() => {
-        if (getAllAgentflowsApi.data && getAllChatflowsApi.data) {
+        if (getAllAgentflowsV2Api.data && getAllAgentflowsApi.data) {
             try {
-                const agentFlows = populateFlowNames(getAllAgentflowsApi.data, 'Agentflow v2')
-                const chatFlows = populateFlowNames(getAllChatflowsApi.data, 'Chatflow')
-                setFlows([...agentFlows, ...chatFlows])
-                setFlowTypes(['Agentflow v2', 'Chatflow'])
+                const agentFlowsV2 = populateFlowNames(getAllAgentflowsV2Api.data, 'Agentflow v2')
+                const agentFlows = populateFlowNames(getAllAgentflowsApi.data, 'Agentflow')
+                setFlows([...agentFlowsV2, ...agentFlows])
+                setFlowTypes(['Agentflow v2', 'Agentflow'])
             } catch (e) {
                 console.error(e)
             }
         }
-    }, [getAllAgentflowsApi.data, getAllChatflowsApi.data])
+    }, [getAllAgentflowsV2Api.data, getAllAgentflowsApi.data])
 
     useEffect(() => {
         if (getNodesByCategoryApi.data) {
@@ -423,7 +423,7 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                 </Typography>
                                 <Typography sx={{ mt: 2 }} variant='body2'>
                                     Uses the <span style={{ fontStyle: 'italic' }}>input</span> column from the dataset to execute selected
-                                    Chatflow(s), and compares the results with the output column.
+                                    Agentflow(s), and compares the results with the output column.
                                 </Typography>
                                 <Typography variant='body2'>The following metrics will be computed:</Typography>
                                 <Stack
@@ -516,8 +516,8 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                         <span style={{ color: 'red' }}>&nbsp;*</span>
                                     </Typography>
                                     <Typography variant='overline'>
-                                        <Checkbox defaultChecked size='small' label='All' value='Chatflow' onChange={onChangeFlowType} />{' '}
-                                        Chatflows
+                                        <Checkbox defaultChecked size='small' label='All' value='Agentflow' onChange={onChangeFlowType} />{' '}
+                                        Agentflows
                                         <Checkbox
                                             defaultChecked
                                             size='small'
@@ -529,10 +529,10 @@ const CreateEvaluationDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                     </Typography>
                                 </div>
                                 <MultiDropdown
-                                    name={'chatflow1'}
+                                    name={'agentflow1'}
                                     options={flows.filter((f) => flowTypes.includes(f.type))}
-                                    onSelect={(newValue) => setChatflow(newValue)}
-                                    value={chatflow ?? chatflow ?? 'choose an option'}
+                                    onSelect={(newValue) => setAgentflow(newValue)}
+                                    value={agentflow ?? 'choose an option'}
                                 />
                             </Box>
                         </>

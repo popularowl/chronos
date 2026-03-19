@@ -3,7 +3,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm'
 export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
-            CREATE TABLE IF NOT EXISTS chat_flow (
+            CREATE TABLE IF NOT EXISTS agent_flow (
                 id uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "name" varchar NOT NULL,
                 "flowData" text NOT NULL,
@@ -18,19 +18,21 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 "followUpPrompts" text NULL,
                 "category" text NULL,
                 "type" VARCHAR(20) NOT NULL DEFAULT 'AGENTFLOW',
+                "userId" varchar(36) NULL,
                 "createdDate" timestamp NOT NULL DEFAULT now(),
                 "updatedDate" timestamp NOT NULL DEFAULT now(),
                 CONSTRAINT "PK_3c7cea7d047ac4b91764574cdbf" PRIMARY KEY (id)
             );
         `)
 
-        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_chatflow_name" ON "chat_flow" (substring("name" from 1 for 255));`)
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_agentflow_name" ON "agent_flow" (substring("name" from 1 for 255));`)
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_agentflow_userId" ON agent_flow ("userId");`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS chat_message (
                 id uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "role" varchar NOT NULL,
-                "chatflowid" uuid NOT NULL,
+                "agentflowid" uuid NOT NULL,
                 "content" text NOT NULL,
                 "sourceDocuments" text NULL,
                 "usedTools" text NULL,
@@ -51,7 +53,7 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
             );
         `)
 
-        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_f56c36fe42894d57e5c664d229" ON "chat_message" ("chatflowid");`)
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_f56c36fe42894d57e5c664d229" ON "chat_message" ("agentflowid");`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS credential (
@@ -59,11 +61,14 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 "name" varchar NOT NULL,
                 "credentialName" varchar NOT NULL,
                 "encryptedData" text NOT NULL,
+                "userId" varchar(36) NULL,
                 "createdDate" timestamp NOT NULL DEFAULT now(),
                 "updatedDate" timestamp NOT NULL DEFAULT now(),
                 CONSTRAINT "PK_3a5169bcd3d5463cefeec78be82" PRIMARY KEY (id)
             );
         `)
+
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_credential_userId" ON credential ("userId");`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS tool (
@@ -108,7 +113,7 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS chat_message_feedback (
                 id uuid NOT NULL DEFAULT uuid_generate_v4(),
-                "chatflowid" uuid NOT NULL,
+                "agentflowid" uuid NOT NULL,
                 "content" text NULL,
                 "chatId" varchar NOT NULL,
                 "messageId" uuid NOT NULL,
@@ -119,13 +124,13 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
             );
         `)
 
-        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_f56c36fe42894d57e5c664d230" ON "chat_message_feedback" ("chatflowid");`)
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_f56c36fe42894d57e5c664d230" ON "chat_message_feedback" ("agentflowid");`)
         await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_9acddcb7a2b51fe37669049fc6" ON "chat_message_feedback" ("chatId");`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS upsert_history (
                 id uuid NOT NULL DEFAULT uuid_generate_v4(),
-                "chatflowid" varchar NOT NULL,
+                "agentflowid" varchar NOT NULL,
                 "result" text NOT NULL,
                 "flowData" text NOT NULL,
                 "date" timestamp NOT NULL DEFAULT now(),
@@ -136,7 +141,7 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS lead (
                 id uuid NOT NULL DEFAULT uuid_generate_v4(),
-                "chatflowid" varchar NOT NULL,
+                "agentflowid" varchar NOT NULL,
                 "chatId" varchar NOT NULL,
                 "name" text NULL,
                 "email" text NULL,
@@ -157,11 +162,14 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 "vectorStoreConfig" text NULL,
                 "embeddingConfig" text NULL,
                 "recordManagerConfig" text NULL,
+                "userId" varchar(36) NULL,
                 "createdDate" timestamp NOT NULL DEFAULT now(),
                 "updatedDate" timestamp NOT NULL DEFAULT now(),
                 CONSTRAINT "PK_98495043dd774f54-9830ab78f9" PRIMARY KEY (id)
             );
         `)
+
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_document_store_userId" ON document_store ("userId");`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS document_store_file_chunk (
@@ -182,8 +190,8 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
             CREATE TABLE IF NOT EXISTS evaluation (
                 id uuid NOT NULL DEFAULT uuid_generate_v4(),
                 "name" varchar NOT NULL,
-                "chatflowId" text NOT NULL,
-                "chatflowName" text NOT NULL,
+                "agentflowId" text NOT NULL,
+                "agentflowName" text NOT NULL,
                 "datasetId" varchar NOT NULL,
                 "datasetName" varchar NOT NULL,
                 "additionalConfig" text NULL,
@@ -315,9 +323,25 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 CONSTRAINT "PK_oauth_client_id" PRIMARY KEY (id)
             );
         `)
+
+        await queryRunner.query(`
+            CREATE TABLE IF NOT EXISTS skill (
+                id uuid NOT NULL DEFAULT uuid_generate_v4(),
+                "name" varchar NOT NULL,
+                description text NOT NULL,
+                category varchar NOT NULL DEFAULT 'general',
+                color varchar NOT NULL,
+                "iconSrc" varchar NULL,
+                content text NOT NULL,
+                "createdDate" timestamp NOT NULL DEFAULT now(),
+                "updatedDate" timestamp NOT NULL DEFAULT now(),
+                CONSTRAINT "PK_skill_id" PRIMARY KEY (id)
+            );
+        `)
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`DROP TABLE IF EXISTS skill`)
         await queryRunner.query(`DROP TABLE IF EXISTS "oauth_client"`)
         await queryRunner.query(`DROP TABLE IF EXISTS "user"`)
         await queryRunner.query(`DROP TABLE IF EXISTS execution`)
@@ -338,6 +362,6 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE IF EXISTS tool`)
         await queryRunner.query(`DROP TABLE IF EXISTS credential`)
         await queryRunner.query(`DROP TABLE IF EXISTS chat_message`)
-        await queryRunner.query(`DROP TABLE IF EXISTS chat_flow`)
+        await queryRunner.query(`DROP TABLE IF EXISTS agent_flow`)
     }
 }

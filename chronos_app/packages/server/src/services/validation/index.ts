@@ -2,7 +2,7 @@ import { StatusCodes } from 'http-status-codes'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
-import { ChatFlow } from '../../database/entities/ChatFlow'
+import { AgentFlow } from '../../database/entities/AgentFlow'
 import { INodeParams } from 'chronos-components'
 import { IReactFlowEdge, IReactFlowNode } from '../../Interface'
 
@@ -23,7 +23,7 @@ const checkFlowValidation = async (flowId: string, workspaceId?: string): Promis
         const whereCondition: any = { id: flowId }
         if (workspaceId) whereCondition.workspaceId = workspaceId
 
-        const flow = await appServer.AppDataSource.getRepository(ChatFlow).findOne({
+        const flow = await appServer.AppDataSource.getRepository(AgentFlow).findOne({
             where: whereCondition
         })
 

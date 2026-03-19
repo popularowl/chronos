@@ -32,7 +32,7 @@ const programmingLanguages = {
     css: '.css'
 }
 
-export const CodeBlock = memo(({ language, chatflowid, isFullWidth, value }) => {
+export const CodeBlock = memo(({ language, agentflowid, isFullWidth, value }) => {
     const theme = useTheme()
     const [anchorEl, setAnchorEl] = useState(null)
     const openPopOver = Boolean(anchorEl)
@@ -55,7 +55,7 @@ export const CodeBlock = memo(({ language, chatflowid, isFullWidth, value }) => 
 
     const downloadAsFile = () => {
         const fileExtension = programmingLanguages[language] || '.file'
-        const suggestedFileName = `file-${chatflowid}${fileExtension}`
+        const suggestedFileName = `file-${agentflowid}${fileExtension}`
         const fileName = suggestedFileName
 
         if (!fileName) {
@@ -117,7 +117,7 @@ CodeBlock.displayName = 'CodeBlock'
 
 CodeBlock.propTypes = {
     language: PropTypes.string,
-    chatflowid: PropTypes.string,
+    agentflowid: PropTypes.string,
     isFullWidth: PropTypes.bool,
     value: PropTypes.string
 }

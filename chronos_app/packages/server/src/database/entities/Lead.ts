@@ -17,7 +17,7 @@ export class Lead implements ILead {
     phone?: string
 
     @Column()
-    chatflowid: string
+    agentflowid: string
 
     @Column()
     chatId: string

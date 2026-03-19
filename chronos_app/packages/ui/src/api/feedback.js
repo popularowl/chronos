@@ -1,7 +1,7 @@
 import client from './client'
 
-const getStatsFromChatflow = (id, params) => client.get(`/stats/${id}`, { params: { ...params } })
+const getStatsFromAgentflow = (id, params) => client.get(`/stats/${id}`, { params: { ...params } })
 
 export default {
-    getStatsFromChatflow
+    getStatsFromAgentflow
 }

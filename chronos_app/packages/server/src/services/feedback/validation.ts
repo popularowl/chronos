@@ -65,17 +65,17 @@ export const validateFeedbackForCreation = async (feedback: Partial<IChatMessage
         feedback.chatId = message.chatId
     }
 
-    // If chatflowid is provided, validate it matches the message's chatflowid
-    if (feedback.chatflowid) {
-        if (message.chatflowid !== feedback.chatflowid) {
+    // If agentflowid is provided, validate it matches the message's agentflowid
+    if (feedback.agentflowid) {
+        if (message.agentflowid !== feedback.agentflowid) {
             throw new InternalChronosError(
                 StatusCodes.BAD_REQUEST,
-                `Inconsistent chatflow ID: message with ID ${message.id} does not belong to chatflow with ID ${feedback.chatflowid}`
+                `Inconsistent agentflow ID: message with ID ${message.id} does not belong to agentflow with ID ${feedback.agentflowid}`
             )
         }
     } else {
-        // If not provided, use the message's chatflowid
-        feedback.chatflowid = message.chatflowid
+        // If not provided, use the message's agentflowid
+        feedback.agentflowid = message.agentflowid
     }
 
     return feedback
@@ -95,7 +95,7 @@ export const validateFeedbackForUpdate = async (
 
     feedback.messageId = feedback.messageId ?? existingFeedback.messageId
     feedback.chatId = feedback.chatId ?? existingFeedback.chatId
-    feedback.chatflowid = feedback.chatflowid ?? existingFeedback.chatflowid
+    feedback.agentflowid = feedback.agentflowid ?? existingFeedback.agentflowid
 
     // If messageId is provided, validate it exists and get the message
     let message: ChatMessage | null = null
@@ -113,12 +113,12 @@ export const validateFeedbackForUpdate = async (
         }
     }
 
-    // If chatflowid is provided and we have a message, validate it matches the message's chatflowid
-    if (feedback.chatflowid && message) {
-        if (message?.chatflowid !== feedback.chatflowid) {
+    // If agentflowid is provided and we have a message, validate it matches the message's agentflowid
+    if (feedback.agentflowid && message) {
+        if (message?.agentflowid !== feedback.agentflowid) {
             throw new InternalChronosError(
                 StatusCodes.BAD_REQUEST,
-                `Inconsistent chatflow ID: message with ID ${message?.id} does not belong to chatflow with ID ${feedback.chatflowid}`
+                `Inconsistent agentflow ID: message with ID ${message?.id} does not belong to agentflow with ID ${feedback.agentflowid}`
             )
         }
     }

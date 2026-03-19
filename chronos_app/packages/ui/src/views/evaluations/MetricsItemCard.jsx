@@ -6,7 +6,7 @@ import { Box, Grid, Typography } from '@mui/material'
 
 // project imports
 import MainCard from '@/ui-component/cards/MainCard'
-import SkeletonChatflowCard from '@/ui-component/cards/Skeleton/ChatflowCard'
+import SkeletonAgentflowCard from '@/ui-component/cards/Skeleton/AgentflowCard'
 
 const CardWrapper = styled(MainCard)(({ theme }) => ({
     background: theme.palette.card.main,
@@ -27,7 +27,7 @@ const MetricsItemCard = ({ isLoading, data, component }) => {
     return (
         <>
             {isLoading ? (
-                <SkeletonChatflowCard />
+                <SkeletonAgentflowCard />
             ) : (
                 <CardWrapper content={false} sx={{ height: 270, cursor: 'auto', textAlign: 'center', border: 'false' }}>
                     <Box sx={{ p: 2.25 }}>

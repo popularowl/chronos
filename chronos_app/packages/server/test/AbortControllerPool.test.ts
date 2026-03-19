@@ -2,7 +2,7 @@ import { AbortControllerPool } from '../src/AbortControllerPool'
 
 /**
  * Test suite for AbortControllerPool class
- * Tests abort controller management for chatflow sessions
+ * Tests abort controller management for agentflow sessions
  */
 export function abortControllerPoolTest() {
     describe('AbortControllerPool', () => {
@@ -15,9 +15,9 @@ export function abortControllerPoolTest() {
         describe('add', () => {
             it('should add an abort controller to the pool', () => {
                 const controller = new AbortController()
-                pool.add('chatflow_chat_123', controller)
+                pool.add('agentflow_chat_123', controller)
 
-                expect(pool.get('chatflow_chat_123')).toBe(controller)
+                expect(pool.get('agentflow_chat_123')).toBe(controller)
             })
 
             it('should overwrite existing controller with same id', () => {

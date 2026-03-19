@@ -1,21 +1,21 @@
 import { Request } from 'express'
 import { StatusCodes } from 'http-status-codes'
-import { utilBuildChatflow } from '../../utils/buildAgentflow'
+import { utilBuildAgentflow } from '../../utils/buildAgentflow'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 
-const buildChatflow = async (req: Request) => {
+const buildAgentflow = async (req: Request) => {
     try {
-        const dbResponse = await utilBuildChatflow(req)
+        const dbResponse = await utilBuildAgentflow(req)
         return dbResponse
     } catch (error) {
         throw new InternalChronosError(
             StatusCodes.INTERNAL_SERVER_ERROR,
-            `Error: predictionsServices.buildChatflow - ${getErrorMessage(error)}`
+            `Error: predictionsServices.buildAgentflow - ${getErrorMessage(error)}`
         )
     }
 }
 
 export default {
-    buildChatflow
+    buildAgentflow
 }

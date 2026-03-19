@@ -19,19 +19,19 @@ const sanitizeTool = (Tool) => {
     }
 }
 
-const sanitizeChatflow = (ChatFlow) => {
+const sanitizeAgentflow = (AgentFlow) => {
     try {
-        return ChatFlow.map((chatFlow) => {
-            const sanitizeFlowData = generateExportFlowData(JSON.parse(chatFlow.flowData))
+        return AgentFlow.map((agentFlow) => {
+            const sanitizeFlowData = generateExportFlowData(JSON.parse(agentFlow.flowData))
             return {
-                id: chatFlow.id,
-                name: chatFlow.name,
+                id: agentFlow.id,
+                name: agentFlow.name,
                 flowData: stringify(sanitizeFlowData),
-                type: chatFlow.type
+                type: agentFlow.type
             }
         })
     } catch (error) {
-        throw new Error(`exportImport.sanitizeChatflow ${getErrorMessage(error)}`)
+        throw new Error(`exportImport.sanitizeAgentflow ${getErrorMessage(error)}`)
     }
 }
 
@@ -92,9 +92,8 @@ export const stringify = (object) => {
 export const exportData = (exportAllData) => {
     try {
         return {
-            AgentFlow: sanitizeChatflow(exportAllData.AgentFlow),
-            AgentFlowV2: sanitizeChatflow(exportAllData.AgentFlowV2),
-            ChatFlow: sanitizeChatflow(exportAllData.ChatFlow),
+            AgentFlow: sanitizeAgentflow(exportAllData.AgentFlow),
+            AgentFlowV2: sanitizeAgentflow(exportAllData.AgentFlowV2),
             ChatMessage: exportAllData.ChatMessage,
             ChatMessageFeedback: exportAllData.ChatMessageFeedback,
             CustomTemplate: sanitizeCustomTemplate(exportAllData.CustomTemplate),

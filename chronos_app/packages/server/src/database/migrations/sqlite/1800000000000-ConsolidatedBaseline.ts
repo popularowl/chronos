@@ -3,7 +3,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm'
 export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
-            CREATE TABLE IF NOT EXISTS "chat_flow" (
+            CREATE TABLE IF NOT EXISTS "agent_flow" (
                 "id" varchar PRIMARY KEY NOT NULL,
                 "name" varchar NOT NULL,
                 "flowData" text NOT NULL,
@@ -18,18 +18,20 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 "followUpPrompts" text,
                 "category" text,
                 "type" VARCHAR(20) NOT NULL DEFAULT 'AGENTFLOW',
+                "userId" varchar(36),
                 "createdDate" datetime NOT NULL DEFAULT (datetime('now')),
                 "updatedDate" datetime NOT NULL DEFAULT (datetime('now'))
             );
         `)
 
-        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_chatflow_name" ON "chat_flow" (substr(name, 1, 255));`)
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_agentflow_name" ON "agent_flow" (substr(name, 1, 255));`)
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_agentflow_userId" ON "agent_flow" ("userId");`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "chat_message" (
                 "id" varchar PRIMARY KEY NOT NULL,
                 "role" varchar NOT NULL,
-                "chatflowid" varchar NOT NULL,
+                "agentflowid" varchar NOT NULL,
                 "content" text NOT NULL,
                 "sourceDocuments" text,
                 "usedTools" text,
@@ -49,7 +51,7 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
             );
         `)
 
-        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_e574527322272fd838f4f0f3d3" ON "chat_message" ("chatflowid");`)
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_e574527322272fd838f4f0f3d3" ON "chat_message" ("agentflowid");`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "credential" (
@@ -57,10 +59,13 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 "name" varchar NOT NULL,
                 "credentialName" varchar NOT NULL,
                 "encryptedData" text NOT NULL,
+                "userId" varchar(36),
                 "createdDate" datetime NOT NULL DEFAULT (datetime('now')),
                 "updatedDate" datetime NOT NULL DEFAULT (datetime('now'))
             );
         `)
+
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_credential_userId" ON "credential" ("userId");`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "tool" (
@@ -102,7 +107,7 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "chat_message_feedback" (
                 "id" varchar PRIMARY KEY NOT NULL,
-                "chatflowid" varchar NOT NULL,
+                "agentflowid" varchar NOT NULL,
                 "chatId" varchar NOT NULL,
                 "messageId" varchar NOT NULL,
                 "rating" varchar NOT NULL,
@@ -114,7 +119,7 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "upsert_history" (
                 "id" varchar PRIMARY KEY NOT NULL,
-                "chatflowid" varchar NOT NULL,
+                "agentflowid" varchar NOT NULL,
                 "result" text NOT NULL,
                 "flowData" text NOT NULL,
                 "date" datetime NOT NULL DEFAULT (datetime('now'))
@@ -124,7 +129,7 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "lead" (
                 "id" varchar PRIMARY KEY NOT NULL,
-                "chatflowid" varchar NOT NULL,
+                "agentflowid" varchar NOT NULL,
                 "chatId" varchar NOT NULL,
                 "name" text,
                 "email" text,
@@ -144,10 +149,13 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 "vectorStoreConfig" text,
                 "embeddingConfig" text,
                 "recordManagerConfig" text,
+                "userId" varchar(36),
                 "createdDate" datetime NOT NULL DEFAULT (datetime('now')),
                 "updatedDate" datetime NOT NULL DEFAULT (datetime('now'))
             );
         `)
+
+        await queryRunner.query(`CREATE INDEX IF NOT EXISTS "IDX_document_store_userId" ON "document_store" ("userId");`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS "document_store_file_chunk" (
@@ -167,8 +175,8 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
             CREATE TABLE IF NOT EXISTS "evaluation" (
                 "id" varchar PRIMARY KEY NOT NULL,
                 "name" varchar NOT NULL,
-                "chatflowId" text NOT NULL,
-                "chatflowName" text NOT NULL,
+                "agentflowId" text NOT NULL,
+                "agentflowName" text NOT NULL,
                 "datasetId" varchar NOT NULL,
                 "datasetName" varchar NOT NULL,
                 "additionalConfig" text,
@@ -290,9 +298,24 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 "updatedDate" datetime NOT NULL DEFAULT (datetime('now'))
             );
         `)
+
+        await queryRunner.query(`
+            CREATE TABLE IF NOT EXISTS "skill" (
+                "id" varchar PRIMARY KEY NOT NULL,
+                "name" varchar NOT NULL,
+                "description" text NOT NULL,
+                "category" varchar NOT NULL DEFAULT 'general',
+                "color" varchar NOT NULL,
+                "iconSrc" varchar,
+                "content" text NOT NULL,
+                "createdDate" datetime NOT NULL DEFAULT (datetime('now')),
+                "updatedDate" datetime NOT NULL DEFAULT (datetime('now'))
+            );
+        `)
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`DROP TABLE IF EXISTS "skill"`)
         await queryRunner.query(`DROP TABLE IF EXISTS "oauth_client"`)
         await queryRunner.query(`DROP TABLE IF EXISTS "user"`)
         await queryRunner.query(`DROP TABLE IF EXISTS "execution"`)
@@ -313,6 +336,6 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE IF EXISTS "tool"`)
         await queryRunner.query(`DROP TABLE IF EXISTS "credential"`)
         await queryRunner.query(`DROP TABLE IF EXISTS "chat_message"`)
-        await queryRunner.query(`DROP TABLE IF EXISTS "chat_flow"`)
+        await queryRunner.query(`DROP TABLE IF EXISTS "agent_flow"`)
     }
 }

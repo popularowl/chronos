@@ -9,7 +9,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import {
     REMOVE_DIRTY,
     SET_DIRTY,
-    SET_CHATFLOW,
+    SET_AGENTFLOW,
     enqueueSnackbar as enqueueSnackbarAction,
     closeSnackbar as closeSnackbarAction
 } from '@/store/actions'
@@ -35,7 +35,7 @@ import { flowContext } from '@/store/context/ReactFlowContext'
 
 // API
 import nodesApi from '@/api/nodes'
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 // Hooks
 import useApi from '@/hooks/useApi'
@@ -73,16 +73,16 @@ const AgentflowCanvas = () => {
     const templateFlowData = state ? state.templateFlowData : ''
 
     const URLpath = document.location.pathname.toString().split('/')
-    const chatflowId =
+    const agentflowId =
         URLpath[URLpath.length - 1] === 'canvas' || URLpath[URLpath.length - 1] === 'agentcanvas' ? '' : URLpath[URLpath.length - 1]
-    const canvasTitle = URLpath.includes('agentcanvas') ? 'Agent' : 'Chatflow'
+    const canvasTitle = URLpath.includes('agentcanvas') ? 'Agent' : 'Agentflow'
 
     const { confirm } = useConfirm()
 
     const dispatch = useDispatch()
     const canvas = useSelector((state) => state.canvas)
     const [canvasDataStore, setCanvasDataStore] = useState(canvas)
-    const [chatflow, setChatflow] = useState(null)
+    const [agentflow, setAgentflow] = useState(null)
     const { reactFlowInstance, setReactFlowInstance } = useContext(flowContext)
 
     // ==============================|| Snackbar ||============================== //
@@ -105,12 +105,12 @@ const AgentflowCanvas = () => {
 
     const reactFlowWrapper = useRef(null)
 
-    // ==============================|| Chatflow API ||============================== //
+    // ==============================|| Agentflow API ||============================== //
 
     const getNodesApi = useApi(nodesApi.getAllNodes)
-    const createNewChatflowApi = useApi(chatflowsApi.createNewChatflow)
-    const updateChatflowApi = useApi(chatflowsApi.updateChatflow)
-    const getSpecificChatflowApi = useApi(chatflowsApi.getSpecificChatflow)
+    const createNewAgentflowApi = useApi(agentflowsApi.createNewAgentflow)
+    const updateAgentflowApi = useApi(agentflowsApi.updateAgentflow)
+    const getSpecificAgentflowApi = useApi(agentflowsApi.getSpecificAgentflow)
 
     // ==============================|| Events & Actions ||============================== //
 
@@ -173,7 +173,7 @@ const AgentflowCanvas = () => {
     const handleDeleteFlow = async () => {
         const confirmPayload = {
             title: `Delete`,
-            description: `Delete ${canvasTitle} ${chatflow.name}?`,
+            description: `Delete ${canvasTitle} ${agentflow.name}?`,
             confirmButtonName: 'Delete',
             cancelButtonName: 'Cancel'
         }
@@ -181,8 +181,8 @@ const AgentflowCanvas = () => {
 
         if (isConfirmed) {
             try {
-                await chatflowsApi.deleteChatflow(chatflow.id)
-                localStorage.removeItem(`${chatflow.id}_INTERNAL`)
+                await agentflowsApi.deleteAgentflow(agentflow.id)
+                localStorage.removeItem(`${agentflow.id}_INTERNAL`)
                 navigate('/agentflows')
             } catch (error) {
                 enqueueSnackbar({
@@ -202,7 +202,7 @@ const AgentflowCanvas = () => {
         }
     }
 
-    const handleSaveFlow = (chatflowName) => {
+    const handleSaveFlow = (agentflowName) => {
         if (reactFlowInstance) {
             const nodes = reactFlowInstance.getNodes().map((node) => {
                 const nodeData = cloneDeep(node.data)
@@ -222,21 +222,21 @@ const AgentflowCanvas = () => {
             rfInstanceObject.nodes = nodes
             const flowData = JSON.stringify(rfInstanceObject)
 
-            if (!chatflow.id) {
-                const newChatflowBody = {
-                    name: chatflowName,
+            if (!agentflow.id) {
+                const newAgentflowBody = {
+                    name: agentflowName,
                     deployed: false,
                     isPublic: false,
                     flowData,
                     type: 'AGENTFLOW'
                 }
-                createNewChatflowApi.request(newChatflowBody)
+                createNewAgentflowApi.request(newAgentflowBody)
             } else {
                 const updateBody = {
-                    name: chatflowName,
+                    name: agentflowName,
                     flowData
                 }
-                updateChatflowApi.request(chatflow.id, updateBody)
+                updateAgentflowApi.request(agentflow.id, updateBody)
             }
         }
     }
@@ -470,7 +470,7 @@ const AgentflowCanvas = () => {
         }, 50)
     }
 
-    const saveChatflowSuccess = () => {
+    const saveAgentflowSuccess = () => {
         dispatch({ type: REMOVE_DIRTY })
         enqueueSnackbar({
             message: `${canvasTitle} saved`,
@@ -523,62 +523,62 @@ const AgentflowCanvas = () => {
 
     // ==============================|| useEffect ||============================== //
 
-    // Get specific chatflow successful
+    // Get specific agentflow successful
     useEffect(() => {
-        if (getSpecificChatflowApi.data) {
-            const chatflow = getSpecificChatflowApi.data
-            const initialFlow = chatflow.flowData ? JSON.parse(chatflow.flowData) : []
+        if (getSpecificAgentflowApi.data) {
+            const agentflow = getSpecificAgentflowApi.data
+            const initialFlow = agentflow.flowData ? JSON.parse(agentflow.flowData) : []
             setNodes(initialFlow.nodes || [])
             setEdges(initialFlow.edges || [])
-            dispatch({ type: SET_CHATFLOW, chatflow })
-        } else if (getSpecificChatflowApi.error) {
-            errorFailed(`Failed to retrieve ${canvasTitle}: ${getSpecificChatflowApi.error.response.data.message}`)
+            dispatch({ type: SET_AGENTFLOW, agentflow })
+        } else if (getSpecificAgentflowApi.error) {
+            errorFailed(`Failed to retrieve ${canvasTitle}: ${getSpecificAgentflowApi.error.response.data.message}`)
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getSpecificChatflowApi.data, getSpecificChatflowApi.error])
+    }, [getSpecificAgentflowApi.data, getSpecificAgentflowApi.error])
 
-    // Create new chatflow successful
+    // Create new agentflow successful
     useEffect(() => {
-        if (createNewChatflowApi.data) {
-            const chatflow = createNewChatflowApi.data
-            dispatch({ type: SET_CHATFLOW, chatflow })
-            saveChatflowSuccess()
-            window.history.replaceState(state, null, `/v2/agentcanvas/${chatflow.id}`)
-        } else if (createNewChatflowApi.error) {
-            errorFailed(`Failed to save ${canvasTitle}: ${createNewChatflowApi.error.response.data.message}`)
+        if (createNewAgentflowApi.data) {
+            const agentflow = createNewAgentflowApi.data
+            dispatch({ type: SET_AGENTFLOW, agentflow })
+            saveAgentflowSuccess()
+            window.history.replaceState(state, null, `/v2/agentcanvas/${agentflow.id}`)
+        } else if (createNewAgentflowApi.error) {
+            errorFailed(`Failed to save ${canvasTitle}: ${createNewAgentflowApi.error.response.data.message}`)
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [createNewChatflowApi.data, createNewChatflowApi.error])
+    }, [createNewAgentflowApi.data, createNewAgentflowApi.error])
 
-    // Update chatflow successful
+    // Update agentflow successful
     useEffect(() => {
-        if (updateChatflowApi.data) {
-            dispatch({ type: SET_CHATFLOW, chatflow: updateChatflowApi.data })
-            saveChatflowSuccess()
-        } else if (updateChatflowApi.error) {
-            errorFailed(`Failed to save ${canvasTitle}: ${updateChatflowApi.error.response.data.message}`)
+        if (updateAgentflowApi.data) {
+            dispatch({ type: SET_AGENTFLOW, agentflow: updateAgentflowApi.data })
+            saveAgentflowSuccess()
+        } else if (updateAgentflowApi.error) {
+            errorFailed(`Failed to save ${canvasTitle}: ${updateAgentflowApi.error.response.data.message}`)
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [updateChatflowApi.data, updateChatflowApi.error])
+    }, [updateAgentflowApi.data, updateAgentflowApi.error])
 
     useEffect(() => {
-        setChatflow(canvasDataStore.chatflow)
-        if (canvasDataStore.chatflow) {
-            const flowData = canvasDataStore.chatflow.flowData ? JSON.parse(canvasDataStore.chatflow.flowData) : []
+        setAgentflow(canvasDataStore.agentflow)
+        if (canvasDataStore.agentflow) {
+            const flowData = canvasDataStore.agentflow.flowData ? JSON.parse(canvasDataStore.agentflow.flowData) : []
             checkIfSyncNodesAvailable(flowData.nodes || [])
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [canvasDataStore.chatflow])
+    }, [canvasDataStore.agentflow])
 
     // Initialization
     useEffect(() => {
         setIsSyncNodesButtonEnabled(false)
-        if (chatflowId) {
-            getSpecificChatflowApi.request(chatflowId)
+        if (agentflowId) {
+            getSpecificAgentflowApi.request(agentflowId)
         } else {
             if (localStorage.getItem('duplicatedFlowData')) {
                 handleLoadFlow(localStorage.getItem('duplicatedFlowData'))
@@ -588,8 +588,8 @@ const AgentflowCanvas = () => {
                 setEdges([])
             }
             dispatch({
-                type: SET_CHATFLOW,
-                chatflow: {
+                type: SET_AGENTFLOW,
+                agentflow: {
                     name: `Untitled ${canvasTitle}`
                 }
             })
@@ -612,7 +612,7 @@ const AgentflowCanvas = () => {
     useEffect(() => {
         function handlePaste(e) {
             const pasteData = e.clipboardData.getData('text')
-            //TODO: prevent paste event when input focused, temporary fix: catch chatflow syntax
+            //TODO: prevent paste event when input focused, temporary fix: catch agentflow syntax
             if (pasteData.includes('{"nodes":[') && pasteData.includes('],"edges":[')) {
                 handleLoadFlow(pasteData)
             }
@@ -640,7 +640,7 @@ const AgentflowCanvas = () => {
     const [chatPopupOpen, setChatPopupOpen] = useState(false)
 
     useEffect(() => {
-        if (!chatflowId && !localStorage.getItem('duplicatedFlowData') && getNodesApi.data && nodes.length === 0) {
+        if (!agentflowId && !localStorage.getItem('duplicatedFlowData') && getNodesApi.data && nodes.length === 0) {
             const startNodeData = getNodesApi.data.find((node) => node.name === 'startAgentflow')
             if (startNodeData) {
                 const clonedStartNodeData = cloneDeep(startNodeData)
@@ -660,7 +660,7 @@ const AgentflowCanvas = () => {
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getNodesApi.data, chatflowId])
+    }, [getNodesApi.data, agentflowId])
 
     return (
         <>
@@ -691,7 +691,7 @@ const AgentflowCanvas = () => {
                 >
                     <Toolbar>
                         <CanvasHeader
-                            chatflow={chatflow}
+                            agentflow={agentflow}
                             handleSaveFlow={handleSaveFlow}
                             handleDeleteFlow={handleDeleteFlow}
                             handleLoadFlow={handleLoadFlow}
@@ -796,8 +796,8 @@ const AgentflowCanvas = () => {
                                         <IconRefreshAlert />
                                     </Fab>
                                 )}
-                                <ChatPopUp isAgentCanvas={true} chatflowid={chatflowId} onOpenChange={setChatPopupOpen} />
-                                {!chatPopupOpen && <ValidationPopUp isAgentCanvas={true} chatflowid={chatflowId} />}
+                                <ChatPopUp isAgentCanvas={true} agentflowid={agentflowId} onOpenChange={setChatPopupOpen} />
+                                {!chatPopupOpen && <ValidationPopUp isAgentCanvas={true} agentflowid={agentflowId} />}
                             </ReactFlow>
                         </div>
                     </div>

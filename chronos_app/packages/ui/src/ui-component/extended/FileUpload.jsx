@@ -1,7 +1,7 @@
 import { useDispatch, useSelector } from 'react-redux'
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_CHATFLOW } from '@/store/actions'
+import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_AGENTFLOW } from '@/store/actions'
 import parser from 'html-react-parser'
 
 // material-ui
@@ -16,7 +16,7 @@ import { SwitchInput } from '@/ui-component/switch/Switch'
 import useNotifier from '@/utils/useNotifier'
 
 // API
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 const message = `The full contents of uploaded files will be converted to text and sent to the Agent.
 <br />
@@ -87,7 +87,7 @@ const FileUpload = ({ dialogProps }) => {
             }
             chatbotConfig.fullFileUpload = value
 
-            const saveResp = await chatflowsApi.updateChatflow(dialogProps.chatflow.id, {
+            const saveResp = await agentflowsApi.updateAgentflow(dialogProps.agentflow.id, {
                 chatbotConfig: JSON.stringify(chatbotConfig)
             })
             if (saveResp.data) {
@@ -103,7 +103,7 @@ const FileUpload = ({ dialogProps }) => {
                         )
                     }
                 })
-                dispatch({ type: SET_CHATFLOW, chatflow: saveResp.data })
+                dispatch({ type: SET_AGENTFLOW, agentflow: saveResp.data })
             }
         } catch (error) {
             enqueueSnackbar({
@@ -128,10 +128,10 @@ const FileUpload = ({ dialogProps }) => {
         /* backward compatibility - by default, allow all */
         const allowedFileTypes = availableFileTypes.map((fileType) => fileType.ext)
         setAllowedFileTypes(allowedFileTypes)
-        if (dialogProps.chatflow) {
-            if (dialogProps.chatflow.chatbotConfig) {
+        if (dialogProps.agentflow) {
+            if (dialogProps.agentflow.chatbotConfig) {
                 try {
-                    let chatbotConfig = JSON.parse(dialogProps.chatflow.chatbotConfig)
+                    let chatbotConfig = JSON.parse(dialogProps.agentflow.chatbotConfig)
                     setChatbotConfig(chatbotConfig || {})
                     if (chatbotConfig.fullFileUpload) {
                         setFullFileUpload(chatbotConfig.fullFileUpload.status)

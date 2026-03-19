@@ -57,7 +57,7 @@ export const howToUseCode = `- **Libraries:**
   You can access the default flow configuration using these variables:
   - \`$flow.sessionId\`
   - \`$flow.chatId\`
-  - \`$flow.chatflowId\`
+  - \`$flow.agentflowId\`
   - \`$flow.input\`
   - \`$flow.state\`
 

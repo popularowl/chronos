@@ -125,7 +125,7 @@ const EvalEvaluationRows = () => {
             data: item,
             additionalConfig: additionalConfig,
             evaluationType: evaluation.evaluationType,
-            evaluationChatflows: evaluation.chatflowName
+            evaluationAgentflows: evaluation.agentflowName
         })
         setShowSideDrawer(true)
     }
@@ -247,8 +247,8 @@ const EvalEvaluationRows = () => {
             if (data.additionalConfig) {
                 setAdditionalConfig(JSON.parse(data.additionalConfig))
             }
-            data.chatflowId = typeof data.chatflowId === 'object' ? data.chatflowId : JSON.parse(data.chatflowId)
-            data.chatflowName = typeof data.chatflowName === 'object' ? data.chatflowName : JSON.parse(data.chatflowName)
+            data.agentflowId = typeof data.agentflowId === 'object' ? data.agentflowId : JSON.parse(data.agentflowId)
+            data.agentflowName = typeof data.agentflowName === 'object' ? data.agentflowName : JSON.parse(data.agentflowName)
             const rows = getEvaluation.data.rows
             const latencyChartData = []
             const tokensChartData = []
@@ -265,12 +265,12 @@ const EvalEvaluationRows = () => {
                 }
                 for (let m = 0; m < rows[i].metrics.length; m++) {
                     if (rows[i].metrics[m]?.apiLatency > 0) {
-                        latencyObj[data.chatflowName[m]] = parseFloat(rows[i].metrics[m]?.apiLatency, 10)
+                        latencyObj[data.agentflowName[m]] = parseFloat(rows[i].metrics[m]?.apiLatency, 10)
                     }
                     if (rows[i].metrics[m]?.totalTokens) {
                         totalTokens += rows[i].metrics[m]?.totalTokens
-                        tokensObj[data.chatflowName[m] + ' Prompt'] = rows[i].metrics[m]?.promptTokens
-                        tokensObj[data.chatflowName[m] + ' Completion'] = rows[i].metrics[m]?.completionTokens
+                        tokensObj[data.agentflowName[m] + ' Prompt'] = rows[i].metrics[m]?.promptTokens
+                        tokensObj[data.agentflowName[m] + ' Completion'] = rows[i].metrics[m]?.completionTokens
                     }
                 }
                 latencyChartData.push(latencyObj)
@@ -326,22 +326,22 @@ const EvalEvaluationRows = () => {
         if (index === undefined) {
             return undefined
         }
-        const id = evaluation.chatflowId[index]
+        const id = evaluation.agentflowId[index]
         // this is to check if the evaluation is deleted!
         if (outdated?.errors?.length > 0 && outdated.errors.find((e) => e.id === id)) {
             return undefined
         }
-        if (additionalConfig.chatflowTypes) {
-            switch (additionalConfig.chatflowTypes[index]) {
-                case 'Chatflow':
-                    return '/canvas/' + evaluation.chatflowId[index]
+        if (additionalConfig.agentflowTypes) {
+            switch (additionalConfig.agentflowTypes[index]) {
+                case 'Agentflow':
+                    return '/canvas/' + evaluation.agentflowId[index]
                 case 'Custom Assistant':
-                    return '/assistants/custom/' + evaluation.chatflowId[index]
+                    return '/assistants/custom/' + evaluation.agentflowId[index]
                 case 'Agentflow v2':
-                    return '/v2/agentcanvas/' + evaluation.chatflowId[index]
+                    return '/v2/agentcanvas/' + evaluation.agentflowId[index]
             }
         }
-        return '/canvas/' + evaluation.chatflowId[index]
+        return '/canvas/' + evaluation.agentflowId[index]
     }
 
     const openFlow = (index) => {
@@ -355,9 +355,9 @@ const EvalEvaluationRows = () => {
         if (index === undefined) {
             return <IconHierarchy size={17} />
         }
-        if (additionalConfig.chatflowTypes) {
-            switch (additionalConfig.chatflowTypes[index]) {
-                case 'Chatflow':
+        if (additionalConfig.agentflowTypes) {
+            switch (additionalConfig.agentflowTypes[index]) {
+                case 'Agentflow':
                     return <IconHierarchy size={17} />
                 case 'Custom Assistant':
                     return <IconRobot size={17} />
@@ -462,12 +462,12 @@ const EvalEvaluationRows = () => {
                                             ></Chip>
                                         </>
                                     )}
-                                    {outdated.chatflows && outdated?.errors?.length === 0 && outdated.chatflows.length > 0 && (
+                                    {outdated.agentflows && outdated?.errors?.length === 0 && outdated.agentflows.length > 0 && (
                                         <>
                                             <br />
                                             <b style={{ color: 'rgb(116,66,16)' }}>Flows:</b>
                                             <Stack sx={{ mt: 1, alignItems: 'center', flexWrap: 'wrap' }} flexDirection='row' gap={1}>
-                                                {outdated.chatflows.map((chatflow, index) => (
+                                                {outdated.agentflows.map((flow, index) => (
                                                     <Chip
                                                         key={index}
                                                         clickable
@@ -481,14 +481,14 @@ const EvalEvaluationRows = () => {
                                                                 : '0 2px 14px 0 rgb(32 40 45 / 10%)'
                                                         }}
                                                         variant='outlined'
-                                                        label={chatflow.chatflowName}
+                                                        label={flow.agentflowName}
                                                         onClick={() =>
                                                             window.open(
-                                                                chatflow.chatflowType === 'Chatflow'
-                                                                    ? '/canvas/' + chatflow.chatflowId
-                                                                    : chatflow.chatflowType === 'Custom Assistant'
-                                                                    ? '/assistants/custom/' + chatflow.chatflowId
-                                                                    : '/v2/agentcanvas/' + chatflow.chatflowId,
+                                                                flow.agentflowType === 'Agentflow'
+                                                                    ? '/canvas/' + flow.agentflowId
+                                                                    : flow.agentflowType === 'Custom Assistant'
+                                                                    ? '/assistants/custom/' + flow.agentflowId
+                                                                    : '/v2/agentcanvas/' + flow.agentflowId,
                                                                 '_blank'
                                                             )
                                                         }
@@ -585,7 +585,7 @@ const EvalEvaluationRows = () => {
                                             component={
                                                 <ChartTokens
                                                     data={tokensChartData}
-                                                    flowNames={evaluation.chatflowName || []}
+                                                    flowNames={evaluation.agentflowName || []}
                                                     sx={{ pt: 2 }}
                                                 />
                                             }
@@ -603,7 +603,7 @@ const EvalEvaluationRows = () => {
                                             component={
                                                 <ChartLatency
                                                     data={latencyChartData}
-                                                    flowNames={evaluation.chatflowName || []}
+                                                    flowNames={evaluation.agentflowName || []}
                                                     sx={{ pt: 2 }}
                                                 />
                                             }
@@ -630,7 +630,7 @@ const EvalEvaluationRows = () => {
                                     <IconVectorBezier2 style={{ marginRight: 5 }} size={17} />
                                     Flows Used:
                                 </div>
-                                {(evaluation.chatflowName || []).map((chatflowUsed, index) => (
+                                {(evaluation.agentflowName || []).map((agentflowUsed, index) => (
                                     <Chip
                                         key={index}
                                         icon={getFlowIcon(index)}
@@ -642,7 +642,7 @@ const EvalEvaluationRows = () => {
                                                 ? '0 2px 14px 0 rgb(255 255 255 / 10%)'
                                                 : '0 2px 14px 0 rgb(32 40 45 / 10%)'
                                         }}
-                                        label={chatflowUsed}
+                                        label={agentflowUsed}
                                         onClick={() => openFlow(index)}
                                     ></Chip>
                                 ))}
@@ -667,7 +667,7 @@ const EvalEvaluationRows = () => {
                                         <TableCell rowSpan='2'>&nbsp;</TableCell>
                                         <TableCell rowSpan='2'>Input</TableCell>
                                         <TableCell rowSpan='2'>Expected Output</TableCell>
-                                        {evaluation.chatflowId?.map((chatflowId, index) => (
+                                        {evaluation.agentflowId?.map((agentflowId, index) => (
                                             <React.Fragment key={index}>
                                                 <TableCell
                                                     colSpan={getColSpan(
@@ -676,7 +676,7 @@ const EvalEvaluationRows = () => {
                                                     )}
                                                     style={{ borderLeftStyle: 'dotted', borderLeftColor: 'lightgrey', borderLeftWidth: 1 }}
                                                 >
-                                                    {evaluation.chatflowName[index]}
+                                                    {evaluation.agentflowName[index]}
                                                     {rows.length > 0 && rows[0].metrics[index].model && (
                                                         <Chip
                                                             variant='outlined'
@@ -697,7 +697,7 @@ const EvalEvaluationRows = () => {
                                         ))}
                                     </TableRow>
                                     <TableRow>
-                                        {evaluation.chatflowId?.map((chatflowId, index) => (
+                                        {evaluation.agentflowId?.map((agentflowId, index) => (
                                             <React.Fragment key={index}>
                                                 <TableCell
                                                     style={{ borderLeftStyle: 'dashed', borderLeftColor: 'lightgrey', borderLeftWidth: 1 }}
@@ -749,7 +749,7 @@ const EvalEvaluationRows = () => {
                                                         <TableCell style={{ width: 2 }}>{index + 1}</TableCell>
                                                         <TableCell style={{ minWidth: '250px' }}>{item.input}</TableCell>
                                                         <TableCell style={{ minWidth: '250px' }}>{item.expectedOutput}</TableCell>
-                                                        {evaluation.chatflowId?.map((_, index) => (
+                                                        {evaluation.agentflowId?.map((_, index) => (
                                                             <React.Fragment key={index}>
                                                                 <TableCell
                                                                     style={{

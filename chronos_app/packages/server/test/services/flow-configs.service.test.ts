@@ -1,5 +1,5 @@
 const getRunningExpressAppExports = require('../../src/utils/getRunningExpressApp')
-const chatflowsServiceExports = require('../../src/services/chatflows')
+const agentflowsServiceExports = require('../../src/services/agentflows')
 const utilsExports = require('../../src/utils')
 
 export function flowConfigsServiceTest() {
@@ -16,26 +16,26 @@ export function flowConfigsServiceTest() {
         }
 
         const origGetRunningExpressApp = getRunningExpressAppExports.getRunningExpressApp
-        const origGetChatflowById = chatflowsServiceExports.default?.getChatflowById
+        const origGetAgentflowById = agentflowsServiceExports.default?.getAgentflowById
         const origFindAvailableConfigs = utilsExports.findAvailableConfigs
 
-        let mockGetChatflowById: jest.Mock
+        let mockGetAgentflowById: jest.Mock
         let mockFindAvailableConfigs: jest.Mock
 
         beforeEach(() => {
-            mockGetChatflowById = jest.fn()
+            mockGetAgentflowById = jest.fn()
             mockFindAvailableConfigs = jest.fn()
             getRunningExpressAppExports.getRunningExpressApp = jest.fn().mockReturnValue(mockAppServer)
-            if (chatflowsServiceExports.default) {
-                chatflowsServiceExports.default.getChatflowById = mockGetChatflowById
+            if (agentflowsServiceExports.default) {
+                agentflowsServiceExports.default.getAgentflowById = mockGetAgentflowById
             }
             utilsExports.findAvailableConfigs = mockFindAvailableConfigs
         })
 
         afterEach(() => {
             getRunningExpressAppExports.getRunningExpressApp = origGetRunningExpressApp
-            if (chatflowsServiceExports.default) {
-                chatflowsServiceExports.default.getChatflowById = origGetChatflowById
+            if (agentflowsServiceExports.default) {
+                agentflowsServiceExports.default.getAgentflowById = origGetAgentflowById
             }
             utilsExports.findAvailableConfigs = origFindAvailableConfigs
         })
@@ -43,31 +43,31 @@ export function flowConfigsServiceTest() {
         const flowConfigsService = require('../../src/services/flow-configs').default
 
         describe('getSingleFlowConfig', () => {
-            it('should return available configs for a chatflow', async () => {
-                const mockChatflow = {
+            it('should return available configs for an agentflow', async () => {
+                const mockAgentflow = {
                     id: 'flow-1',
                     flowData: JSON.stringify({
                         nodes: [{ id: 'node-1', data: { name: 'OpenAI Chat' } }]
                     })
                 }
                 const mockConfigs = [{ nodeId: 'node-1', label: 'Model', name: 'model' }]
-                mockGetChatflowById.mockResolvedValue(mockChatflow)
+                mockGetAgentflowById.mockResolvedValue(mockAgentflow)
                 mockFindAvailableConfigs.mockReturnValue(mockConfigs)
 
                 const result = await flowConfigsService.getSingleFlowConfig('flow-1')
 
                 expect(result).toEqual(mockConfigs)
-                expect(mockGetChatflowById).toHaveBeenCalledWith('flow-1')
+                expect(mockGetAgentflowById).toHaveBeenCalledWith('flow-1')
                 expect(mockFindAvailableConfigs).toHaveBeenCalledWith(expect.any(Array), mockNodesPool.componentCredentials)
             })
 
-            it('should throw error when chatflow not found', async () => {
-                mockGetChatflowById.mockResolvedValue(null)
-                await expect(flowConfigsService.getSingleFlowConfig('non-existent')).rejects.toThrow('Chatflow non-existent not found')
+            it('should throw error when agentflow not found', async () => {
+                mockGetAgentflowById.mockResolvedValue(null)
+                await expect(flowConfigsService.getSingleFlowConfig('non-existent')).rejects.toThrow('Agentflow non-existent not found')
             })
 
             it('should throw InternalChronosError on general error', async () => {
-                mockGetChatflowById.mockRejectedValue(new Error('Database error'))
+                mockGetAgentflowById.mockRejectedValue(new Error('Database error'))
                 await expect(flowConfigsService.getSingleFlowConfig('flow-1')).rejects.toThrow(
                     'Error: flowConfigService.getSingleFlowConfig'
                 )
@@ -78,8 +78,8 @@ export function flowConfigsServiceTest() {
                     { id: 'node-1', data: { name: 'LLM' } },
                     { id: 'node-2', data: { name: 'Memory' } }
                 ]
-                const mockChatflow = { id: 'flow-1', flowData: JSON.stringify({ nodes }) }
-                mockGetChatflowById.mockResolvedValue(mockChatflow)
+                const mockAgentflow = { id: 'flow-1', flowData: JSON.stringify({ nodes }) }
+                mockGetAgentflowById.mockResolvedValue(mockAgentflow)
                 mockFindAvailableConfigs.mockReturnValue([])
 
                 await flowConfigsService.getSingleFlowConfig('flow-1')

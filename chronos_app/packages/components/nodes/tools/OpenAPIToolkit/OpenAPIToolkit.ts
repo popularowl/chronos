@@ -158,7 +158,7 @@ class OpenAPIToolkit_Tools implements INode {
         const appDataSource = options.appDataSource as DataSource
         const databaseEntities = options.databaseEntities as IDatabaseEntity
         const variables = await getVars(appDataSource, databaseEntities, nodeData, options)
-        const flow = { chatflowId: options.chatflowid }
+        const flow = { agentflowId: options.agentflowid }
 
         let tools = getTools(_data.paths, baseUrl, headers, variables, flow, toolReturnDirect, customCode, removeNulls)
 
@@ -313,8 +313,8 @@ class OpenAPIToolkit_Tools implements INode {
                     const file = openApiFile.replace('FILE-STORAGE::', '')
                     fileName = file
                     const orgId = options.orgId
-                    const chatflowid = options.chatflowid
-                    const fileData = await getFileFromStorage(file, orgId, chatflowid)
+                    const agentflowid = options.agentflowid
+                    const fileData = await getFileFromStorage(file, orgId, agentflowid)
                     utf8String = fileData.toString('utf-8')
                 } else {
                     // Extract filename from data URI if possible

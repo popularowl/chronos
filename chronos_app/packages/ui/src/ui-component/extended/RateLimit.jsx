@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_CHATFLOW } from '@/store/actions'
+import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_AGENTFLOW } from '@/store/actions'
 import PropTypes from 'prop-types'
 
 import { Typography, Button, OutlinedInput, Stack } from '@mui/material'
@@ -14,16 +14,16 @@ import { SwitchInput } from '@/ui-component/switch/Switch'
 import { IconX } from '@tabler/icons-react'
 
 // API
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 // utils
 import useNotifier from '@/utils/useNotifier'
 
 const RateLimit = ({ dialogProps }) => {
     const dispatch = useDispatch()
-    const chatflow = useSelector((state) => state.canvas.chatflow)
-    const chatflowid = chatflow.id
-    const apiConfig = chatflow.apiConfig ? JSON.parse(chatflow.apiConfig) : {}
+    const agentflow = useSelector((state) => state.canvas.agentflow)
+    const agentflowid = agentflow.id
+    const apiConfig = agentflow.apiConfig ? JSON.parse(agentflow.apiConfig) : {}
 
     useNotifier()
 
@@ -36,7 +36,7 @@ const RateLimit = ({ dialogProps }) => {
     const [limitMsg, setLimitMsg] = useState(apiConfig?.rateLimit?.limitMsg ?? '')
 
     const formatObj = () => {
-        let apiConfig = JSON.parse(dialogProps.chatflow.apiConfig)
+        let apiConfig = JSON.parse(dialogProps.agentflow.apiConfig)
         if (apiConfig === null || apiConfig === undefined) {
             apiConfig = {}
         }
@@ -75,7 +75,7 @@ const RateLimit = ({ dialogProps }) => {
 
     const onSave = async () => {
         try {
-            const saveResp = await chatflowsApi.updateChatflow(chatflowid, {
+            const saveResp = await agentflowsApi.updateAgentflow(agentflowid, {
                 apiConfig: JSON.stringify(formatObj())
             })
             if (saveResp.data) {
@@ -91,7 +91,7 @@ const RateLimit = ({ dialogProps }) => {
                         )
                     }
                 })
-                dispatch({ type: SET_CHATFLOW, chatflow: saveResp.data })
+                dispatch({ type: SET_AGENTFLOW, agentflow: saveResp.data })
             }
         } catch (error) {
             enqueueSnackbar({

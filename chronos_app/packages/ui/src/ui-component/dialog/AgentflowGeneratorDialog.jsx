@@ -4,7 +4,7 @@ import { useState, useEffect, useContext } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import PropTypes from 'prop-types'
 import { Box, Typography, OutlinedInput, DialogActions, Button, Dialog, DialogContent, DialogTitle, LinearProgress } from '@mui/material'
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction } from '@/store/actions'
 import { IconX, IconSparkles, IconArrowLeft } from '@tabler/icons-react'
 import useNotifier from '@/utils/useNotifier'
@@ -116,7 +116,7 @@ const AgentflowGeneratorDialog = ({ show, dialogProps, onCancel, onConfirm }) =>
         try {
             setLoading(true)
 
-            const response = await chatflowsApi.generateAgentflow({
+            const response = await agentflowsApi.generateAgentflow({
                 question: customAssistantInstruction.trim(),
                 selectedChatModel: selectedChatModel
             })

@@ -719,7 +719,7 @@ export const NodeExecutionDetails = ({ data, label, status, metadata, isPublic, 
                                                                 component='img'
                                                                 image={
                                                                     artifact.data.startsWith('FILE-STORAGE::')
-                                                                        ? `${baseURL}/api/v1/get-upload-file?chatflowId=${
+                                                                        ? `${baseURL}/api/v1/get-upload-file?agentflowId=${
                                                                               metadata?.agentflowId
                                                                           }&chatId=${metadata?.sessionId}&fileName=${artifact.data.replace(
                                                                               'FILE-STORAGE::',
@@ -793,7 +793,7 @@ export const NodeExecutionDetails = ({ data, label, status, metadata, isPublic, 
                                                     component='img'
                                                     image={
                                                         content.type === 'stored-file'
-                                                            ? `${baseURL}/api/v1/get-upload-file?chatflowId=${metadata?.agentflowId}&chatId=${metadata?.sessionId}&fileName=${content.name}`
+                                                            ? `${baseURL}/api/v1/get-upload-file?agentflowId=${metadata?.agentflowId}&chatId=${metadata?.sessionId}&fileName=${content.name}`
                                                             : content.name
                                                     }
                                                     onError={(e) => {
@@ -948,7 +948,7 @@ export const NodeExecutionDetails = ({ data, label, status, metadata, isPublic, 
                                                             component='img'
                                                             image={
                                                                 artifact.data.startsWith('FILE-STORAGE::')
-                                                                    ? `${baseURL}/api/v1/get-upload-file?chatflowId=${
+                                                                    ? `${baseURL}/api/v1/get-upload-file?agentflowId=${
                                                                           metadata?.agentflowId
                                                                       }&chatId=${metadata?.sessionId}&fileName=${artifact.data.replace(
                                                                           'FILE-STORAGE::',

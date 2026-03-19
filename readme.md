@@ -17,10 +17,15 @@
 
 This project has started as a fork of [Flowise](https://github.com/FlowiseAI/Flowise) - but since has implemented multiple improvements and updates towards enterprise grade and self-hosting focus.
 
-- 100+ of prebuilt LLM model integrations, vector databases and templates.
+- 100+ of prebuilt LLM model integrations, agent templates, skills, and deep research examples.
 - Enterprise level observability, tracing, loging and auditing.
 - Number of [Docker compose examples](./chronos_app/docker/) to get you started fast.
 - Maintained project [`backlog`](#backlog) with regular releases.
+
+## Chronos features
+
+- OpenAI API specification for cummunicating with deployed agentflows.
+- 
 
 ## Quick Start
 
@@ -44,7 +49,7 @@ Chronos allows configuration via set of supported environment variables. See exa
 
 ## Backlog
 
-- OpenAI API specification for deployed agents.
+- OpenAI API specification for cummunicating with agents.
 - Versioning and publishing for agents.
 - Scheduled Execution
 - SSO user logins

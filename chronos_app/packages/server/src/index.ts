@@ -13,7 +13,7 @@ import { getNodeModulesPackagePath, getEncryptionKey } from './utils'
 import logger, { expressRequestLogger } from './utils/logger'
 import { getDataSource } from './DataSource'
 import { NodesPool } from './NodesPool'
-import { ChatFlow } from './database/entities/ChatFlow'
+import { AgentFlow } from './database/entities/AgentFlow'
 import { CachePool } from './CachePool'
 import { AbortControllerPool } from './AbortControllerPool'
 import { RateLimiterManager } from './utils/rateLimit'
@@ -118,7 +118,7 @@ export class App {
 
             // Initialize Rate Limit
             this.rateLimiterManager = RateLimiterManager.getInstance()
-            await this.rateLimiterManager.initializeRateLimiters(await getDataSource().getRepository(ChatFlow).find())
+            await this.rateLimiterManager.initializeRateLimiters(await getDataSource().getRepository(AgentFlow).find())
             logger.info('🚦 [server]: Rate limiters initialized successfully')
 
             // Initialize cache pool

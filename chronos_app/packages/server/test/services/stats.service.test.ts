@@ -14,8 +14,8 @@ export function statsServiceTest() {
 
         const statsService = require('../../src/services/stats').default
 
-        describe('getChatflowStats', () => {
-            it('should return stats for a chatflow', async () => {
+        describe('getAgentflowStats', () => {
+            it('should return stats for an agentflow', async () => {
                 const mockMessages = [
                     { id: 'msg-1', sessionId: 'session-1', feedback: { rating: 'THUMBS_UP' } },
                     { id: 'msg-2', sessionId: 'session-1', feedback: { rating: 'THUMBS_DOWN' } },
@@ -23,7 +23,7 @@ export function statsServiceTest() {
                 ]
                 getChatMessageExports.utilGetChatMessage.mockResolvedValue(mockMessages)
 
-                const result = await statsService.getChatflowStats('flow-1', undefined)
+                const result = await statsService.getAgentflowStats('flow-1', undefined)
 
                 expect(result).toEqual({
                     totalMessages: 3,
@@ -36,7 +36,7 @@ export function statsServiceTest() {
             it('should return zero stats when no messages', async () => {
                 getChatMessageExports.utilGetChatMessage.mockResolvedValue([])
 
-                const result = await statsService.getChatflowStats('flow-1', undefined)
+                const result = await statsService.getAgentflowStats('flow-1', undefined)
 
                 expect(result).toEqual({
                     totalMessages: 0,
@@ -49,17 +49,17 @@ export function statsServiceTest() {
             it('should throw InternalChronosError on error', async () => {
                 getChatMessageExports.utilGetChatMessage.mockRejectedValue(new Error('DB error'))
 
-                await expect(statsService.getChatflowStats('flow-1', undefined)).rejects.toThrow('Error: statsService.getChatflowStats')
+                await expect(statsService.getAgentflowStats('flow-1', undefined)).rejects.toThrow('Error: statsService.getAgentflowStats')
             })
 
             it('should pass date range and feedback params', async () => {
                 getChatMessageExports.utilGetChatMessage.mockResolvedValue([])
 
-                await statsService.getChatflowStats('flow-1', ['INTERNAL'], '2024-01-01', '2024-12-31', undefined, true, ['THUMBS_UP'])
+                await statsService.getAgentflowStats('flow-1', ['INTERNAL'], '2024-01-01', '2024-12-31', undefined, true, ['THUMBS_UP'])
 
                 expect(getChatMessageExports.utilGetChatMessage).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        chatflowid: 'flow-1',
+                        agentflowid: 'flow-1',
                         chatTypes: ['INTERNAL'],
                         startDate: '2024-01-01',
                         endDate: '2024-12-31',

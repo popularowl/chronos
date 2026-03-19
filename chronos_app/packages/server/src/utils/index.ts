@@ -7,7 +7,7 @@ import fs from 'fs'
 import logger from './logger'
 import { v4 as uuidv4 } from 'uuid'
 import {
-    IChatFlow,
+    IAgentFlow,
     IComponentCredentials,
     IComponentNodes,
     ICredentialDataDecrypted,
@@ -45,7 +45,7 @@ import { AES, enc } from 'crypto-js'
 import multer from 'multer'
 import multerS3 from 'multer-s3'
 import MulterGoogleCloudStorage from 'multer-cloud-storage'
-import { ChatFlow } from '../database/entities/ChatFlow'
+import { AgentFlow } from '../database/entities/AgentFlow'
 import { ChatMessage } from '../database/entities/ChatMessage'
 import { Credential } from '../database/entities/Credential'
 import { Tool } from '../database/entities/Tool'
@@ -95,7 +95,7 @@ if (USE_AWS_SECRETS_MANAGER) {
 }
 
 export const databaseEntities: IDatabaseEntity = {
-    ChatFlow: ChatFlow,
+    AgentFlow: AgentFlow,
     ChatMessage: ChatMessage,
     Tool: Tool,
     Credential: Credential,
@@ -480,7 +480,7 @@ type BuildFlowParams = {
     chatHistory: IMessage[]
     chatId: string
     sessionId: string
-    chatflowid: string
+    agentflowid: string
     apiMessageId: string
     appDataSource: DataSource
     overrideConfig?: ICommonObject
@@ -519,7 +519,7 @@ export const buildFlow = async ({
     apiMessageId,
     chatId,
     sessionId,
-    chatflowid,
+    agentflowid,
     appDataSource,
     overrideConfig,
     apiOverrideStatus = false,
@@ -560,7 +560,7 @@ export const buildFlow = async ({
     const reversedGraph = constructGraphs(reactFlowNodes, reactFlowEdges, { isReversed: true }).graph
 
     const flowData: ICommonObject = {
-        chatflowid,
+        agentflowid,
         chatId,
         sessionId,
         chatHistory,
@@ -606,7 +606,7 @@ export const buildFlow = async ({
                     subscriptionId,
                     chatId,
                     sessionId,
-                    chatflowid,
+                    agentflowid,
                     chatHistory,
                     apiMessageId,
                     logger,
@@ -636,7 +636,7 @@ export const buildFlow = async ({
                     subscriptionId,
                     chatId,
                     sessionId,
-                    chatflowid,
+                    agentflowid,
                     chatHistory,
                     logger,
                     appDataSource,
@@ -1257,7 +1257,7 @@ export const isStartNodeDependOnInput = (startingNodes: IReactFlowNode[], nodes:
             if (inputVariables.length > 0) return true
         }
     }
-    const whitelistNodeNames = ['vectorStoreToDocument', 'autoGPT', 'chatPromptTemplate', 'promptTemplate'] //If these nodes are found, chatflow cannot be reused
+    const whitelistNodeNames = ['vectorStoreToDocument', 'autoGPT', 'chatPromptTemplate', 'promptTemplate'] //If these nodes are found, agentflow cannot be reused
     for (const node of nodes) {
         if (node.data.name === 'chatPromptTemplate' || node.data.name === 'promptTemplate') {
             let promptValues: ICommonObject = {}
@@ -1670,8 +1670,8 @@ export const getMemorySessionId = (
 }
 
 /**
- * Method that find memory that is connected within chatflow
- * In a chatflow, there should only be 1 memory node
+ * Method that find memory that is connected within agentflow
+ * In a agentflow, there should only be 1 memory node
  * @param {IReactFlowNode[]} nodes
  * @param {IReactFlowEdge[]} edges
  * @returns {IReactFlowNode | undefined}
@@ -1773,9 +1773,9 @@ export const aMonthAgo = () => {
     return date
 }
 
-export const getAPIOverrideConfig = (chatflow: IChatFlow) => {
+export const getAPIOverrideConfig = (agentflow: IAgentFlow) => {
     try {
-        const apiConfig = chatflow.apiConfig ? JSON.parse(chatflow.apiConfig) : {}
+        const apiConfig = agentflow.apiConfig ? JSON.parse(agentflow.apiConfig) : {}
         const nodeOverrides: INodeOverrides =
             apiConfig.overrideConfig && apiConfig.overrideConfig.nodes ? apiConfig.overrideConfig.nodes : {}
         const variableOverrides: IVariableOverride[] =

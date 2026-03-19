@@ -90,7 +90,7 @@ const getDocumentStoreById = async (req: Request, res: Response, next: NextFunct
         }
         const apiResponse = await documentStoreService.getDocumentStoreById(req.params.id, '', getUserContext(req))
         if (apiResponse && apiResponse.whereUsed) {
-            apiResponse.whereUsed = JSON.stringify(await documentStoreService.getUsedChatflowNames(apiResponse, ''))
+            apiResponse.whereUsed = JSON.stringify(await documentStoreService.getUsedAgentflowNames(apiResponse, ''))
         }
         return res.json(DocumentStoreDTO.fromEntity(apiResponse))
     } catch (error) {

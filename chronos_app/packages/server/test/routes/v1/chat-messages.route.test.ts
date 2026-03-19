@@ -27,7 +27,7 @@ export function chatMessagesRouteTest() {
         })
 
         describe('GET /api/v1/chatmessage/:id', () => {
-            it('should handle non-existent chatflow', async () => {
+            it('should handle non-existent agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/chatmessage/non-existent-id')
                     .set('Authorization', `Bearer ${authToken}`)
@@ -270,8 +270,8 @@ export function chatMessagesRouteTest() {
             })
         })
 
-        describe('POST /api/v1/chatmessage/:chatflowid/:chatid/abort', () => {
-            it('should handle abort for non-existent chatflow', async () => {
+        describe('POST /api/v1/chatmessage/:agentflowid/:chatid/abort', () => {
+            it('should handle abort for non-existent agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/chatmessage/test-flow/test-chat/abort')
                     .set('Authorization', `Bearer ${authToken}`)

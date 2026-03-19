@@ -64,7 +64,7 @@ export const TableViewOnly = ({ columns, rows, sx }) => {
                                             <TooltipWithParser
                                                 style={{ mb: 1, mt: 2, marginLeft: 10 }}
                                                 title={
-                                                    'If enabled, this variable can be overridden in API calls and embeds. If disabled, any overrides will be ignored. To change this, go to Security settings in Chatflow Configuration.'
+                                                    'If enabled, this variable can be overridden in API calls and embeds. If disabled, any overrides will be ignored. To change this, go to Security settings in Agentflow Configuration.'
                                                 }
                                             />
                                         </>
