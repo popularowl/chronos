@@ -3,28 +3,28 @@ import leadsService from '../../services/leads'
 import { StatusCodes } from 'http-status-codes'
 import { InternalChronosError } from '../../errors/internalChronosError'
 
-const getAllLeadsForChatflow = async (req: Request, res: Response, next: NextFunction) => {
+const getAllLeadsForAgentflow = async (req: Request, res: Response, next: NextFunction) => {
     try {
         if (typeof req.params.id === 'undefined' || req.params.id === '') {
             throw new InternalChronosError(
                 StatusCodes.PRECONDITION_FAILED,
-                `Error: leadsController.getAllLeadsForChatflow - id not provided!`
+                `Error: leadsController.getAllLeadsForAgentflow - id not provided!`
             )
         }
-        const chatflowid = req.params.id
-        const apiResponse = await leadsService.getAllLeads(chatflowid)
+        const agentflowid = req.params.id
+        const apiResponse = await leadsService.getAllLeads(agentflowid)
         return res.json(apiResponse)
     } catch (error) {
         next(error)
     }
 }
 
-const createLeadInChatflow = async (req: Request, res: Response, next: NextFunction) => {
+const createLeadInAgentflow = async (req: Request, res: Response, next: NextFunction) => {
     try {
         if (typeof req.body === 'undefined' || req.body === '') {
             throw new InternalChronosError(
                 StatusCodes.PRECONDITION_FAILED,
-                `Error: leadsController.createLeadInChatflow - body not provided!`
+                `Error: leadsController.createLeadInAgentflow - body not provided!`
             )
         }
         const apiResponse = await leadsService.createLead(req.body)
@@ -35,6 +35,6 @@ const createLeadInChatflow = async (req: Request, res: Response, next: NextFunct
 }
 
 export default {
-    createLeadInChatflow,
-    getAllLeadsForChatflow
+    createLeadInAgentflow,
+    getAllLeadsForAgentflow
 }

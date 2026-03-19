@@ -3,7 +3,7 @@ import { MigrationInterface, QueryRunner } from 'typeorm'
 export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {
         await queryRunner.query(`
-            CREATE TABLE IF NOT EXISTS \`chat_flow\` (
+            CREATE TABLE IF NOT EXISTS \`agent_flow\` (
                 \`id\` varchar(36) NOT NULL,
                 \`name\` varchar(255) NOT NULL,
                 \`flowData\` LONGTEXT NOT NULL,
@@ -18,19 +18,21 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 \`followUpPrompts\` text DEFAULT NULL,
                 \`category\` text DEFAULT NULL,
                 \`type\` VARCHAR(20) NOT NULL DEFAULT 'AGENTFLOW',
+                \`userId\` varchar(36) DEFAULT NULL,
                 \`createdDate\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 \`updatedDate\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
                 PRIMARY KEY (\`id\`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
         `)
 
-        await queryRunner.query(`CREATE INDEX \`IDX_chatflow_name\` ON \`chat_flow\` (\`name\`(191));`)
+        await queryRunner.query(`CREATE INDEX \`IDX_agentflow_name\` ON \`agent_flow\` (\`name\`(191));`)
+        await queryRunner.query(`CREATE INDEX \`IDX_agentflow_userId\` ON \`agent_flow\` (\`userId\`);`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS \`chat_message\` (
                 \`id\` varchar(36) NOT NULL,
                 \`role\` varchar(255) NOT NULL,
-                \`chatflowid\` varchar(255) NOT NULL,
+                \`agentflowid\` varchar(255) NOT NULL,
                 \`content\` LONGTEXT NOT NULL,
                 \`sourceDocuments\` text DEFAULT NULL,
                 \`usedTools\` LONGTEXT DEFAULT NULL,
@@ -48,7 +50,7 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 \`sessionId\` varchar(255) DEFAULT NULL,
                 \`createdDate\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 PRIMARY KEY (\`id\`),
-                KEY \`IDX_e574527322272fd838f4f0f3d3\` (\`chatflowid\`)
+                KEY \`IDX_e574527322272fd838f4f0f3d3\` (\`agentflowid\`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
         `)
 
@@ -58,11 +60,14 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 \`name\` varchar(255) NOT NULL,
                 \`credentialName\` varchar(255) NOT NULL,
                 \`encryptedData\` text NOT NULL,
+                \`userId\` varchar(36) DEFAULT NULL,
                 \`createdDate\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 \`updatedDate\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
                 PRIMARY KEY (\`id\`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
         `)
+
+        await queryRunner.query(`CREATE INDEX \`IDX_credential_userId\` ON \`credential\` (\`userId\`);`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS \`tool\` (
@@ -107,7 +112,7 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS \`chat_message_feedback\` (
                 \`id\` varchar(36) NOT NULL,
-                \`chatflowid\` varchar(255) NOT NULL,
+                \`agentflowid\` varchar(255) NOT NULL,
                 \`content\` text DEFAULT NULL,
                 \`chatId\` varchar(255) NOT NULL,
                 \`messageId\` varchar(255) NOT NULL,
@@ -120,19 +125,19 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS \`upsert_history\` (
                 \`id\` varchar(36) NOT NULL,
-                \`chatflowid\` varchar(255) NOT NULL,
+                \`agentflowid\` varchar(255) NOT NULL,
                 \`result\` text NOT NULL,
                 \`flowData\` LONGTEXT NOT NULL,
                 \`date\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 PRIMARY KEY (\`id\`),
-                KEY \`IDX_a0b59fd66f6e48d2b198123cb6\` (\`chatflowid\`)
+                KEY \`IDX_a0b59fd66f6e48d2b198123cb6\` (\`agentflowid\`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
         `)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS \`lead\` (
                 \`id\` varchar(36) NOT NULL,
-                \`chatflowid\` varchar(255) NOT NULL,
+                \`agentflowid\` varchar(255) NOT NULL,
                 \`chatId\` varchar(255) NOT NULL,
                 \`name\` text DEFAULT NULL,
                 \`email\` text DEFAULT NULL,
@@ -153,11 +158,14 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 \`vectorStoreConfig\` text DEFAULT NULL,
                 \`embeddingConfig\` text DEFAULT NULL,
                 \`recordManagerConfig\` text DEFAULT NULL,
+                \`userId\` varchar(36) DEFAULT NULL,
                 \`createdDate\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
                 \`updatedDate\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
                 PRIMARY KEY (\`id\`)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
         `)
+
+        await queryRunner.query(`CREATE INDEX \`IDX_document_store_userId\` ON \`document_store\` (\`userId\`);`)
 
         await queryRunner.query(`
             CREATE TABLE IF NOT EXISTS \`document_store_file_chunk\` (
@@ -177,8 +185,8 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
             CREATE TABLE IF NOT EXISTS \`evaluation\` (
                 \`id\` varchar(36) NOT NULL,
                 \`name\` varchar(255) NOT NULL,
-                \`chatflowId\` LONGTEXT NOT NULL,
-                \`chatflowName\` varchar(255) NOT NULL,
+                \`agentflowId\` LONGTEXT NOT NULL,
+                \`agentflowName\` varchar(255) NOT NULL,
                 \`datasetId\` LONGTEXT NOT NULL,
                 \`datasetName\` varchar(255) NOT NULL,
                 \`additionalConfig\` LONGTEXT DEFAULT NULL,
@@ -310,9 +318,25 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
                 PRIMARY KEY (id)
             );
         `)
+
+        await queryRunner.query(`
+            CREATE TABLE IF NOT EXISTS \`skill\` (
+                \`id\` varchar(36) NOT NULL,
+                \`name\` varchar(255) NOT NULL,
+                \`description\` text NOT NULL,
+                \`category\` varchar(255) NOT NULL DEFAULT 'general',
+                \`color\` varchar(255) NOT NULL,
+                \`iconSrc\` varchar(255) DEFAULT NULL,
+                \`content\` text NOT NULL,
+                \`createdDate\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+                \`updatedDate\` datetime(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+                PRIMARY KEY (\`id\`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_520_ci;
+        `)
     }
 
     public async down(queryRunner: QueryRunner): Promise<void> {
+        await queryRunner.query(`DROP TABLE IF EXISTS \`skill\``)
         await queryRunner.query(`DROP TABLE IF EXISTS \`oauth_client\``)
         await queryRunner.query(`DROP TABLE IF EXISTS \`user\``)
         await queryRunner.query(`DROP TABLE IF EXISTS \`execution\``)
@@ -333,6 +357,6 @@ export class ConsolidatedBaseline1800000000000 implements MigrationInterface {
         await queryRunner.query(`DROP TABLE IF EXISTS \`tool\``)
         await queryRunner.query(`DROP TABLE IF EXISTS \`credential\``)
         await queryRunner.query(`DROP TABLE IF EXISTS \`chat_message\``)
-        await queryRunner.query(`DROP TABLE IF EXISTS \`chat_flow\``)
+        await queryRunner.query(`DROP TABLE IF EXISTS \`agent_flow\``)
     }
 }

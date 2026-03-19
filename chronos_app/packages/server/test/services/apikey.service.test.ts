@@ -1,7 +1,7 @@
 import { createMockRepository, createMockQueryBuilder } from '../mocks/appServer.mock'
 
 const getRunningExpressAppExports = require('../../src/utils/getRunningExpressApp')
-const addChatflowsCountExports = require('../../src/utils/addChatflowsCount')
+const addAgentflowsCountExports = require('../../src/utils/addAgentflowsCount')
 
 export function apikeyServiceTest() {
     describe('API Key Service', () => {
@@ -16,11 +16,13 @@ export function apikeyServiceTest() {
         }
 
         const origGetRunningExpressApp = getRunningExpressAppExports.getRunningExpressApp
-        const origAddChatflowsCount = addChatflowsCountExports.addChatflowsCount
+        const origAddAgentflowsCount = addAgentflowsCountExports.addAgentflowsCount
 
         beforeEach(() => {
             getRunningExpressAppExports.getRunningExpressApp = jest.fn().mockReturnValue(mockAppServer)
-            addChatflowsCountExports.addChatflowsCount = jest.fn(async (keys: any[]) => keys.map((k: any) => ({ ...k, chatflowsCount: 0 })))
+            addAgentflowsCountExports.addAgentflowsCount = jest.fn(async (keys: any[]) =>
+                keys.map((k: any) => ({ ...k, agentflowsCount: 0 }))
+            )
             mockAppServer.AppDataSource.getRepository.mockReturnValue(mockRepository)
             mockRepository.createQueryBuilder.mockReturnValue(mockQueryBuilder)
             // Reset query builder mocks
@@ -36,7 +38,7 @@ export function apikeyServiceTest() {
 
         afterEach(() => {
             getRunningExpressAppExports.getRunningExpressApp = origGetRunningExpressApp
-            addChatflowsCountExports.addChatflowsCount = origAddChatflowsCount
+            addAgentflowsCountExports.addAgentflowsCount = origAddAgentflowsCount
         })
 
         const apikeyService = require('../../src/services/apikey').default

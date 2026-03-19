@@ -81,7 +81,7 @@ export function evaluationsRouteTest() {
                     .post('/api/v1/evaluations')
                     .send({
                         name: 'Test Evaluation',
-                        chatflowId: 'test-chatflow-id',
+                        agentflowId: 'test-agentflow-id',
                         datasetId: 'test-dataset-id'
                     })
                     .set('Authorization', `Bearer ${authToken}`)

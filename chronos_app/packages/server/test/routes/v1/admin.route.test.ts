@@ -46,8 +46,8 @@ export function adminRouteTest() {
         })
 
         describe('Admin endpoints without auth', () => {
-            it('should return 401 for GET /admin/chatflows without token', async () => {
-                const response = await supertest(getRunningExpressApp().app).get(`${adminBase}/chatflows`)
+            it('should return 401 for GET /admin/agentflows without token', async () => {
+                const response = await supertest(getRunningExpressApp().app).get(`${adminBase}/agentflows`)
 
                 expect(response.status).toEqual(StatusCodes.UNAUTHORIZED)
                 expect(response.body.success).toBe(false)
@@ -69,7 +69,7 @@ export function adminRouteTest() {
         describe('Admin endpoints with invalid token', () => {
             it('should return 401 with an expired or invalid JWT', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get(`${adminBase}/chatflows`)
+                    .get(`${adminBase}/agentflows`)
                     .set('Authorization', 'Bearer invalid-jwt-token')
 
                 expect(response.status).toEqual(StatusCodes.UNAUTHORIZED)

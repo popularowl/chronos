@@ -156,13 +156,13 @@ export function rateLimitUtilTest() {
             })
 
             describe('updateRateLimiter', () => {
-                it('should return early when chatFlow has no apiConfig', async () => {
+                it('should return early when agentFlow has no apiConfig', async () => {
                     delete process.env.MODE
 
                     const manager = new RateLimiterManager()
-                    const chatFlow = { id: 'test-id', apiConfig: null } as any
+                    const agentFlow = { id: 'test-id', apiConfig: null } as any
 
-                    await manager.updateRateLimiter(chatFlow)
+                    await manager.updateRateLimiter(agentFlow)
 
                     // Should complete without error
                     expect(true).toBe(true)
@@ -172,12 +172,12 @@ export function rateLimitUtilTest() {
                     delete process.env.MODE
 
                     const manager = new RateLimiterManager()
-                    const chatFlow = {
+                    const agentFlow = {
                         id: 'test-id',
                         apiConfig: JSON.stringify({ someOtherConfig: true })
                     } as any
 
-                    await manager.updateRateLimiter(chatFlow)
+                    await manager.updateRateLimiter(agentFlow)
 
                     expect(true).toBe(true)
                 })
@@ -188,7 +188,7 @@ export function rateLimitUtilTest() {
                     const manager = new RateLimiterManager()
                     await manager.addRateLimiter('test-id', 60, 100, 'Rate limit')
 
-                    const chatFlow = {
+                    const agentFlow = {
                         id: 'test-id',
                         apiConfig: JSON.stringify({
                             rateLimit: {
@@ -200,7 +200,7 @@ export function rateLimitUtilTest() {
                         })
                     } as any
 
-                    await manager.updateRateLimiter(chatFlow, true)
+                    await manager.updateRateLimiter(agentFlow, true)
 
                     expect(true).toBe(true)
                 })
@@ -209,7 +209,7 @@ export function rateLimitUtilTest() {
                     delete process.env.MODE
 
                     const manager = new RateLimiterManager()
-                    const chatFlow = {
+                    const agentFlow = {
                         id: 'test-id',
                         apiConfig: JSON.stringify({
                             rateLimit: {
@@ -221,7 +221,7 @@ export function rateLimitUtilTest() {
                         })
                     } as any
 
-                    await manager.updateRateLimiter(chatFlow, true)
+                    await manager.updateRateLimiter(agentFlow, true)
 
                     expect(true).toBe(true)
                 })
@@ -230,7 +230,7 @@ export function rateLimitUtilTest() {
                     delete process.env.MODE
 
                     const manager = new RateLimiterManager()
-                    const chatFlow = {
+                    const agentFlow = {
                         id: 'test-id',
                         apiConfig: JSON.stringify({
                             rateLimit: {
@@ -241,7 +241,7 @@ export function rateLimitUtilTest() {
                         })
                     } as any
 
-                    await manager.updateRateLimiter(chatFlow, true)
+                    await manager.updateRateLimiter(agentFlow, true)
 
                     expect(true).toBe(true)
                 })
@@ -250,7 +250,7 @@ export function rateLimitUtilTest() {
                     delete process.env.MODE
 
                     const manager = new RateLimiterManager()
-                    const chatFlow = {
+                    const agentFlow = {
                         id: 'test-id',
                         apiConfig: JSON.stringify({
                             rateLimit: {
@@ -261,18 +261,18 @@ export function rateLimitUtilTest() {
                         })
                     } as any
 
-                    await manager.updateRateLimiter(chatFlow, true)
+                    await manager.updateRateLimiter(agentFlow, true)
 
                     expect(true).toBe(true)
                 })
             })
 
             describe('initializeRateLimiters', () => {
-                it('should initialize rate limiters for all chatflows', async () => {
+                it('should initialize rate limiters for all agentflows', async () => {
                     delete process.env.MODE
 
                     const manager = new RateLimiterManager()
-                    const chatflows = [
+                    const agentflows = [
                         {
                             id: 'flow-1',
                             apiConfig: JSON.stringify({
@@ -297,12 +297,12 @@ export function rateLimitUtilTest() {
                         }
                     ] as any[]
 
-                    await manager.initializeRateLimiters(chatflows)
+                    await manager.initializeRateLimiters(agentflows)
 
                     expect(true).toBe(true)
                 })
 
-                it('should handle empty chatflows array', async () => {
+                it('should handle empty agentflows array', async () => {
                     delete process.env.MODE
 
                     const manager = new RateLimiterManager()
@@ -312,13 +312,13 @@ export function rateLimitUtilTest() {
                     expect(true).toBe(true)
                 })
 
-                it('should handle chatflows without apiConfig', async () => {
+                it('should handle agentflows without apiConfig', async () => {
                     delete process.env.MODE
 
                     const manager = new RateLimiterManager()
-                    const chatflows = [{ id: 'flow-1', apiConfig: null }, { id: 'flow-2' }] as any[]
+                    const agentflows = [{ id: 'flow-1', apiConfig: null }, { id: 'flow-2' }] as any[]
 
-                    await manager.initializeRateLimiters(chatflows)
+                    await manager.initializeRateLimiters(agentflows)
 
                     expect(true).toBe(true)
                 })

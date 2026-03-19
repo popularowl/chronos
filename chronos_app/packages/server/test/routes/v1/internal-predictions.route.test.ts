@@ -27,7 +27,7 @@ export function internalPredictionsRouteTest() {
         })
 
         describe('POST /api/v1/internal-prediction/:id', () => {
-            it('should handle non-existent chatflow', async () => {
+            it('should handle non-existent agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/internal-prediction/non-existent-id')
                     .set('Authorization', `Bearer ${authToken}`)

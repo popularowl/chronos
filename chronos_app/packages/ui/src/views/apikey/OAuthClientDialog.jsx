@@ -35,8 +35,8 @@ import useNotifier from '@/utils/useNotifier'
 
 const ALL_SCOPES = [
     { value: 'admin:full', label: 'Full Admin Access' },
-    { value: 'chatflows:read', label: 'Chatflows - Read' },
-    { value: 'chatflows:write', label: 'Chatflows - Write' },
+    { value: 'agentflows:read', label: 'Agentflows - Read' },
+    { value: 'agentflows:write', label: 'Agentflows - Write' },
     { value: 'credentials:read', label: 'Credentials - Read' },
     { value: 'credentials:write', label: 'Credentials - Write' },
     { value: 'apikeys:read', label: 'API Keys - Read' },

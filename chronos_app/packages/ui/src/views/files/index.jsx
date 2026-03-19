@@ -25,7 +25,7 @@ import { IconX } from '@tabler/icons-react'
 import { useDispatch } from 'react-redux'
 import { useError } from '@/store/context/ErrorContext'
 
-// ==============================|| CHATFLOWS ||============================== //
+// ==============================|| AGENTFLOWS ||============================== //
 
 const Files = () => {
     const { confirm } = useConfirm()

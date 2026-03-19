@@ -121,7 +121,7 @@ export function loggerUtilTest() {
 
             it('should call next for API URLs', () => {
                 const req = {
-                    url: '/api/v1/chatflows',
+                    url: '/api/v1/agentflows',
                     method: 'GET',
                     params: {},
                     body: {},
@@ -189,7 +189,7 @@ export function loggerUtilTest() {
 
             it('should handle POST requests', () => {
                 const req = {
-                    url: '/api/v1/chatflows',
+                    url: '/api/v1/agentflows',
                     method: 'POST',
                     params: {},
                     body: { name: 'test' },
@@ -206,7 +206,7 @@ export function loggerUtilTest() {
 
             it('should handle PUT requests', () => {
                 const req = {
-                    url: '/api/v1/chatflows/123',
+                    url: '/api/v1/agentflows/123',
                     method: 'PUT',
                     params: { id: '123' },
                     body: { name: 'updated' },
@@ -223,7 +223,7 @@ export function loggerUtilTest() {
 
             it('should handle DELETE requests', () => {
                 const req = {
-                    url: '/api/v1/chatflows/123',
+                    url: '/api/v1/agentflows/123',
                     method: 'DELETE',
                     params: { id: '123' },
                     body: {},
@@ -240,7 +240,7 @@ export function loggerUtilTest() {
 
             it('should handle OPTION requests', () => {
                 const req = {
-                    url: '/api/v1/chatflows',
+                    url: '/api/v1/agentflows',
                     method: 'OPTION',
                     params: {},
                     body: {},
@@ -257,7 +257,7 @@ export function loggerUtilTest() {
 
             it('should handle unknown HTTP methods', () => {
                 const req = {
-                    url: '/api/v1/chatflows',
+                    url: '/api/v1/agentflows',
                     method: 'PATCH',
                     params: {},
                     body: {},
@@ -275,7 +275,7 @@ export function loggerUtilTest() {
             it('should include body in debug mode', () => {
                 process.env.DEBUG = 'true'
                 const req = {
-                    url: '/api/v1/chatflows',
+                    url: '/api/v1/agentflows',
                     method: 'POST',
                     params: {},
                     body: { name: 'test', password: 'secret' },
@@ -313,7 +313,7 @@ export function loggerUtilTest() {
                 process.env.DEBUG = 'true'
                 process.env.LOG_SANITIZE_HEADER_FIELDS = 'authorization,x-api-key'
                 const req = {
-                    url: '/api/v1/chatflows',
+                    url: '/api/v1/agentflows',
                     method: 'GET',
                     params: {},
                     body: {},
@@ -348,7 +348,7 @@ export function loggerUtilTest() {
 
             it('should handle requests with URL params', () => {
                 const req = {
-                    url: '/api/v1/chatflows/abc-123',
+                    url: '/api/v1/agentflows/abc-123',
                     method: 'GET',
                     params: { id: 'abc-123' },
                     body: {},
@@ -367,7 +367,7 @@ export function loggerUtilTest() {
                 process.env.DEBUG = 'true'
                 process.env.LOG_SANITIZE_HEADER_FIELDS = 'authorization'
                 const req = {
-                    url: '/api/v1/chatflows',
+                    url: '/api/v1/agentflows',
                     method: 'GET',
                     params: {},
                     body: {},
@@ -385,7 +385,7 @@ export function loggerUtilTest() {
             it('should handle body with non-string non-email fields in debug mode', () => {
                 process.env.DEBUG = 'true'
                 const req = {
-                    url: '/api/v1/chatflows',
+                    url: '/api/v1/agentflows',
                     method: 'POST',
                     params: {},
                     body: { count: 42, active: true, tags: ['tag1', 'tag2'] },
@@ -403,7 +403,7 @@ export function loggerUtilTest() {
             it('should handle body with strings that have @ but no dot', () => {
                 process.env.DEBUG = 'true'
                 const req = {
-                    url: '/api/v1/chatflows',
+                    url: '/api/v1/agentflows',
                     method: 'POST',
                     params: {},
                     body: { note: 'contact @ office' },

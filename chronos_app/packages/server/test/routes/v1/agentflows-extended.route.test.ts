@@ -7,7 +7,7 @@ import { getRunningExpressApp } from '../../../src/utils/getRunningExpressApp'
 async function getAuthToken(): Promise<string> {
     const uniqueId = Date.now() + Math.random()
     const testUser = {
-        email: `chatflows-ext-${uniqueId}@test.com`,
+        email: `agentflows-ext-${uniqueId}@test.com`,
         password: 'test1234'
     }
     const response = await supertest(getRunningExpressApp().app).post('/api/v1/auth/signup').send(testUser)
@@ -15,21 +15,21 @@ async function getAuthToken(): Promise<string> {
 }
 
 /**
- * Extended test suite for chatflows route
+ * Extended test suite for agentflows route
  * Tests additional branches and edge cases
  */
-export function chatflowsExtendedRouteTest() {
-    describe('Chatflows Extended Route Tests', () => {
+export function agentflowsExtendedRouteTest() {
+    describe('Agentflows Extended Route Tests', () => {
         let authToken: string
 
         beforeAll(async () => {
             authToken = await getAuthToken()
         })
 
-        describe('GET /api/v1/chatflows with pagination', () => {
+        describe('GET /api/v1/agentflows with pagination', () => {
             it('should handle page parameter', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?page=0')
+                    .get('/api/v1/agentflows?page=0')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -38,7 +38,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should handle limit parameter', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?limit=5')
+                    .get('/api/v1/agentflows?limit=5')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -47,7 +47,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should handle both page and limit', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?page=0&limit=10')
+                    .get('/api/v1/agentflows?page=0&limit=10')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -56,7 +56,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should reject negative page', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?page=-1')
+                    .get('/api/v1/agentflows?page=-1')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -65,7 +65,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should reject negative limit', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?limit=-5')
+                    .get('/api/v1/agentflows?limit=-5')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -73,10 +73,10 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('GET /api/v1/chatflows with type filter', () => {
-            it('should filter by CHATFLOW type', async () => {
+        describe('GET /api/v1/agentflows with type filter', () => {
+            it('should filter by AGENTFLOW type', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?type=CHATFLOW')
+                    .get('/api/v1/agentflows?type=AGENTFLOW')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -85,7 +85,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should filter by AGENTFLOW type', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?type=AGENTFLOW')
+                    .get('/api/v1/agentflows?type=AGENTFLOW')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -94,7 +94,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should filter by MULTIAGENT type', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?type=MULTIAGENT')
+                    .get('/api/v1/agentflows?type=MULTIAGENT')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -102,10 +102,10 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('POST /api/v1/chatflows validation', () => {
+        describe('POST /api/v1/agentflows validation', () => {
             it('should reject invalid type', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
@@ -117,13 +117,13 @@ export function chatflowsExtendedRouteTest() {
                 expect([400, 412, 500]).toContain(response.status)
             })
 
-            it('should accept valid chatflow with minimal data', async () => {
+            it('should accept valid agentflow with minimal data', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
-                        name: `Test Chatflow ${Date.now()}`,
+                        name: `Test Agentflow ${Date.now()}`,
                         type: 'AGENTFLOW',
                         flowData: JSON.stringify({ nodes: [], edges: [] })
                     })
@@ -132,11 +132,11 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('GET /api/v1/chatflows/:id error cases', () => {
-            it('should return 404 for non-existent chatflow', async () => {
+        describe('GET /api/v1/agentflows/:id error cases', () => {
+            it('should return 404 for non-existent agentflow', async () => {
                 const fakeId = '00000000-0000-0000-0000-000000000000'
                 const response = await supertest(getRunningExpressApp().app)
-                    .get(`/api/v1/chatflows/${fakeId}`)
+                    .get(`/api/v1/agentflows/${fakeId}`)
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -145,7 +145,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should reject invalid UUID format', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows/invalid-uuid')
+                    .get('/api/v1/agentflows/invalid-uuid')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -153,11 +153,11 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('PUT /api/v1/chatflows/:id error cases', () => {
-            it('should return error for non-existent chatflow', async () => {
+        describe('PUT /api/v1/agentflows/:id error cases', () => {
+            it('should return error for non-existent agentflow', async () => {
                 const fakeId = '00000000-0000-0000-0000-000000000000'
                 const response = await supertest(getRunningExpressApp().app)
-                    .put(`/api/v1/chatflows/${fakeId}`)
+                    .put(`/api/v1/agentflows/${fakeId}`)
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({ name: 'Updated Name' })
@@ -166,11 +166,11 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('DELETE /api/v1/chatflows/:id error cases', () => {
-            it('should return error for non-existent chatflow', async () => {
+        describe('DELETE /api/v1/agentflows/:id error cases', () => {
+            it('should return error for non-existent agentflow', async () => {
                 const fakeId = '00000000-0000-0000-0000-000000000000'
                 const response = await supertest(getRunningExpressApp().app)
-                    .delete(`/api/v1/chatflows/${fakeId}`)
+                    .delete(`/api/v1/agentflows/${fakeId}`)
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -178,10 +178,10 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('GET /api/v1/chatflows with search', () => {
+        describe('GET /api/v1/agentflows with search', () => {
             it('should handle search parameter', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?search=test')
+                    .get('/api/v1/agentflows?search=test')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -190,7 +190,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should handle empty search', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?search=')
+                    .get('/api/v1/agentflows?search=')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -199,7 +199,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should handle search with special characters', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?search=%20%23')
+                    .get('/api/v1/agentflows?search=%20%23')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -207,10 +207,10 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('GET /api/v1/chatflows with sorting', () => {
+        describe('GET /api/v1/agentflows with sorting', () => {
             it('should handle sort by name', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?sortBy=name')
+                    .get('/api/v1/agentflows?sortBy=name')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -219,7 +219,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should handle sort by createdDate', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?sortBy=createdDate')
+                    .get('/api/v1/agentflows?sortBy=createdDate')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -228,7 +228,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should handle sort order ASC', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?sortOrder=ASC')
+                    .get('/api/v1/agentflows?sortOrder=ASC')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -237,7 +237,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should handle sort order DESC', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?sortOrder=DESC')
+                    .get('/api/v1/agentflows?sortOrder=DESC')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -245,10 +245,10 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('GET /api/v1/chatflows/:id/streaming', () => {
-            it('should check streaming validity for non-existent chatflow', async () => {
+        describe('GET /api/v1/agentflows/:id/streaming', () => {
+            it('should check streaming validity for non-existent agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows/non-existent-id/streaming')
+                    .get('/api/v1/agentflows/non-existent-id/streaming')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -256,10 +256,10 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('GET /api/v1/chatflows/:id/uploads', () => {
-            it('should check uploads validity for non-existent chatflow', async () => {
+        describe('GET /api/v1/agentflows/:id/uploads', () => {
+            it('should check uploads validity for non-existent agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows/non-existent-id/uploads')
+                    .get('/api/v1/agentflows/non-existent-id/uploads')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -267,10 +267,10 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('GET /api/v1/chatflows/apikey/:apikey', () => {
+        describe('GET /api/v1/agentflows/apikey/:apikey', () => {
             it('should reject invalid API key', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows/apikey/invalid-key')
+                    .get('/api/v1/agentflows/apikey/invalid-key')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -279,7 +279,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should handle keyonly query param', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows/apikey/test-key?keyonly=true')
+                    .get('/api/v1/agentflows/apikey/test-key?keyonly=true')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -287,10 +287,10 @@ export function chatflowsExtendedRouteTest() {
             })
         })
 
-        describe('GET /api/v1/chatflows/:id/config', () => {
-            it('should get config for non-existent chatflow', async () => {
+        describe('GET /api/v1/agentflows/:id/config', () => {
+            it('should get config for non-existent agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows/non-existent-id/config')
+                    .get('/api/v1/agentflows/non-existent-id/config')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -301,7 +301,7 @@ export function chatflowsExtendedRouteTest() {
         describe('Combined filters', () => {
             it('should handle type + pagination', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?type=CHATFLOW&page=1&limit=5')
+                    .get('/api/v1/agentflows?type=AGENTFLOW&page=1&limit=5')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -310,7 +310,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should handle type + search + sort', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?type=CHATFLOW&search=test&sortBy=name&sortOrder=ASC')
+                    .get('/api/v1/agentflows?type=AGENTFLOW&search=test&sortBy=name&sortOrder=ASC')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -319,7 +319,7 @@ export function chatflowsExtendedRouteTest() {
 
             it('should handle all filters combined', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/chatflows?type=AGENTFLOW&search=agent&sortBy=createdDate&sortOrder=DESC&page=0&limit=10')
+                    .get('/api/v1/agentflows?type=AGENTFLOW&search=agent&sortBy=createdDate&sortOrder=DESC&page=0&limit=10')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 

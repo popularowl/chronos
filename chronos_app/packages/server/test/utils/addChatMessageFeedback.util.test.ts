@@ -26,7 +26,7 @@ export function addChatMessageFeedbackUtilTest() {
         const { utilAddChatMessageFeedback } = require('../../src/utils/addChatMessageFeedback')
 
         it('should create and save chat message feedback', async () => {
-            const feedback = { chatflowid: 'flow-1', chatId: 'chat-1', content: 'Great!', rating: 'THUMBS_UP' }
+            const feedback = { agentflowid: 'flow-1', chatId: 'chat-1', content: 'Great!', rating: 'THUMBS_UP' }
             mockRepository.create.mockReturnValue(feedback)
             mockRepository.save.mockResolvedValue({ id: 'fb-1', ...feedback })
 

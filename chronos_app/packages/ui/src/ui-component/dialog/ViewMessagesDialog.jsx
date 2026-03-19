@@ -146,7 +146,7 @@ const ConfirmDeleteMessageDialog = ({ show, dialogProps, onCancel, onConfirm }) 
             </DialogTitle>
             <DialogContent>
                 <span style={{ marginTop: '20px', marginBottom: '20px' }}>{dialogProps.description}</span>
-                {dialogProps.isChatflow && (
+                {dialogProps.isAgentflow && (
                     <FormControlLabel
                         control={<Checkbox checked={hardDelete} onChange={(event) => setHardDelete(event.target.checked)} />}
                         label='Remove messages from 3rd party Memory Node'
@@ -200,9 +200,9 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
     const [anchorEl, setAnchorEl] = useState(null)
     const open = Boolean(anchorEl)
 
-    const getChatmessageApi = useApi(chatmessageApi.getAllChatmessageFromChatflow)
+    const getChatmessageApi = useApi(chatmessageApi.getAllChatmessageFromAgentflow)
     const getChatmessageFromPKApi = useApi(chatmessageApi.getChatmessageFromPK)
-    const getStatsApi = useApi(feedbackApi.getStatsFromChatflow)
+    const getStatsApi = useApi(feedbackApi.getStatsFromAgentflow)
     const getStoragePathFromServer = useApi(chatmessageApi.getStoragePath)
     let storagePath = ''
 
@@ -216,7 +216,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
     }
 
     const refresh = (page, limit, startDate, endDate, chatTypes, feedbackTypes) => {
-        getChatmessageApi.request(dialogProps.chatflow.id, {
+        getChatmessageApi.request(dialogProps.agentflow.id, {
             chatType: chatTypes.length ? chatTypes : undefined,
             feedbackType: feedbackTypes.length ? feedbackTypes : undefined,
             startDate: startDate,
@@ -225,7 +225,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
             page: page,
             limit: limit
         })
-        getStatsApi.request(dialogProps.chatflow.id, {
+        getStatsApi.request(dialogProps.agentflow.id, {
             chatType: chatTypes.length ? chatTypes : undefined,
             feedbackType: feedbackTypes.length ? feedbackTypes : undefined,
             startDate: startDate,
@@ -278,16 +278,16 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
             description: 'Are you sure you want to delete messages? This action cannot be undone.',
             confirmButtonName: 'Delete',
             cancelButtonName: 'Cancel',
-            isChatflow: dialogProps.isChatflow
+            isAgentflow: dialogProps.isAgentflow
         })
         setHardDeleteDialogOpen(true)
     }
 
     const deleteMessages = async (hardDelete) => {
         setHardDeleteDialogOpen(false)
-        const chatflowid = dialogProps.chatflow.id
+        const agentflowid = dialogProps.agentflow.id
         try {
-            const obj = { chatflowid, isClearFromViewMessageDialog: true }
+            const obj = { agentflowid, isClearFromViewMessageDialog: true }
 
             let _chatTypeFilter = chatTypeFilter
             if (typeof chatTypeFilter === 'string' && chatTypeFilter.startsWith('[') && chatTypeFilter.endsWith(']')) {
@@ -309,7 +309,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
             if (endDate) obj.endDate = endDate
             if (hardDelete) obj.hardDelete = true
 
-            await chatmessageApi.deleteChatmessage(chatflowid, obj)
+            await chatmessageApi.deleteChatmessage(agentflowid, obj)
             enqueueSnackbar({
                 message: 'Succesfully deleted messages',
                 options: {
@@ -360,7 +360,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
             fileSeparator = '\\'
         }
 
-        const resp = await chatmessageApi.getAllChatmessageFromChatflow(dialogProps.chatflow.id, {
+        const resp = await chatmessageApi.getAllChatmessageFromAgentflow(dialogProps.agentflow.id, {
             chatType: chatTypeFilter.length ? chatTypeFilter : undefined,
             feedbackType: feedbackTypeFilter.length ? feedbackTypeFilter : undefined,
             startDate: startDate,
@@ -377,7 +377,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
                 chatmsg.fileUploads.forEach((file) => {
                     if (file.type === 'stored-file') {
                         filePaths.push(
-                            `${storagePath}${fileSeparator}${chatmsg.chatflowid}${fileSeparator}${chatmsg.chatId}${fileSeparator}${file.name}`
+                            `${storagePath}${fileSeparator}${chatmsg.agentflowid}${fileSeparator}${chatmsg.chatId}${fileSeparator}${file.name}`
                         )
                     }
                 })
@@ -397,7 +397,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
                 msg.artifacts = chatmsg.artifacts
                 msg.artifacts.forEach((artifact) => {
                     if (artifact.type === 'png' || artifact.type === 'jpeg') {
-                        artifact.data = `${baseURL}/api/v1/get-upload-file?chatflowId=${chatmsg.chatflowid}&chatId=${
+                        artifact.data = `${baseURL}/api/v1/get-upload-file?agentflowId=${chatmsg.agentflowid}&chatId=${
                             chatmsg.chatId
                         }&fileName=${artifact.data.replace('FILE-STORAGE::', '')}`
                     }
@@ -433,7 +433,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
         const blob = new Blob([dataStr], { type: 'application/json' })
         const dataUri = URL.createObjectURL(blob)
 
-        const exportFileDefaultName = `${dialogProps.chatflow.id}-Message.json`
+        const exportFileDefaultName = `${dialogProps.agentflow.id}-Message.json`
 
         let linkElement = document.createElement('a')
         linkElement.setAttribute('href', dataUri)
@@ -454,16 +454,16 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
         }
         const isConfirmed = await confirm(confirmPayload)
 
-        const chatflowid = dialogProps.chatflow.id
+        const agentflowid = dialogProps.agentflow.id
         if (isConfirmed) {
             try {
-                const obj = { chatflowid, isClearFromViewMessageDialog: true }
+                const obj = { agentflowid, isClearFromViewMessageDialog: true }
                 if (chatmsg.chatId) obj.chatId = chatmsg.chatId
                 if (chatmsg.chatType) obj.chatType = chatmsg.chatType
                 if (chatmsg.memoryType) obj.memoryType = chatmsg.memoryType
                 if (chatmsg.sessionId) obj.sessionId = chatmsg.sessionId
 
-                await chatmessageApi.deleteChatmessage(chatflowid, obj)
+                await chatmessageApi.deleteChatmessage(agentflowid, obj)
                 const description =
                     chatmsg.sessionId && chatmsg.memoryType
                         ? `Succesfully cleared session id: ${chatmsg.sessionId} from ${chatmsg.memoryType}`
@@ -480,13 +480,13 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
                         )
                     }
                 })
-                getChatmessageApi.request(chatflowid, {
+                getChatmessageApi.request(agentflowid, {
                     startDate: startDate,
                     endDate: endDate,
                     chatType: chatTypeFilter.length ? chatTypeFilter : undefined,
                     feedbackType: feedbackTypeFilter.length ? feedbackTypeFilter : undefined
                 })
-                getStatsApi.request(chatflowid, {
+                getStatsApi.request(agentflowid, {
                     startDate: startDate,
                     endDate: endDate,
                     chatType: chatTypeFilter.length ? chatTypeFilter : undefined,
@@ -535,7 +535,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
             if (chatmsg.fileUploads && Array.isArray(chatmsg.fileUploads)) {
                 chatmsg.fileUploads.forEach((file) => {
                     if (file.type === 'stored-file') {
-                        file.data = `${baseURL}/api/v1/get-upload-file?chatflowId=${chatmsg.chatflowid}&chatId=${chatmsg.chatId}&fileName=${file.name}`
+                        file.data = `${baseURL}/api/v1/get-upload-file?agentflowId=${chatmsg.agentflowid}&chatId=${chatmsg.chatId}&fileName=${file.name}`
                     }
                 })
             }
@@ -552,7 +552,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
                 obj.artifacts = chatmsg.artifacts
                 obj.artifacts.forEach((artifact) => {
                     if (artifact.type === 'png' || artifact.type === 'jpeg') {
-                        artifact.data = `${baseURL}/api/v1/get-upload-file?chatflowId=${chatmsg.chatflowid}&chatId=${
+                        artifact.data = `${baseURL}/api/v1/get-upload-file?agentflowId=${chatmsg.agentflowid}&chatId=${
                             chatmsg.chatId
                         }&fileName=${artifact.data.replace('FILE-STORAGE::', '')}`
                     }
@@ -638,12 +638,12 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
     const handleItemClick = (idx, chatmsg) => {
         setSelectedMessageIndex(idx)
         if (feedbackTypeFilter.length > 0) {
-            getChatmessageFromPKApi.request(dialogProps.chatflow.id, {
+            getChatmessageFromPKApi.request(dialogProps.agentflow.id, {
                 ...transformChatPKToParams(getChatPK(chatmsg)),
                 feedbackType: feedbackTypeFilter
             })
         } else {
-            getChatmessageFromPKApi.request(dialogProps.chatflow.id, transformChatPKToParams(getChatPK(chatmsg)))
+            getChatmessageFromPKApi.request(dialogProps.agentflow.id, transformChatPKToParams(getChatPK(chatmsg)))
         }
     }
 
@@ -740,12 +740,12 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
             setSelectedMessageIndex(0)
             if (chatPK) {
                 if (feedbackTypeFilter.length > 0) {
-                    getChatmessageFromPKApi.request(dialogProps.chatflow.id, {
+                    getChatmessageFromPKApi.request(dialogProps.agentflow.id, {
                         ...transformChatPKToParams(chatPK),
                         feedbackType: feedbackTypeFilter
                     })
                 } else {
-                    getChatmessageFromPKApi.request(dialogProps.chatflow.id, transformChatPKToParams(chatPK))
+                    getChatmessageFromPKApi.request(dialogProps.agentflow.id, transformChatPKToParams(chatPK))
                 }
             }
         }
@@ -761,9 +761,9 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
     }, [getStatsApi.data])
 
     useEffect(() => {
-        if (dialogProps.chatflow) {
+        if (dialogProps.agentflow) {
             refresh(currentPage, pageLimit, startDate, endDate, chatTypeFilter, feedbackTypeFilter)
-            getStatsApi.request(dialogProps.chatflow.id, {
+            getStatsApi.request(dialogProps.agentflow.id, {
                 startDate: startDate,
                 endDate: endDate
             })
@@ -795,7 +795,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
     }, [show, dispatch])
 
     useEffect(() => {
-        if (dialogProps.chatflow) {
+        if (dialogProps.agentflow) {
             // when the filter is cleared fetch all messages
             if (feedbackTypeFilter.length === 0) {
                 refresh(currentPage, pageLimit, startDate, endDate, chatTypeFilter, feedbackTypeFilter)
@@ -810,8 +810,8 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
             const artifact = newArtifacts[i]
             if (artifact && (artifact.type === 'png' || artifact.type === 'jpeg')) {
                 const data = artifact.data
-                newArtifacts[i].data = `${baseURL}/api/v1/get-upload-file?chatflowId=${
-                    dialogProps.chatflow.id
+                newArtifacts[i].data = `${baseURL}/api/v1/get-upload-file?agentflowId=${
+                    dialogProps.agentflow.id
                 }&chatId=${selectedChatId}&fileName=${data.replace('FILE-STORAGE::', '')}`
             }
         }
@@ -851,7 +851,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
                 </div>
             )
         } else {
-            return <MemoizedReactMarkdown chatflowid={dialogProps.chatflow.id}>{item.data}</MemoizedReactMarkdown>
+            return <MemoizedReactMarkdown agentflowid={dialogProps.agentflow.id}>{item.data}</MemoizedReactMarkdown>
         }
     }
 
@@ -1390,7 +1390,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
                                                                                         )}
                                                                                         {agent.messages.length > 0 && (
                                                                                             <MemoizedReactMarkdown
-                                                                                                chatflowid={dialogProps.chatflow.id}
+                                                                                                agentflowid={dialogProps.agentflow.id}
                                                                                             >
                                                                                                 {agent.messages.length > 1
                                                                                                     ? agent.messages.join('\\n')
@@ -1520,7 +1520,7 @@ const ViewMessagesDialog = ({ show, dialogProps, onCancel }) => {
                                                                     className='markdownanswer'
                                                                     style={{ wordBreak: 'break-word', overflowWrap: 'break-word' }}
                                                                 >
-                                                                    <MemoizedReactMarkdown chatflowid={dialogProps.chatflow.id}>
+                                                                    <MemoizedReactMarkdown agentflowid={dialogProps.agentflow.id}>
                                                                         {message.message}
                                                                     </MemoizedReactMarkdown>
                                                                 </div>

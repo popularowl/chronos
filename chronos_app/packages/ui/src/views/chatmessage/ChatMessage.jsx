@@ -64,7 +64,7 @@ import './ChatMessage.css'
 
 // api
 import chatmessageApi from '@/api/chatmessage'
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 import predictionApi from '@/api/prediction'
 import vectorstoreApi from '@/api/vectorstore'
 import attachmentsApi from '@/api/attachments'
@@ -82,7 +82,7 @@ import { baseURL, maxScroll } from '@/store/constant'
 import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction } from '@/store/actions'
 
 // Utils
-import { isValidURL, removeDuplicateURL, setLocalStorageChatflow, getLocalStorageChatflow } from '@/utils/genericHelper'
+import { isValidURL, removeDuplicateURL, setLocalStorageAgentflow, getLocalStorageAgentflow } from '@/utils/genericHelper'
 import useNotifier from '@/utils/useNotifier'
 import FollowUpPromptsCard from '@/ui-component/cards/FollowUpPromptsCard'
 
@@ -162,7 +162,7 @@ CardWithDeleteOverlay.propTypes = {
     onDelete: PropTypes.func
 }
 
-const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setPreviews }) => {
+const ChatMessage = ({ open, agentflowid, isAgentCanvas, isDialog, previews, setPreviews }) => {
     const theme = useTheme()
     const customization = useSelector((state) => state.customization)
 
@@ -183,8 +183,8 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
             type: 'apiMessage'
         }
     ])
-    const [isChatFlowAvailableToStream, setIsChatFlowAvailableToStream] = useState(false)
-    const [isChatFlowAvailableForSpeech, setIsChatFlowAvailableForSpeech] = useState(false)
+    const [isAgentFlowAvailableToStream, setIsAgentFlowAvailableToStream] = useState(false)
+    const [isAgentFlowAvailableForSpeech, setIsAgentFlowAvailableForSpeech] = useState(false)
     const [sourceDialogOpen, setSourceDialogOpen] = useState(false)
     const [sourceDialogProps, setSourceDialogProps] = useState({})
     const [chatId, setChatId] = useState(uuidv4())
@@ -195,11 +195,11 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     const [inputHistory] = useState(new ChatInputHistory(10))
 
     const inputRef = useRef(null)
-    const getChatmessageApi = useApi(chatmessageApi.getInternalChatmessageFromChatflow)
+    const getChatmessageApi = useApi(chatmessageApi.getInternalChatmessageFromAgentflow)
     const getAllExecutionsApi = useApi(executionsApi.getAllExecutions)
-    const getIsChatflowStreamingApi = useApi(chatflowsApi.getIsChatflowStreaming)
-    const getAllowChatFlowUploads = useApi(chatflowsApi.getAllowChatflowUploads)
-    const getChatflowConfig = useApi(chatflowsApi.getSpecificChatflow)
+    const getIsAgentflowStreamingApi = useApi(agentflowsApi.getIsAgentflowStreaming)
+    const getAllowAgentFlowUploads = useApi(agentflowsApi.getAllowAgentflowUploads)
+    const getAgentflowConfig = useApi(agentflowsApi.getSpecificAgentflow)
 
     const [starterPrompts, setStarterPrompts] = useState([])
 
@@ -227,9 +227,9 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     // drag & drop and file input
     const imgUploadRef = useRef(null)
     const fileUploadRef = useRef(null)
-    const [isChatFlowAvailableForImageUploads, setIsChatFlowAvailableForImageUploads] = useState(false)
-    const [isChatFlowAvailableForFileUploads, setIsChatFlowAvailableForFileUploads] = useState(false)
-    const [isChatFlowAvailableForRAGFileUploads, setIsChatFlowAvailableForRAGFileUploads] = useState(false)
+    const [isAgentFlowAvailableForImageUploads, setIsAgentFlowAvailableForImageUploads] = useState(false)
+    const [isAgentFlowAvailableForFileUploads, setIsAgentFlowAvailableForFileUploads] = useState(false)
+    const [isAgentFlowAvailableForRAGFileUploads, setIsAgentFlowAvailableForRAGFileUploads] = useState(false)
     const [isDragActive, setIsDragActive] = useState(false)
 
     // recording
@@ -273,7 +273,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     const ttsTimeoutRef = useRef(null)
 
     const isFileAllowedForUpload = (file) => {
-        const constraints = getAllowChatFlowUploads.data
+        const constraints = getAllowAgentFlowUploads.data
         /**
          * {isImageUploadAllowed: boolean, imgUploadSizeAndTypes: Array<{ fileTypes: string[], maxUploadSize: number }>}
          */
@@ -318,7 +318,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     }
 
     const handleDrop = async (e) => {
-        if (!isChatFlowAvailableForImageUploads && !isChatFlowAvailableForFileUploads) {
+        if (!isAgentFlowAvailableForImageUploads && !isAgentFlowAvailableForFileUploads) {
             return
         }
         e.preventDefault()
@@ -470,7 +470,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     }
 
     const handleDrag = (e) => {
-        if (isChatFlowAvailableForImageUploads || isChatFlowAvailableForFileUploads) {
+        if (isAgentFlowAvailableForImageUploads || isAgentFlowAvailableForFileUploads) {
             e.preventDefault()
             e.stopPropagation()
             if (e.type === 'dragenter' || e.type === 'dragover') {
@@ -488,7 +488,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
             await handleTTSAbortAll()
             stopAllTTS()
 
-            await chatmessageApi.abortMessage(chatflowid, chatId)
+            await chatmessageApi.abortMessage(agentflowid, chatId)
             setIsMessageStopping(false)
         } catch (error) {
             setIsMessageStopping(false)
@@ -650,7 +650,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     const updateLastMessageArtifacts = (artifacts) => {
         artifacts.forEach((artifact) => {
             if (artifact.type === 'png' || artifact.type === 'jpeg') {
-                artifact.data = `${baseURL}/api/v1/get-upload-file?chatflowId=${chatflowid}&chatId=${chatId}&fileName=${artifact.data.replace(
+                artifact.data = `${baseURL}/api/v1/get-upload-file?agentflowId=${agentflowid}&chatId=${chatId}&fileName=${artifact.data.replace(
                     'FILE-STORAGE::',
                     ''
                 )}`
@@ -891,7 +891,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                 }
                 formData.append('chatId', chatId)
 
-                const response = await attachmentsApi.createAttachment(chatflowid, chatId, formData)
+                const response = await attachmentsApi.createAttachment(agentflowid, chatId, formData)
                 const data = response.data
 
                 for (const extractedFileData of data) {
@@ -911,7 +911,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                     }
                 }
             }
-        } else if (isChatFlowAvailableForRAGFileUploads) {
+        } else if (isAgentFlowAvailableForRAGFileUploads) {
             const filesWithRAGUploadType = uploadedFiles.filter((file) => file.type === 'file:rag')
 
             if (filesWithRAGUploadType.length > 0) {
@@ -921,7 +921,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                 }
                 formData.append('chatId', chatId)
 
-                await vectorstoreApi.upsertVectorStoreWithFormData(chatflowid, formData)
+                await vectorstoreApi.upsertVectorStoreWithFormData(agentflowid, formData)
 
                 // delay for vector store to be updated
                 const delay = (delayInms) => {
@@ -1002,10 +1002,10 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
             if (action) params.action = action
             if (humanInput) params.humanInput = humanInput
 
-            if (isChatFlowAvailableToStream) {
-                fetchResponseFromEventStream(chatflowid, params)
+            if (isAgentFlowAvailableToStream) {
+                fetchResponseFromEventStream(agentflowid, params)
             } else {
-                const response = await predictionApi.sendMessageAndGetPrediction(chatflowid, params)
+                const response = await predictionApi.sendMessageAndGetPrediction(agentflowid, params)
                 if (response.data) {
                     const data = response.data
 
@@ -1034,7 +1034,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                         }
                     ])
 
-                    setLocalStorageChatflow(chatflowid, data.chatId)
+                    setLocalStorageAgentflow(agentflowid, data.chatId)
                     setLoading(false)
                     setUserInput('')
                     setUploadedFiles([])
@@ -1051,11 +1051,11 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
         }
     }
 
-    const fetchResponseFromEventStream = async (chatflowid, params) => {
+    const fetchResponseFromEventStream = async (agentflowid, params) => {
         const chatId = params.chatId
         const input = params.question
         params.streaming = true
-        await fetchEventSource(`${baseURL}/api/v1/internal-prediction/${chatflowid}`, {
+        await fetchEventSource(`${baseURL}/api/v1/internal-prediction/${agentflowid}`, {
             openWhenHidden: true,
             method: 'POST',
             body: JSON.stringify(params),
@@ -1134,7 +1134,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                         break
                     case 'end':
                         cleanupCalledTools()
-                        setLocalStorageChatflow(chatflowid, chatId)
+                        setLocalStorageAgentflow(agentflowid, chatId)
                         closeResponse()
                         break
                 }
@@ -1241,7 +1241,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                     obj.artifacts = message.artifacts
                     obj.artifacts.forEach((artifact) => {
                         if (artifact.type === 'png' || artifact.type === 'jpeg') {
-                            artifact.data = `${baseURL}/api/v1/get-upload-file?chatflowId=${chatflowid}&chatId=${chatId}&fileName=${artifact.data.replace(
+                            artifact.data = `${baseURL}/api/v1/get-upload-file?agentflowId=${agentflowid}&chatId=${chatId}&fileName=${artifact.data.replace(
                                 'FILE-STORAGE::',
                                 ''
                             )}`
@@ -1252,7 +1252,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                     obj.fileUploads = message.fileUploads
                     obj.fileUploads.forEach((file) => {
                         if (file.type === 'stored-file') {
-                            file.data = `${baseURL}/api/v1/get-upload-file?chatflowId=${chatflowid}&chatId=${chatId}&fileName=${file.name}`
+                            file.data = `${baseURL}/api/v1/get-upload-file?agentflowId=${agentflowid}&chatId=${chatId}&fileName=${file.name}`
                         }
                     })
                 }
@@ -1262,7 +1262,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                 return obj
             })
             setMessages((prevMessages) => [...prevMessages, ...loadedMessages])
-            setLocalStorageChatflow(chatflowid, chatId)
+            setLocalStorageAgentflow(agentflowid, chatId)
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -1282,36 +1282,36 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                 return obj
             })
             setMessages((prevMessages) => [...prevMessages, ...loadedMessages])
-            setLocalStorageChatflow(chatflowid, chatId)
+            setLocalStorageAgentflow(agentflowid, chatId)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [getAllExecutionsApi.data])
 
-    // Get chatflow streaming capability
+    // Get agentflow streaming capability
     useEffect(() => {
-        if (getIsChatflowStreamingApi.data) {
-            setIsChatFlowAvailableToStream(getIsChatflowStreamingApi.data?.isStreaming ?? false)
+        if (getIsAgentflowStreamingApi.data) {
+            setIsAgentFlowAvailableToStream(getIsAgentflowStreamingApi.data?.isStreaming ?? false)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getIsChatflowStreamingApi.data])
+    }, [getIsAgentflowStreamingApi.data])
 
-    // Get chatflow uploads capability
+    // Get agentflow uploads capability
     useEffect(() => {
-        if (getAllowChatFlowUploads.data) {
-            setIsChatFlowAvailableForImageUploads(getAllowChatFlowUploads.data?.isImageUploadAllowed ?? false)
-            setIsChatFlowAvailableForRAGFileUploads(getAllowChatFlowUploads.data?.isRAGFileUploadAllowed ?? false)
-            setIsChatFlowAvailableForSpeech(getAllowChatFlowUploads.data?.isSpeechToTextEnabled ?? false)
-            setImageUploadAllowedTypes(getAllowChatFlowUploads.data?.imgUploadSizeAndTypes.map((allowed) => allowed.fileTypes).join(','))
-            setFileUploadAllowedTypes(getAllowChatFlowUploads.data?.fileUploadSizeAndTypes.map((allowed) => allowed.fileTypes).join(','))
+        if (getAllowAgentFlowUploads.data) {
+            setIsAgentFlowAvailableForImageUploads(getAllowAgentFlowUploads.data?.isImageUploadAllowed ?? false)
+            setIsAgentFlowAvailableForRAGFileUploads(getAllowAgentFlowUploads.data?.isRAGFileUploadAllowed ?? false)
+            setIsAgentFlowAvailableForSpeech(getAllowAgentFlowUploads.data?.isSpeechToTextEnabled ?? false)
+            setImageUploadAllowedTypes(getAllowAgentFlowUploads.data?.imgUploadSizeAndTypes.map((allowed) => allowed.fileTypes).join(','))
+            setFileUploadAllowedTypes(getAllowAgentFlowUploads.data?.fileUploadSizeAndTypes.map((allowed) => allowed.fileTypes).join(','))
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getAllowChatFlowUploads.data])
+    }, [getAllowAgentFlowUploads.data])
 
     useEffect(() => {
-        if (getChatflowConfig.data) {
+        if (getAgentflowConfig.data) {
             setIsConfigLoading(false)
-            if (getChatflowConfig.data?.flowData) {
-                let nodes = JSON.parse(getChatflowConfig.data?.flowData).nodes ?? []
+            if (getAgentflowConfig.data?.flowData) {
+                let nodes = JSON.parse(getAgentflowConfig.data?.flowData).nodes ?? []
                 const startNode = nodes.find((node) => node.data.name === 'startAgentflow')
                 if (startNode) {
                     const startInputType = startNode.data.inputs?.startInputType
@@ -1337,12 +1337,12 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                         setFormDescription(startNode.data.inputs?.formDescription)
                     }
 
-                    getAllExecutionsApi.request({ agentflowId: chatflowid })
+                    getAllExecutionsApi.request({ agentflowId: agentflowid })
                 }
             }
 
-            if (getChatflowConfig.data?.chatbotConfig && JSON.parse(getChatflowConfig.data?.chatbotConfig)) {
-                let config = JSON.parse(getChatflowConfig.data?.chatbotConfig)
+            if (getAgentflowConfig.data?.chatbotConfig && JSON.parse(getAgentflowConfig.data?.chatbotConfig)) {
+                let config = JSON.parse(getAgentflowConfig.data?.chatbotConfig)
                 if (config.starterPrompts) {
                     let inputFields = []
                     Object.getOwnPropertyNames(config.starterPrompts).forEach((key) => {
@@ -1358,7 +1358,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
 
                 if (config.leads) {
                     setLeadsConfig(config.leads)
-                    if (config.leads.status && !getLocalStorageChatflow(chatflowid).lead) {
+                    if (config.leads.status && !getLocalStorageAgentflow(agentflowid).lead) {
                         setMessages((prevMessages) => {
                             const leadCaptureMessage = {
                                 message: '',
@@ -1384,12 +1384,12 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
         }
 
         // Check if TTS is configured
-        if (getChatflowConfig.data && getChatflowConfig.data.textToSpeech) {
+        if (getAgentflowConfig.data && getAgentflowConfig.data.textToSpeech) {
             try {
                 const ttsConfig =
-                    typeof getChatflowConfig.data.textToSpeech === 'string'
-                        ? JSON.parse(getChatflowConfig.data.textToSpeech)
-                        : getChatflowConfig.data.textToSpeech
+                    typeof getAgentflowConfig.data.textToSpeech === 'string'
+                        ? JSON.parse(getAgentflowConfig.data.textToSpeech)
+                        : getAgentflowConfig.data.textToSpeech
 
                 let isEnabled = false
                 if (ttsConfig) {
@@ -1407,24 +1407,24 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
             setIsTTSEnabled(false)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getChatflowConfig.data])
+    }, [getAgentflowConfig.data])
 
     useEffect(() => {
-        if (getChatflowConfig.error) {
+        if (getAgentflowConfig.error) {
             setIsConfigLoading(false)
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [getChatflowConfig.error])
+    }, [getAgentflowConfig.error])
 
     useEffect(() => {
         if (fullFileUpload) {
-            setIsChatFlowAvailableForFileUploads(true)
-        } else if (isChatFlowAvailableForRAGFileUploads) {
-            setIsChatFlowAvailableForFileUploads(true)
+            setIsAgentFlowAvailableForFileUploads(true)
+        } else if (isAgentFlowAvailableForRAGFileUploads) {
+            setIsAgentFlowAvailableForFileUploads(true)
         } else {
-            setIsChatFlowAvailableForFileUploads(false)
+            setIsAgentFlowAvailableForFileUploads(false)
         }
-    }, [isChatFlowAvailableForRAGFileUploads, fullFileUpload])
+    }, [isAgentFlowAvailableForRAGFileUploads, fullFileUpload])
 
     // Auto scroll chat to bottom (but not during TTS actions)
     useEffect(() => {
@@ -1442,12 +1442,12 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     }, [isDialog, inputRef])
 
     useEffect(() => {
-        if (open && chatflowid) {
+        if (open && agentflowid) {
             // API request
-            getChatmessageApi.request(chatflowid)
-            getIsChatflowStreamingApi.request(chatflowid)
-            getAllowChatFlowUploads.request(chatflowid)
-            getChatflowConfig.request(chatflowid)
+            getChatmessageApi.request(agentflowid)
+            getIsAgentflowStreamingApi.request(agentflowid)
+            getAllowAgentFlowUploads.request(agentflowid)
+            getAgentflowConfig.request(agentflowid)
 
             // Add a small delay to ensure content is rendered before scrolling
             setTimeout(() => {
@@ -1458,7 +1458,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
             setIsConfigLoading(true)
 
             // leads
-            const savedLead = getLocalStorageChatflow(chatflowid)?.lead
+            const savedLead = getLocalStorageAgentflow(agentflowid)?.lead
             if (savedLead) {
                 setIsLeadSaved(!!savedLead)
                 setLeadEmail(savedLead.email)
@@ -1478,7 +1478,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, chatflowid])
+    }, [open, agentflowid])
 
     useEffect(() => {
         // wait for audio recording to load and then send
@@ -1518,13 +1518,13 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
 
     const onThumbsUpClick = async (messageId) => {
         const body = {
-            chatflowid,
+            agentflowid,
             chatId,
             messageId,
             rating: 'THUMBS_UP',
             content: ''
         }
-        const result = await chatmessagefeedbackApi.addFeedback(chatflowid, body)
+        const result = await chatmessagefeedbackApi.addFeedback(agentflowid, body)
         if (result.data) {
             const data = result.data
             let id = ''
@@ -1547,13 +1547,13 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
 
     const onThumbsDownClick = async (messageId) => {
         const body = {
-            chatflowid,
+            agentflowid,
             chatId,
             messageId,
             rating: 'THUMBS_DOWN',
             content: ''
         }
-        const result = await chatmessagefeedbackApi.addFeedback(chatflowid, body)
+        const result = await chatmessagefeedbackApi.addFeedback(agentflowid, body)
         if (result.data) {
             const data = result.data
             let id = ''
@@ -1590,7 +1590,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
         setIsLeadSaving(true)
 
         const body = {
-            chatflowid,
+            agentflowid,
             chatId,
             name: leadName,
             email: leadEmail,
@@ -1601,7 +1601,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
         if (result.data) {
             const data = result.data
             setChatId(data.chatId)
-            setLocalStorageChatflow(chatflowid, data.chatId, { lead: { name: leadName, email: leadEmail, phone: leadPhone } })
+            setLocalStorageAgentflow(agentflowid, data.chatId, { lead: { name: leadName, email: leadEmail, phone: leadPhone } })
             setIsLeadSaved(true)
             setLeadEmail(leadEmail)
             setMessages((prevMessages) => {
@@ -1647,7 +1647,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
 
     const handleTTSStop = async (messageId) => {
         setTTSAction(true)
-        await ttsApi.abortTTS({ chatflowId: chatflowid, chatId, chatMessageId: messageId })
+        await ttsApi.abortTTS({ agentflowId: agentflowid, chatId, chatMessageId: messageId })
         cleanupTTSForMessage(messageId)
         setIsMessageStopping(false)
     }
@@ -1702,7 +1702,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                 credentials: 'include',
                 signal: abortController.signal,
                 body: JSON.stringify({
-                    chatflowId: chatflowid,
+                    agentflowId: agentflowid,
                     chatId: chatId,
                     chatMessageId: messageId,
                     text: messageText
@@ -2022,7 +2022,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     const handleTTSAbortAll = async () => {
         const activeTTSMessages = Object.keys(isTTSLoading).concat(Object.keys(isTTSPlaying))
         for (const messageId of activeTTSMessages) {
-            await ttsApi.abortTTS({ chatflowId: chatflowid, chatId, chatMessageId: messageId })
+            await ttsApi.abortTTS({ agentflowId: agentflowid, chatId, chatMessageId: messageId })
         }
     }
 
@@ -2060,7 +2060,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
     const getInputDisabled = () => {
         return (
             loading ||
-            !chatflowid ||
+            !agentflowid ||
             (leadsConfig?.status && !isLeadSaved) ||
             (messages[messages.length - 1].action && Object.keys(messages[messages.length - 1].action).length > 0)
         )
@@ -2179,7 +2179,9 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
             const artifact = newArtifacts[i]
             if (artifact && (artifact.type === 'png' || artifact.type === 'jpeg')) {
                 const data = artifact.data
-                newArtifacts[i].data = `${baseURL}/api/v1/get-upload-file?chatflowId=${chatflowid}&chatId=${chatId}&fileName=${data.replace(
+                newArtifacts[
+                    i
+                ].data = `${baseURL}/api/v1/get-upload-file?agentflowId=${agentflowid}&chatId=${chatId}&fileName=${data.replace(
                     'FILE-STORAGE::',
                     ''
                 )}`
@@ -2222,7 +2224,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
             )
         } else {
             return (
-                <MemoizedReactMarkdown chatflowid={chatflowid} isFullWidth={isDialog}>
+                <MemoizedReactMarkdown agentflowid={agentflowid} isFullWidth={isDialog}>
                     {item.data}
                 </MemoizedReactMarkdown>
             )
@@ -2352,12 +2354,12 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                 />
             )}
             {isDragActive &&
-                (getAllowChatFlowUploads.data?.isImageUploadAllowed || getAllowChatFlowUploads.data?.isRAGFileUploadAllowed) && (
+                (getAllowAgentFlowUploads.data?.isImageUploadAllowed || getAllowAgentFlowUploads.data?.isRAGFileUploadAllowed) && (
                     <Box className='drop-overlay'>
                         <Typography variant='h2'>Drop here to upload</Typography>
                         {[
-                            ...getAllowChatFlowUploads.data.imgUploadSizeAndTypes,
-                            ...getAllowChatFlowUploads.data.fileUploadSizeAndTypes
+                            ...getAllowAgentFlowUploads.data.imgUploadSizeAndTypes,
+                            ...getAllowAgentFlowUploads.data.fileUploadSizeAndTypes
                         ].map((allowed) => {
                             return (
                                 <>
@@ -2431,7 +2433,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                                         agent={agent}
                                                         index={index}
                                                         customization={customization}
-                                                        chatflowid={chatflowid}
+                                                        agentflowid={agentflowid}
                                                         isDialog={isDialog}
                                                         onSourceDialogClick={onSourceDialogClick}
                                                         renderArtifacts={renderArtifacts}
@@ -2451,7 +2453,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                                 <AgentExecutedDataCard
                                                     status={message.agentFlowEventStatus}
                                                     execution={message.agentFlowExecutedData}
-                                                    agentflowId={chatflowid}
+                                                    agentflowId={agentflowid}
                                                     sessionId={chatId}
                                                 />
                                             )}
@@ -2535,7 +2537,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                         )}
                                         <div className='markdownanswer'>
                                             {message.type === 'leadCaptureMessage' &&
-                                            !getLocalStorageChatflow(chatflowid)?.lead &&
+                                            !getLocalStorageAgentflow(agentflowid)?.lead &&
                                             leadsConfig.status ? (
                                                 <Box
                                                     sx={{
@@ -2611,7 +2613,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                                 </Box>
                                             ) : (
                                                 <>
-                                                    <MemoizedReactMarkdown chatflowid={chatflowid} isFullWidth={isDialog}>
+                                                    <MemoizedReactMarkdown agentflowid={agentflowid} isFullWidth={isDialog}>
                                                         {message.message}
                                                     </MemoizedReactMarkdown>
                                                 </>
@@ -2870,12 +2872,12 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                 <div className='recording-control-buttons-container'>
                                     <IconButton onClick={onRecordingCancelled} size='small'>
                                         <IconX
-                                            color={loading || !chatflowid ? '#9e9e9e' : customization.isDarkMode ? 'white' : '#1e88e5'}
+                                            color={loading || !agentflowid ? '#9e9e9e' : customization.isDarkMode ? 'white' : '#1e88e5'}
                                         />
                                     </IconButton>
                                     <IconButton onClick={onRecordingStopped} size='small'>
                                         <IconSend
-                                            color={loading || !chatflowid ? '#9e9e9e' : customization.isDarkMode ? 'white' : '#1e88e5'}
+                                            color={loading || !agentflowid ? '#9e9e9e' : customization.isDarkMode ? 'white' : '#1e88e5'}
                                         />
                                     </IconButton>
                                 </div>
@@ -2900,7 +2902,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                             maxRows={isDialog ? 7 : 2}
                             startAdornment={
                                 <>
-                                    {isChatFlowAvailableForImageUploads && !isChatFlowAvailableForFileUploads && (
+                                    {isAgentFlowAvailableForImageUploads && !isAgentFlowAvailableForFileUploads && (
                                         <InputAdornment position='start' sx={{ ml: 2 }}>
                                             <IconButton
                                                 onClick={handleImageUploadClick}
@@ -2914,7 +2916,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                             </IconButton>
                                         </InputAdornment>
                                     )}
-                                    {!isChatFlowAvailableForImageUploads && isChatFlowAvailableForFileUploads && (
+                                    {!isAgentFlowAvailableForImageUploads && isAgentFlowAvailableForFileUploads && (
                                         <InputAdornment position='start' sx={{ ml: 2 }}>
                                             <IconButton
                                                 onClick={handleFileUploadClick}
@@ -2928,7 +2930,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                             </IconButton>
                                         </InputAdornment>
                                     )}
-                                    {isChatFlowAvailableForImageUploads && isChatFlowAvailableForFileUploads && (
+                                    {isAgentFlowAvailableForImageUploads && isAgentFlowAvailableForFileUploads && (
                                         <InputAdornment position='start' sx={{ ml: 2 }}>
                                             <IconButton
                                                 onClick={handleImageUploadClick}
@@ -2953,12 +2955,12 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                             </IconButton>
                                         </InputAdornment>
                                     )}
-                                    {!isChatFlowAvailableForImageUploads && !isChatFlowAvailableForFileUploads && <Box sx={{ pl: 1 }} />}
+                                    {!isAgentFlowAvailableForImageUploads && !isAgentFlowAvailableForFileUploads && <Box sx={{ pl: 1 }} />}
                                 </>
                             }
                             endAdornment={
                                 <>
-                                    {isChatFlowAvailableForSpeech && (
+                                    {isAgentFlowAvailableForSpeech && (
                                         <InputAdornment position='end'>
                                             <IconButton
                                                 onClick={() => onMicrophonePressed()}
@@ -3032,7 +3034,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                 </>
                             }
                         />
-                        {isChatFlowAvailableForImageUploads && (
+                        {isAgentFlowAvailableForImageUploads && (
                             <input
                                 style={{ display: 'none' }}
                                 multiple
@@ -3042,7 +3044,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
                                 accept={imageUploadAllowedTypes || '*'}
                             />
                         )}
-                        {isChatFlowAvailableForFileUploads && (
+                        {isAgentFlowAvailableForFileUploads && (
                             <input
                                 style={{ display: 'none' }}
                                 multiple
@@ -3098,7 +3100,7 @@ const ChatMessage = ({ open, chatflowid, isAgentCanvas, isDialog, previews, setP
 
 ChatMessage.propTypes = {
     open: PropTypes.bool,
-    chatflowid: PropTypes.string,
+    agentflowid: PropTypes.string,
     isAgentCanvas: PropTypes.bool,
     isDialog: PropTypes.bool,
     previews: PropTypes.array,

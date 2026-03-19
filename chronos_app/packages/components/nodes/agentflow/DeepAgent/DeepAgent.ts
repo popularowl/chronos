@@ -813,7 +813,7 @@ class DeepAgent_Agentflow implements INode {
                     ?.todos?.map((t) => ({ content: t.content, status: t.status })) || []
 
             // ── Extract and persist files created by the agent ──
-            const chatflowId = options.chatflowid as string
+            const agentflowId = options.agentflowid as string
             const agentFiles = (result as any).files || {}
             const artifacts: Array<{ type: string; data: string }> = []
 
@@ -846,7 +846,7 @@ class DeepAgent_Agentflow implements INode {
                     const mime = mimeMap[ext] || 'application/octet-stream'
                     const buffer = Buffer.from(fileContent, ext === 'png' || ext === 'jpg' || ext === 'jpeg' ? 'base64' : 'utf-8')
 
-                    const storedFile = await addSingleFileToStorage(mime, buffer, fileName, chatflowId, chatId)
+                    const storedFile = await addSingleFileToStorage(mime, buffer, fileName, agentflowId, chatId)
                     const storedPath = storedFile.path // FILE-STORAGE::<filename>
 
                     // Determine artifact type for the UI

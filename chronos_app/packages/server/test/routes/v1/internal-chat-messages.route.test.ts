@@ -45,7 +45,7 @@ export function internalChatMessagesRouteTest() {
             it('should get internal chat messages with filters', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/internal-chatmessages')
-                    .query({ chatflowid: 'test-flow' })
+                    .query({ agentflowid: 'test-flow' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 

@@ -6,12 +6,12 @@ import { ILead } from '../../Interface'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 
-const getAllLeads = async (chatflowid: string) => {
+const getAllLeads = async (agentflowid: string) => {
     try {
         const appServer = getRunningExpressApp()
         const dbResponse = await appServer.AppDataSource.getRepository(Lead).find({
             where: {
-                chatflowid
+                agentflowid: agentflowid
             }
         })
         return dbResponse

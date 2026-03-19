@@ -11,7 +11,7 @@ import { VectorStoreRetriever } from '@langchain/core/vectorstores'
 const howToUse = `Add additional filters to vector store. You can also filter with flow config, including the current "state":
 - \`$flow.sessionId\`
 - \`$flow.chatId\`
-- \`$flow.chatflowId\`
+- \`$flow.agentflowId\`
 - \`$flow.input\`
 - \`$flow.state\`
 `
@@ -191,7 +191,7 @@ class Retriever_Tools implements INode {
             description
         }
 
-        const flow = { chatflowId: options.chatflowid }
+        const flow = { agentflowId: options.agentflowid }
 
         const func = async ({ input }: { input: string }, _?: CallbackManagerForToolRun, flowConfig?: IFlowConfig) => {
             if (retrieverToolMetadataFilter) {

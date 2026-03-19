@@ -24,12 +24,12 @@ export function getUploadsConfigUtilTest() {
 
         const { utilGetUploadsConfig } = require('../../src/utils/getUploadsConfig')
 
-        it('should throw error when chatflow not found', async () => {
+        it('should throw error when agentflow not found', async () => {
             mockRepository.findOneBy.mockResolvedValue(null)
-            await expect(utilGetUploadsConfig('non-existent')).rejects.toThrow('Chatflow non-existent not found')
+            await expect(utilGetUploadsConfig('non-existent')).rejects.toThrow('Agentflow non-existent not found')
         })
 
-        it('should return default config for simple chatflow with no uploads', async () => {
+        it('should return default config for simple agentflow with no uploads', async () => {
             mockRepository.findOneBy.mockResolvedValue({
                 id: 'flow-1',
                 flowData: JSON.stringify({ nodes: [], edges: [] }),

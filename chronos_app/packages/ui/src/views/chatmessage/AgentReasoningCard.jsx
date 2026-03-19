@@ -8,7 +8,7 @@ const AgentReasoningCard = ({
     agent,
     index,
     customization,
-    chatflowid,
+    agentflowid,
     isDialog,
     onSourceDialogClick,
     renderArtifacts,
@@ -132,7 +132,7 @@ const AgentReasoningCard = ({
                     </div>
                 )}
                 {agent.messages.length > 0 && (
-                    <MemoizedReactMarkdown chatflowid={chatflowid} isFullWidth={isDialog}>
+                    <MemoizedReactMarkdown agentflowid={agentflowid} isFullWidth={isDialog}>
                         {agent.messages.length > 1 ? agent.messages.join('\\n') : agent.messages[0]}
                     </MemoizedReactMarkdown>
                 )}
@@ -166,7 +166,7 @@ AgentReasoningCard.propTypes = {
     agent: PropTypes.object.isRequired,
     index: PropTypes.number.isRequired,
     customization: PropTypes.object.isRequired,
-    chatflowid: PropTypes.string,
+    agentflowid: PropTypes.string,
     isDialog: PropTypes.bool,
     onSourceDialogClick: PropTypes.func.isRequired,
     renderArtifacts: PropTypes.func.isRequired,

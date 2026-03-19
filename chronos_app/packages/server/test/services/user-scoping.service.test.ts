@@ -113,8 +113,8 @@ export function userScopingServiceTest() {
         })
     })
 
-    describe('User Scoping - ChatFlows Service', () => {
-        let chatflowsService: any
+    describe('User Scoping - AgentFlows Service', () => {
+        let agentflowsService: any
         let mockRepository: ReturnType<typeof createMockRepository>
         let mockQueryBuilder: ReturnType<typeof createMockQueryBuilder>
         let mockAppServer: any
@@ -162,7 +162,7 @@ export function userScopingServiceTest() {
                 default: { error: jest.fn(), info: jest.fn(), warn: jest.fn() }
             }))
 
-            chatflowsService = require('../../src/services/chatflows').default
+            agentflowsService = require('../../src/services/agentflows').default
         })
 
         afterAll(() => {
@@ -176,14 +176,14 @@ export function userScopingServiceTest() {
             mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
         })
 
-        it('getAllChatflows should filter by userId for non-admin', async () => {
-            await chatflowsService.getAllChatflows(undefined, -1, -1, userContext)
+        it('getAllAgentflows should filter by userId for non-admin', async () => {
+            await agentflowsService.getAllAgentflows(undefined, -1, -1, userContext)
 
             expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('chat_flow.userId = :userId', { userId: 'user-1' })
         })
 
-        it('getAllChatflows should not filter by userId for admin', async () => {
-            await chatflowsService.getAllChatflows(undefined, -1, -1, adminContext)
+        it('getAllAgentflows should not filter by userId for admin', async () => {
+            await agentflowsService.getAllAgentflows(undefined, -1, -1, adminContext)
 
             expect(mockQueryBuilder.andWhere).not.toHaveBeenCalledWith(
                 'chat_flow.userId = :userId',
@@ -191,44 +191,44 @@ export function userScopingServiceTest() {
             )
         })
 
-        it('getChatflowById should throw 403 for non-owner', async () => {
+        it('getAgentflowById should throw 403 for non-owner', async () => {
             mockRepository.findOne.mockResolvedValue({ id: 'cf-1', userId: 'user-1' })
 
-            await expect(chatflowsService.getChatflowById('cf-1', otherUserContext)).rejects.toThrow(
-                'You do not have permission to access this chatflow'
+            await expect(agentflowsService.getAgentflowById('cf-1', otherUserContext)).rejects.toThrow(
+                'You do not have permission to access this agentflow'
             )
         })
 
-        it('saveChatflow should set userId from userContext', async () => {
-            const newChatFlow = {
+        it('saveAgentflow should set userId from userContext', async () => {
+            const newAgentFlow = {
                 name: 'Test',
                 type: 'AGENTFLOW',
                 flowData: JSON.stringify({ nodes: [], edges: [] })
             }
-            const saved = { id: 'cf-1', ...newChatFlow, userId: 'user-1' }
+            const saved = { id: 'cf-1', ...newAgentFlow, userId: 'user-1' }
 
             mockRepository.create.mockReturnValue(saved)
             mockRepository.save.mockResolvedValue(saved)
 
-            const result = await chatflowsService.saveChatflow(newChatFlow, userContext)
+            const result = await agentflowsService.saveAgentflow(newAgentFlow, userContext)
 
             expect(result.userId).toEqual('user-1')
         })
 
-        it('updateChatflow should throw 403 for non-owner', async () => {
-            const existingChatflow = { id: 'cf-1', userId: 'user-1', type: 'AGENTFLOW' }
+        it('updateAgentflow should throw 403 for non-owner', async () => {
+            const existingAgentflow = { id: 'cf-1', userId: 'user-1', type: 'AGENTFLOW' }
             const updateData = { name: 'Updated' }
 
-            await expect(chatflowsService.updateChatflow(existingChatflow, updateData, otherUserContext)).rejects.toThrow(
-                'You do not have permission to update this chatflow'
+            await expect(agentflowsService.updateAgentflow(existingAgentflow, updateData, otherUserContext)).rejects.toThrow(
+                'You do not have permission to update this agentflow'
             )
         })
 
-        it('deleteChatflow should throw 403 for non-owner', async () => {
+        it('deleteAgentflow should throw 403 for non-owner', async () => {
             mockRepository.findOne.mockResolvedValue({ id: 'cf-1', userId: 'user-1' })
 
-            await expect(chatflowsService.deleteChatflow('cf-1', otherUserContext)).rejects.toThrow(
-                'You do not have permission to delete this chatflow'
+            await expect(agentflowsService.deleteAgentflow('cf-1', otherUserContext)).rejects.toThrow(
+                'You do not have permission to delete this agentflow'
             )
         })
     })

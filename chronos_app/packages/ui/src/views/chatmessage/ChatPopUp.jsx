@@ -25,9 +25,9 @@ import { flowContext } from '@/store/context/ReactFlowContext'
 import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction } from '@/store/actions'
 
 // Utils
-import { getLocalStorageChatflow, removeLocalStorageChatHistory } from '@/utils/genericHelper'
+import { getLocalStorageAgentflow, removeLocalStorageChatHistory } from '@/utils/genericHelper'
 
-const ChatPopUp = ({ chatflowid, isAgentCanvas, onOpenChange }) => {
+const ChatPopUp = ({ agentflowid, isAgentCanvas, onOpenChange }) => {
     const theme = useTheme()
     const { confirm } = useConfirm()
     const dispatch = useDispatch()
@@ -62,7 +62,7 @@ const ChatPopUp = ({ chatflowid, isAgentCanvas, onOpenChange }) => {
     const expandChat = () => {
         const props = {
             open: true,
-            chatflowid: chatflowid
+            agentflowid: agentflowid
         }
         setExpandDialogProps(props)
         setShowExpandDialog(true)
@@ -95,10 +95,10 @@ const ChatPopUp = ({ chatflowid, isAgentCanvas, onOpenChange }) => {
 
         if (isConfirmed) {
             try {
-                const objChatDetails = getLocalStorageChatflow(chatflowid)
+                const objChatDetails = getLocalStorageAgentflow(agentflowid)
                 if (!objChatDetails.chatId) return
-                await chatmessageApi.deleteChatmessage(chatflowid, { chatId: objChatDetails.chatId, chatType: 'INTERNAL' })
-                removeLocalStorageChatHistory(chatflowid)
+                await chatmessageApi.deleteChatmessage(agentflowid, { chatId: objChatDetails.chatId, chatType: 'INTERNAL' })
+                removeLocalStorageChatHistory(agentflowid)
                 resetChatDialog()
                 enqueueSnackbar({
                     message: 'Succesfully cleared all chat history',
@@ -138,7 +138,7 @@ const ChatPopUp = ({ chatflowid, isAgentCanvas, onOpenChange }) => {
         prevOpen.current = open
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [open, chatflowid])
+    }, [open, agentflowid])
 
     return (
         <>
@@ -211,7 +211,7 @@ const ChatPopUp = ({ chatflowid, isAgentCanvas, onOpenChange }) => {
                                 >
                                     <ChatMessage
                                         isAgentCanvas={isAgentCanvas}
-                                        chatflowid={chatflowid}
+                                        agentflowid={agentflowid}
                                         open={open}
                                         previews={previews}
                                         setPreviews={setPreviews}
@@ -236,7 +236,7 @@ const ChatPopUp = ({ chatflowid, isAgentCanvas, onOpenChange }) => {
 }
 
 ChatPopUp.propTypes = {
-    chatflowid: PropTypes.string,
+    agentflowid: PropTypes.string,
     isAgentCanvas: PropTypes.bool,
     onOpenChange: PropTypes.func
 }

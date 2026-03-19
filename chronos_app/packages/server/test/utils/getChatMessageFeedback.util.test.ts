@@ -24,8 +24,8 @@ export function getChatMessageFeedbackUtilTest() {
 
         const { utilGetChatMessageFeedback } = require('../../src/utils/getChatMessageFeedback')
 
-        it('should return feedback for a chatflow', async () => {
-            const mockFeedback = [{ id: 'fb-1', chatflowid: 'flow-1', rating: 'THUMBS_UP' }]
+        it('should return feedback for an agentflow', async () => {
+            const mockFeedback = [{ id: 'fb-1', agentflowid: 'flow-1', rating: 'THUMBS_UP' }]
             mockRepository.find.mockResolvedValue(mockFeedback)
 
             const result = await utilGetChatMessageFeedback('flow-1')
@@ -33,7 +33,7 @@ export function getChatMessageFeedbackUtilTest() {
             expect(result).toEqual(mockFeedback)
             expect(mockRepository.find).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    where: expect.objectContaining({ chatflowid: 'flow-1' }),
+                    where: expect.objectContaining({ agentflowid: 'flow-1' }),
                     order: expect.objectContaining({ createdDate: 'ASC' })
                 })
             )
@@ -59,7 +59,7 @@ export function getChatMessageFeedbackUtilTest() {
             expect(mockRepository.find).toHaveBeenCalledWith(
                 expect.objectContaining({
                     where: expect.objectContaining({
-                        chatflowid: 'flow-1',
+                        agentflowid: 'flow-1',
                         createdDate: expect.anything()
                     })
                 })
@@ -73,7 +73,7 @@ export function getChatMessageFeedbackUtilTest() {
 
             expect(mockRepository.find).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    where: expect.objectContaining({ chatflowid: 'flow-1', chatId: 'chat-123' })
+                    where: expect.objectContaining({ agentflowid: 'flow-1', chatId: 'chat-123' })
                 })
             )
         })

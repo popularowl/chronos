@@ -76,8 +76,8 @@ export function templatesServiceTest() {
                 const mockTemplates = [
                     {
                         id: 'ct-1',
-                        name: 'Custom Chatflow',
-                        type: 'Chatflow',
+                        name: 'Custom Agentflow',
+                        type: 'Agentflow',
                         flowData: JSON.stringify({ nodes: [{ data: { category: 'LLMs' } }], edges: [] }),
                         usecases: JSON.stringify(['chatbot']),
                         badge: 'NEW',
@@ -96,7 +96,7 @@ export function templatesServiceTest() {
                 const mockTemplates = [
                     {
                         id: 'ct-1',
-                        type: 'Chatflow',
+                        type: 'Agentflow',
                         flowData: JSON.stringify({ nodes: [], edges: [] }),
                         usecases: JSON.stringify(['chatbot', 'qa'])
                     }
@@ -136,7 +136,7 @@ export function templatesServiceTest() {
                 const mockTemplates = [
                     {
                         id: 'ct-1',
-                        type: 'Chatflow',
+                        type: 'Agentflow',
                         flowData: JSON.stringify({ nodes: [], edges: [] }),
                         usecases: null,
                         badge: null,

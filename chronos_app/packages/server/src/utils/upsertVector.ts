@@ -23,7 +23,7 @@ import {
 } from '../utils'
 import { validateFlowAPIKey } from './validateKey'
 import { IncomingInput, INodeDirectedGraph, IReactFlowObject, ChatType, IExecuteFlowParams, MODE } from '../Interface'
-import { ChatFlow } from '../database/entities/ChatFlow'
+import { AgentFlow } from '../database/entities/AgentFlow'
 import { getRunningExpressApp } from '../utils/getRunningExpressApp'
 import { UpsertHistory } from '../database/entities/UpsertHistory'
 import { InternalChronosError } from '../errors/internalChronosError'
@@ -40,7 +40,7 @@ import { OMIT_QUEUE_JOB_DATA } from './constants'
 export const executeUpsert = async ({
     componentNodes,
     incomingInput,
-    chatflow,
+    agentflow,
     chatId,
     appDataSource,
     telemetry,
@@ -57,7 +57,7 @@ export const executeUpsert = async ({
     let stopNodeId = incomingInput?.stopNodeId ?? ''
     const chatHistory: IMessage[] = []
     const isUpsert = true
-    const chatflowid = chatflow.id
+    const agentflowid = agentflow.id
     const apiMessageId = uuidv4()
 
     if (files?.length) {
@@ -79,7 +79,7 @@ export const executeUpsert = async ({
                 file.originalname,
                 fileNames,
                 orgId,
-                chatflowid
+                agentflowid
             )
             await updateStorageUsage(orgId, workspaceId, totalSize, usageCacheManager)
 
@@ -125,8 +125,8 @@ export const executeUpsert = async ({
         }
     }
 
-    /*** Get chatflows and prepare data  ***/
-    const flowData = chatflow.flowData
+    /*** Get agentflow and prepare data  ***/
+    const flowData = agentflow.flowData
     const parsedFlowData: IReactFlowObject = JSON.parse(flowData)
     const nodes = parsedFlowData.nodes
     const edges = parsedFlowData.edges
@@ -169,7 +169,7 @@ export const executeUpsert = async ({
 
     /*** Get API Config ***/
     const availableVariables = await appDataSource.getRepository(Variable).findBy(getWorkspaceSearchOptions(''))
-    const { nodeOverrides, variableOverrides, apiOverrideStatus } = getAPIOverrideConfig(chatflow)
+    const { nodeOverrides, variableOverrides, apiOverrideStatus } = getAPIOverrideConfig(agentflow)
 
     const upsertedResult = await buildFlow({
         startingNodeIds,
@@ -183,7 +183,7 @@ export const executeUpsert = async ({
         chatHistory,
         chatId,
         sessionId,
-        chatflowid,
+        agentflowid,
         appDataSource,
         usageCacheManager,
         cachePool,
@@ -206,7 +206,7 @@ export const executeUpsert = async ({
         const result = cloneDeep(upsertedResult)
         result['flowData'] = JSON.stringify(result['flowData'])
         result['result'] = JSON.stringify(omit(result['result'], ['totalKeys', 'addedDocs']))
-        result.chatflowid = chatflowid
+        result.agentflowid = agentflowid
         const newUpsertHistory = new UpsertHistory()
         Object.assign(newUpsertHistory, result)
         const upsertHistory = appDataSource.getRepository(UpsertHistory).create(newUpsertHistory)
@@ -217,7 +217,7 @@ export const executeUpsert = async ({
         'vector_upserted',
         {
             version: await getAppVersion(),
-            chatlowId: chatflowid,
+            chatlowId: agentflowid,
             type: isInternal ? ChatType.INTERNAL : ChatType.EXTERNAL,
             flowGraph: getTelemetryFlowObj(nodes, edges),
             stopNodeId
@@ -237,14 +237,14 @@ export const upsertVector = async (req: Request, isInternal: boolean = false) =>
     const appServer = getRunningExpressApp()
 
     try {
-        const chatflowid = req.params.id
+        const agentflowid = req.params.id
 
-        // Check if chatflow exists
-        const chatflow = await appServer.AppDataSource.getRepository(ChatFlow).findOneBy({
-            id: chatflowid
+        // Check if agentflow exists
+        const agentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({
+            id: agentflowid
         })
-        if (!chatflow) {
-            throw new InternalChronosError(StatusCodes.NOT_FOUND, `Chatflow ${chatflowid} not found`)
+        if (!agentflow) {
+            throw new InternalChronosError(StatusCodes.NOT_FOUND, `Agentflow ${agentflowid} not found`)
         }
 
         const httpProtocol = req.get('x-forwarded-proto') || req.protocol
@@ -254,7 +254,7 @@ export const upsertVector = async (req: Request, isInternal: boolean = false) =>
         const files = (req.files as Express.Multer.File[]) || []
 
         if (!isInternal) {
-            const isKeyValidated = await validateFlowAPIKey(req, chatflow)
+            const isKeyValidated = await validateFlowAPIKey(req, agentflow)
             if (!isKeyValidated) {
                 throw new InternalChronosError(StatusCodes.UNAUTHORIZED, `Unauthorized`)
             }
@@ -264,7 +264,7 @@ export const upsertVector = async (req: Request, isInternal: boolean = false) =>
         const executeData: IExecuteFlowParams = {
             componentNodes: appServer.nodesPool.componentNodes,
             incomingInput,
-            chatflow,
+            agentflow,
             chatId,
             appDataSource: appServer.AppDataSource,
             telemetry: appServer.telemetry,

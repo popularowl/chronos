@@ -70,7 +70,7 @@ const chatCompletions = async (req: Request, res: Response, next: NextFunction) 
  * Non-streaming: call prediction service, wrap response in OpenAI format.
  */
 const handleNonStreamingResponse = async (req: Request, res: Response, agentflowId: string, chatId: string) => {
-    const predictionResult = await predictionsService.buildChatflow(req)
+    const predictionResult = await predictionsService.buildAgentflow(req)
 
     const openaiResponse = openaiService.transformResponse(agentflowId, predictionResult)
 
@@ -110,7 +110,7 @@ const handleStreamingResponse = async (req: Request, res: Response, agentflowId:
     }
 
     try {
-        const apiResponse = await predictionsService.buildChatflow(req)
+        const apiResponse = await predictionsService.buildAgentflow(req)
         sseStreamer.streamMetadataEvent(apiResponse.chatId, apiResponse)
     } catch (error) {
         const errorMsg = getErrorMessage(error)

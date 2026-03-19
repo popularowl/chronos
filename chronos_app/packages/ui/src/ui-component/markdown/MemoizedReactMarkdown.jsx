@@ -104,7 +104,7 @@ export const MemoizedReactMarkdown = memo(
                             return !inline ? (
                                 <CodeBlock
                                     key={Math.random()}
-                                    chatflowid={props.chatflowid}
+                                    agentflowid={props.agentflowid}
                                     isFullWidth={props.isFullWidth !== undefined ? props.isFullWidth : true}
                                     language={(match && match[1]) || ''}
                                     value={String(children).replace(/\n$/, '')}
@@ -153,7 +153,7 @@ MemoizedReactMarkdown.displayName = 'MemoizedReactMarkdown'
 
 MemoizedReactMarkdown.propTypes = {
     children: PropTypes.any,
-    chatflowid: PropTypes.string,
+    agentflowid: PropTypes.string,
     isFullWidth: PropTypes.bool,
     remarkPlugins: PropTypes.array,
     rehypePlugins: PropTypes.array,

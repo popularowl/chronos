@@ -198,23 +198,23 @@ export class TypeORMDriver extends VectorStoreDriver {
         distanceOperator: string = '<=>'
     ) => {
         const embeddingString = `[${query.join(',')}]`
-        let chatflowOr = ''
+        let agentflowOr = ''
         const { [CHRONOS_CHATID]: chatId, ...restFilters } = filter || {}
 
         const _filter = JSON.stringify(restFilters || {})
         const parameters: any[] = [embeddingString, _filter, k]
 
-        // Match chatflow uploaded file and keep filtering on other files:
+        // Match agentflow uploaded file and keep filtering on other files:
         // https://github.com/FlowiseAI/Flowise/pull/3367#discussion_r1804229295
         if (chatId) {
             parameters.push({ [CHRONOS_CHATID]: chatId })
-            chatflowOr = `OR metadata @> $${parameters.length}`
+            agentflowOr = `OR metadata @> $${parameters.length}`
         }
 
         const queryString = `
             SELECT *, embedding ${distanceOperator} $1 as "_distance"
             FROM ${tablePath}
-            WHERE ((metadata @> $2) AND NOT (metadata ? '${CHRONOS_CHATID}')) ${chatflowOr}
+            WHERE ((metadata @> $2) AND NOT (metadata ? '${CHRONOS_CHATID}')) ${agentflowOr}
             ORDER BY "_distance" ASC
             LIMIT $3;`
 

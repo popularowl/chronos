@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux'
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_CHATFLOW } from '@/store/actions'
+import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_AGENTFLOW } from '@/store/actions'
 
 // material-ui
 import {
@@ -36,7 +36,7 @@ import opikPNG from '@/assets/images/opik.png'
 import useNotifier from '@/utils/useNotifier'
 
 // API
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 const analyticProviders = [
     {
@@ -232,7 +232,7 @@ const AnalyseFlow = ({ dialogProps }) => {
 
     const onSave = async () => {
         try {
-            const saveResp = await chatflowsApi.updateChatflow(dialogProps.chatflow.id, {
+            const saveResp = await agentflowsApi.updateAgentflow(dialogProps.agentflow.id, {
                 analytic: JSON.stringify(analytic)
             })
             if (saveResp.data) {
@@ -248,7 +248,7 @@ const AnalyseFlow = ({ dialogProps }) => {
                         )
                     }
                 })
-                dispatch({ type: SET_CHATFLOW, chatflow: saveResp.data })
+                dispatch({ type: SET_AGENTFLOW, agentflow: saveResp.data })
             }
         } catch (error) {
             enqueueSnackbar({
@@ -288,9 +288,9 @@ const AnalyseFlow = ({ dialogProps }) => {
     }
 
     useEffect(() => {
-        if (dialogProps.chatflow && dialogProps.chatflow.analytic) {
+        if (dialogProps.agentflow && dialogProps.agentflow.analytic) {
             try {
-                setAnalytic(JSON.parse(dialogProps.chatflow.analytic))
+                setAnalytic(JSON.parse(dialogProps.agentflow.analytic))
             } catch (e) {
                 setAnalytic({})
                 console.error(e)

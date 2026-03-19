@@ -20,8 +20,8 @@ export enum EvaluationStatus {
 export interface IEvaluation {
     id: string
     name: string
-    chatflowId: string
-    chatflowName: string
+    agentflowId: string
+    agentflowName: string
     datasetId: string
     datasetName: string
     evaluationType: string

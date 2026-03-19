@@ -62,10 +62,10 @@ export function exportImportRouteTest() {
                 expect([200, 400, 404, 500]).toContain(response.status)
             })
 
-            it('should handle export with chatflows option', async () => {
+            it('should handle export with agentflows option', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/export-import/export')
-                    .send({ chatflows: true })
+                    .send({ agentflows: true })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -106,7 +106,6 @@ export function exportImportRouteTest() {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/export-import/export')
                     .send({
-                        chatflows: true,
                         agentflows: true,
                         tools: true,
                         variables: true
@@ -144,10 +143,10 @@ export function exportImportRouteTest() {
                 expect([200, 400, 404, 500]).toContain(response.status)
             })
 
-            it('should handle import with chatflows data', async () => {
+            it('should handle import with agentflows data', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/export-import/import')
-                    .send({ Chatflows: [] })
+                    .send({ Agentflows: [] })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -188,7 +187,6 @@ export function exportImportRouteTest() {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/export-import/import')
                     .send({
-                        Chatflows: [],
                         Agentflows: [],
                         Tools: [],
                         Variables: []
@@ -203,7 +201,7 @@ export function exportImportRouteTest() {
         describe('Full Export/Import Lifecycle', () => {
             let createdToolId: string
             let createdVariableId: string
-            let createdChatflowId: string
+            let createdAgentflowId: string
 
             beforeAll(async () => {
                 // Create test tool
@@ -235,18 +233,18 @@ export function exportImportRouteTest() {
                     createdVariableId = variableResponse.body.id
                 }
 
-                // Create test chatflow
-                const chatflowResponse = await supertest(getRunningExpressApp().app)
-                    .post('/api/v1/chatflows')
+                // Create test agentflow
+                const agentflowResponse = await supertest(getRunningExpressApp().app)
+                    .post('/api/v1/agentflows')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
-                        name: `Export Test Chatflow ${Date.now()}`,
+                        name: `Export Test Agentflow ${Date.now()}`,
                         flowData: JSON.stringify({ nodes: [], edges: [] }),
                         type: 'AGENTFLOW'
                     })
-                if (chatflowResponse.status === 200 || chatflowResponse.status === 201) {
-                    createdChatflowId = chatflowResponse.body.id
+                if (agentflowResponse.status === 200 || agentflowResponse.status === 201) {
+                    createdAgentflowId = agentflowResponse.body.id
                 }
             })
 
@@ -264,9 +262,9 @@ export function exportImportRouteTest() {
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
                 }
-                if (createdChatflowId) {
+                if (createdAgentflowId) {
                     await supertest(getRunningExpressApp().app)
-                        .delete(`/api/v1/chatflows/${createdChatflowId}`)
+                        .delete(`/api/v1/agentflows/${createdAgentflowId}`)
                         .set('Authorization', `Bearer ${authToken}`)
                         .set('x-request-from', 'internal')
                 }

@@ -32,11 +32,11 @@ import { CodeEditor } from '@/ui-component/editor/CodeEditor'
 import ExpandTextDialog from '@/ui-component/dialog/ExpandTextDialog'
 
 // store
-import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_CHATFLOW } from '@/store/actions'
+import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_AGENTFLOW } from '@/store/actions'
 import useNotifier from '@/utils/useNotifier'
 
 // API
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 const sampleFunction = `// Access chat history as a string
 const chatHistory = JSON.stringify($flow.chatHistory, null, 2); 
@@ -91,7 +91,7 @@ const PostProcessing = ({ dialogProps }) => {
                 }
             }
             chatbotConfig.postProcessing = value.postProcessing
-            const saveResp = await chatflowsApi.updateChatflow(dialogProps.chatflow.id, {
+            const saveResp = await agentflowsApi.updateAgentflow(dialogProps.agentflow.id, {
                 chatbotConfig: JSON.stringify(chatbotConfig)
             })
             if (saveResp.data) {
@@ -107,7 +107,7 @@ const PostProcessing = ({ dialogProps }) => {
                         )
                     }
                 })
-                dispatch({ type: SET_CHATFLOW, chatflow: saveResp.data })
+                dispatch({ type: SET_AGENTFLOW, agentflow: saveResp.data })
             }
         } catch (error) {
             enqueueSnackbar({
@@ -129,8 +129,8 @@ const PostProcessing = ({ dialogProps }) => {
     }
 
     useEffect(() => {
-        if (dialogProps.chatflow && dialogProps.chatflow.chatbotConfig) {
-            let chatbotConfig = JSON.parse(dialogProps.chatflow.chatbotConfig)
+        if (dialogProps.agentflow && dialogProps.agentflow.chatbotConfig) {
+            let chatbotConfig = JSON.parse(dialogProps.agentflow.chatbotConfig)
             setChatbotConfig(chatbotConfig || {})
             if (chatbotConfig.postProcessing) {
                 setPostProcessingEnabled(chatbotConfig.postProcessing.enabled)
@@ -242,10 +242,10 @@ const PostProcessing = ({ dialogProps }) => {
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>
-                                            <code>$flow.chatflowId</code>
+                                            <code>$flow.agentflowId</code>
                                         </TableCell>
                                         <TableCell>string</TableCell>
-                                        <TableCell>Unique identifier for the chatflow</TableCell>
+                                        <TableCell>Unique identifier for the agentflow</TableCell>
                                     </TableRow>
                                     <TableRow>
                                         <TableCell>

@@ -16,7 +16,7 @@ import { validateFileMimeTypeAndExtensionMatch } from './fileValidation'
 import logger from './logger'
 import { getErrorMessage } from '../errors/utils'
 import { checkStorage, updateStorageUsage } from './quotaUsage'
-import { ChatFlow } from '../database/entities/ChatFlow'
+import { AgentFlow } from '../database/entities/AgentFlow'
 import { InternalChronosError } from '../errors/internalChronosError'
 import { StatusCodes } from 'http-status-codes'
 
@@ -27,22 +27,22 @@ import { StatusCodes } from 'http-status-codes'
 export const createFileAttachment = async (req: Request) => {
     const appServer = getRunningExpressApp()
 
-    const chatflowid = req.params.chatflowId
+    const agentflowid = req.params.agentflowId
     const chatId = req.params.chatId
 
-    if (!chatflowid || !isValidUUID(chatflowid)) {
-        throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'Invalid chatflowId format - must be a valid UUID')
+    if (!agentflowid || !isValidUUID(agentflowid)) {
+        throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'Invalid agentflowId format - must be a valid UUID')
     }
-    if (isPathTraversal(chatflowid) || (chatId && isPathTraversal(chatId))) {
+    if (isPathTraversal(agentflowid) || (chatId && isPathTraversal(chatId))) {
         throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'Invalid path characters detected')
     }
 
-    // Validate chatflow exists and check API key
-    const chatflow = await appServer.AppDataSource.getRepository(ChatFlow).findOneBy({
-        id: chatflowid
+    // Validate agentflow exists and check API key
+    const agentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({
+        id: agentflowid
     })
-    if (!chatflow) {
-        throw new InternalChronosError(StatusCodes.NOT_FOUND, `Chatflow ${chatflowid} not found`)
+    if (!agentflow) {
+        throw new InternalChronosError(StatusCodes.NOT_FOUND, `Agentflow ${agentflowid} not found`)
     }
 
     // Open source: No workspace/organization needed
@@ -58,9 +58,9 @@ export const createFileAttachment = async (req: Request) => {
     let allowedFileTypes: string[] = []
     let fileUploadEnabled = false
 
-    if (chatflow.chatbotConfig) {
+    if (agentflow.chatbotConfig) {
         try {
-            const chatbotConfig = JSON.parse(chatflow.chatbotConfig)
+            const chatbotConfig = JSON.parse(agentflow.chatbotConfig)
             if (chatbotConfig?.fullFileUpload) {
                 fileUploadEnabled = chatbotConfig.fullFileUpload.status
 
@@ -86,7 +86,7 @@ export const createFileAttachment = async (req: Request) => {
 
     // Check if file upload is enabled
     if (!fileUploadEnabled) {
-        throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'File upload is not enabled for this chatflow')
+        throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'File upload is not enabled for this agentflow')
     }
 
     // Find FileLoader node
@@ -98,7 +98,7 @@ export const createFileAttachment = async (req: Request) => {
         retrieveAttachmentChatId: true,
         orgId,
         workspaceId,
-        chatflowid,
+        agentflowid,
         chatId
     }
     const files = (req.files as Express.Multer.File[]) || []
@@ -138,7 +138,7 @@ export const createFileAttachment = async (req: Request) => {
                 file.originalname,
                 fileNames,
                 orgId,
-                chatflowid,
+                agentflowid,
                 chatId
             )
             await updateStorageUsage(orgId, workspaceId, totalSize, appServer.usageCacheManager)
@@ -198,7 +198,7 @@ export const createFileAttachment = async (req: Request) => {
                     try {
                         const { totalSize: newTotalSize } = await removeSpecificFileFromStorage(
                             orgId,
-                            chatflowid,
+                            agentflowid,
                             chatId,
                             sanitizedFilename
                         )

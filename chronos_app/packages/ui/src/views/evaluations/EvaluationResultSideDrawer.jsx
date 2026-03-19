@@ -40,9 +40,9 @@ const EvaluationResultSideDrawer = ({ show, dialogProps, onClickFunction }) => {
         if (index === undefined) {
             return <IconHierarchy size={24} />
         }
-        if (dialogProps.additionalConfig.chatflowTypes) {
-            switch (dialogProps.additionalConfig.chatflowTypes[index]) {
-                case 'Chatflow':
+        if (dialogProps.additionalConfig.agentflowTypes) {
+            switch (dialogProps.additionalConfig.agentflowTypes[index]) {
+                case 'Agentflow':
                     return <IconHierarchy size={20} />
                 case 'Custom Assistant':
                     return <IconRobot size={20} />
@@ -96,7 +96,7 @@ const EvaluationResultSideDrawer = ({ show, dialogProps, onClickFunction }) => {
                     dialogProps.data.actualOutput.map((output, index) => (
                         <Card key={indexedDB} sx={{ mt: 2, border: '1px solid #e0e0e0', borderRadius: `15px` }}>
                             <CardContent>
-                                {dialogProps.evaluationChatflows?.length > 0 && (
+                                {dialogProps.evaluationAgentflows?.length > 0 && (
                                     <>
                                         <div
                                             style={{
@@ -108,7 +108,7 @@ const EvaluationResultSideDrawer = ({ show, dialogProps, onClickFunction }) => {
                                         >
                                             {getFlowIcon(index)}
                                             <Typography variant='overline' sx={{ fontWeight: 'bold', fontSize: '1.1rem', marginLeft: 1 }}>
-                                                {dialogProps.evaluationChatflows[index]}
+                                                {dialogProps.evaluationAgentflows[index]}
                                             </Typography>
                                         </div>
                                         <Divider />

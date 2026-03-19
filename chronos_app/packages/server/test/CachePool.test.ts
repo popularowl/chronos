@@ -60,42 +60,42 @@ export function cachePoolTest() {
 
         describe('LLM Cache', () => {
             it('should add and retrieve LLM cache', async () => {
-                const chatflowId = 'chatflow-123'
+                const agentflowId = 'agentflow-123'
                 const cacheMap = new Map([
                     ['key1', 'value1'],
                     ['key2', 'value2']
                 ])
 
-                await cachePool.addLLMCache(chatflowId, cacheMap)
-                const result = await cachePool.getLLMCache(chatflowId)
+                await cachePool.addLLMCache(agentflowId, cacheMap)
+                const result = await cachePool.getLLMCache(agentflowId)
 
                 expect(result).toEqual(cacheMap)
             })
 
             it('should return undefined for non-existent LLM cache', async () => {
-                const result = await cachePool.getLLMCache('non-existent-chatflow')
+                const result = await cachePool.getLLMCache('non-existent-agentflow')
                 expect(result).toBeUndefined()
             })
 
             it('should handle empty Map', async () => {
-                const chatflowId = 'empty-cache'
+                const agentflowId = 'empty-cache'
                 const emptyMap = new Map()
 
-                await cachePool.addLLMCache(chatflowId, emptyMap)
-                const result = await cachePool.getLLMCache(chatflowId)
+                await cachePool.addLLMCache(agentflowId, emptyMap)
+                const result = await cachePool.getLLMCache(agentflowId)
 
                 expect(result).toEqual(emptyMap)
                 expect(result?.size).toBe(0)
             })
 
             it('should overwrite existing LLM cache', async () => {
-                const chatflowId = 'overwrite-llm'
+                const agentflowId = 'overwrite-llm'
                 const map1 = new Map([['a', '1']])
                 const map2 = new Map([['b', '2']])
 
-                await cachePool.addLLMCache(chatflowId, map1)
-                await cachePool.addLLMCache(chatflowId, map2)
-                const result = await cachePool.getLLMCache(chatflowId)
+                await cachePool.addLLMCache(agentflowId, map1)
+                await cachePool.addLLMCache(agentflowId, map2)
+                const result = await cachePool.getLLMCache(agentflowId)
 
                 expect(result).toEqual(map2)
             })
@@ -103,14 +103,14 @@ export function cachePoolTest() {
 
         describe('Embedding Cache', () => {
             it('should add and retrieve embedding cache', async () => {
-                const chatflowId = 'embedding-flow-123'
+                const agentflowId = 'embedding-flow-123'
                 const cacheMap = new Map([
                     ['embed1', [0.1, 0.2, 0.3]],
                     ['embed2', [0.4, 0.5, 0.6]]
                 ])
 
-                await cachePool.addEmbeddingCache(chatflowId, cacheMap)
-                const result = await cachePool.getEmbeddingCache(chatflowId)
+                await cachePool.addEmbeddingCache(agentflowId, cacheMap)
+                const result = await cachePool.getEmbeddingCache(agentflowId)
 
                 expect(result).toEqual(cacheMap)
             })
@@ -121,14 +121,14 @@ export function cachePoolTest() {
             })
 
             it('should handle complex embedding data', async () => {
-                const chatflowId = 'complex-embed'
+                const agentflowId = 'complex-embed'
                 const complexMap = new Map<any, any>([
                     ['text1', { embedding: [0.1, 0.2], metadata: { source: 'test' } }],
                     ['text2', { embedding: [0.3, 0.4], metadata: { source: 'test2' } }]
                 ])
 
-                await cachePool.addEmbeddingCache(chatflowId, complexMap)
-                const result = await cachePool.getEmbeddingCache(chatflowId)
+                await cachePool.addEmbeddingCache(agentflowId, complexMap)
+                const result = await cachePool.getEmbeddingCache(agentflowId)
 
                 expect(result).toEqual(complexMap)
             })

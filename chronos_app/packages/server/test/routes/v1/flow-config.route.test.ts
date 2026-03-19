@@ -27,7 +27,7 @@ export function flowConfigRouteTest() {
         })
 
         describe('GET /api/v1/flow-config/:id', () => {
-            it('should handle non-existent chatflow', async () => {
+            it('should handle non-existent agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/flow-config/non-existent-id')
                     .set('Authorization', `Bearer ${authToken}`)

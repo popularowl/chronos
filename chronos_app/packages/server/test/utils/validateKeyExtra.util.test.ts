@@ -25,9 +25,9 @@ export function validateKeyExtraUtilTest() {
             it('should return false when apiKey not found', async () => {
                 apikeyServiceExports.default.getApiKeyById.mockResolvedValue(null)
                 const req = { headers: { authorization: 'Bearer test-key' } } as any
-                const chatflow = { apikeyid: 'key-123' } as any
+                const agentflow = { apikeyid: 'key-123' } as any
 
-                const result = await validateFlowAPIKey(req, chatflow)
+                const result = await validateFlowAPIKey(req, agentflow)
 
                 expect(result).toBe(false)
             })
@@ -36,9 +36,9 @@ export function validateKeyExtraUtilTest() {
                 apikeyServiceExports.default.getApiKeyById.mockResolvedValue({ apiSecret: 'stored-secret' })
                 apiKeyUtilsExports.compareKeys.mockReturnValue(false)
                 const req = { headers: { authorization: 'Bearer wrong-key' } } as any
-                const chatflow = { apikeyid: 'key-123' } as any
+                const agentflow = { apikeyid: 'key-123' } as any
 
-                const result = await validateFlowAPIKey(req, chatflow)
+                const result = await validateFlowAPIKey(req, agentflow)
 
                 expect(result).toBe(false)
             })
@@ -46,9 +46,9 @@ export function validateKeyExtraUtilTest() {
             it('should return false when getApiKeyById throws', async () => {
                 apikeyServiceExports.default.getApiKeyById.mockRejectedValue(new Error('DB error'))
                 const req = { headers: { authorization: 'Bearer test-key' } } as any
-                const chatflow = { apikeyid: 'key-123' } as any
+                const agentflow = { apikeyid: 'key-123' } as any
 
-                const result = await validateFlowAPIKey(req, chatflow)
+                const result = await validateFlowAPIKey(req, agentflow)
 
                 expect(result).toBe(false)
             })

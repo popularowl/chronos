@@ -46,7 +46,7 @@ export function feedbackServiceTest() {
         })
 
         describe('getAllChatMessageFeedback', () => {
-            it('should return all feedback for a chatflow', async () => {
+            it('should return all feedback for an agentflow', async () => {
                 const mockFeedback = [
                     { id: 'fb-1', rating: ChatMessageRatingType.THUMBS_UP, content: 'Great!' },
                     { id: 'fb-2', rating: ChatMessageRatingType.THUMBS_DOWN, content: 'Needs improvement' }
@@ -92,10 +92,10 @@ export function feedbackServiceTest() {
             })
         })
 
-        describe('createChatMessageFeedbackForChatflow', () => {
+        describe('createChatMessageFeedbackForAgentflow', () => {
             it('should create new feedback', async () => {
                 const feedbackData = {
-                    chatflowid: 'flow-1',
+                    agentflowid: 'flow-1',
                     chatId: 'chat-1',
                     messageId: 'msg-1',
                     rating: ChatMessageRatingType.THUMBS_UP,
@@ -104,7 +104,7 @@ export function feedbackServiceTest() {
                 const savedFeedback = { id: 'fb-1', ...feedbackData }
                 mockAddFeedback.mockResolvedValue(savedFeedback)
 
-                const result = await feedbackService.createChatMessageFeedbackForChatflow(feedbackData)
+                const result = await feedbackService.createChatMessageFeedbackForAgentflow(feedbackData)
 
                 expect(mockAddFeedback).toHaveBeenCalledWith(feedbackData)
                 expect(result).toEqual(savedFeedback)
@@ -117,7 +117,7 @@ export function feedbackServiceTest() {
                 }
                 mockAddFeedback.mockResolvedValue({ id: 'fb-1', ...feedbackData })
 
-                const result = await feedbackService.createChatMessageFeedbackForChatflow(feedbackData)
+                const result = await feedbackService.createChatMessageFeedbackForAgentflow(feedbackData)
 
                 expect(mockAddFeedback).toHaveBeenCalledWith(feedbackData)
                 expect(result).toBeDefined()
@@ -126,11 +126,11 @@ export function feedbackServiceTest() {
             it('should throw error on utility failure', async () => {
                 mockAddFeedback.mockRejectedValue(new Error('Utility error'))
 
-                await expect(feedbackService.createChatMessageFeedbackForChatflow({ messageId: 'msg-1' })).rejects.toThrow()
+                await expect(feedbackService.createChatMessageFeedbackForAgentflow({ messageId: 'msg-1' })).rejects.toThrow()
             })
         })
 
-        describe('updateChatMessageFeedbackForChatflow', () => {
+        describe('updateChatMessageFeedbackForAgentflow', () => {
             it('should update existing feedback', async () => {
                 const updateData = {
                     rating: ChatMessageRatingType.THUMBS_UP,
@@ -139,7 +139,7 @@ export function feedbackServiceTest() {
                 const updatedFeedback = { id: 'fb-1', ...updateData }
                 mockUpdateFeedback.mockResolvedValue(updatedFeedback)
 
-                const result = await feedbackService.updateChatMessageFeedbackForChatflow('fb-1', updateData)
+                const result = await feedbackService.updateChatMessageFeedbackForAgentflow('fb-1', updateData)
 
                 expect(mockUpdateFeedback).toHaveBeenCalledWith('fb-1', updateData)
                 expect(result).toEqual(updatedFeedback)
@@ -149,7 +149,7 @@ export function feedbackServiceTest() {
                 const updateData = { content: 'New content' }
                 mockUpdateFeedback.mockResolvedValue({ id: 'fb-1', ...updateData })
 
-                const result = await feedbackService.updateChatMessageFeedbackForChatflow('fb-1', updateData)
+                const result = await feedbackService.updateChatMessageFeedbackForAgentflow('fb-1', updateData)
 
                 expect(mockUpdateFeedback).toHaveBeenCalledWith('fb-1', updateData)
                 expect(result).toBeDefined()
@@ -159,7 +159,7 @@ export function feedbackServiceTest() {
                 const updateData = { rating: ChatMessageRatingType.THUMBS_DOWN }
                 mockUpdateFeedback.mockResolvedValue({ id: 'fb-1', ...updateData })
 
-                const result = await feedbackService.updateChatMessageFeedbackForChatflow('fb-1', updateData)
+                const result = await feedbackService.updateChatMessageFeedbackForAgentflow('fb-1', updateData)
 
                 expect(mockUpdateFeedback).toHaveBeenCalledWith('fb-1', updateData)
                 expect(result).toBeDefined()
@@ -169,7 +169,7 @@ export function feedbackServiceTest() {
                 mockUpdateFeedback.mockRejectedValue(new Error('Utility error'))
 
                 await expect(
-                    feedbackService.updateChatMessageFeedbackForChatflow('fb-1', { rating: ChatMessageRatingType.THUMBS_UP })
+                    feedbackService.updateChatMessageFeedbackForAgentflow('fb-1', { rating: ChatMessageRatingType.THUMBS_UP })
                 ).rejects.toThrow()
             })
         })

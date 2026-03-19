@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux'
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_CHATFLOW } from '@/store/actions'
+import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_AGENTFLOW } from '@/store/actions'
 
 // material-ui
 import { Button, IconButton, OutlinedInput, Box, List, InputAdornment } from '@mui/material'
@@ -14,7 +14,7 @@ import { StyledButton } from '@/ui-component/button/StyledButton'
 import useNotifier from '@/utils/useNotifier'
 
 // API
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 const StarterPrompts = ({ dialogProps, onConfirm }) => {
     const dispatch = useDispatch()
@@ -61,7 +61,7 @@ const StarterPrompts = ({ dialogProps, onConfirm }) => {
                 }
             }
             chatbotConfig.starterPrompts = value.starterPrompts
-            const saveResp = await chatflowsApi.updateChatflow(dialogProps.chatflow.id, {
+            const saveResp = await agentflowsApi.updateAgentflow(dialogProps.agentflow.id, {
                 chatbotConfig: JSON.stringify(chatbotConfig)
             })
             if (saveResp.data) {
@@ -77,7 +77,7 @@ const StarterPrompts = ({ dialogProps, onConfirm }) => {
                         )
                     }
                 })
-                dispatch({ type: SET_CHATFLOW, chatflow: saveResp.data })
+                dispatch({ type: SET_AGENTFLOW, agentflow: saveResp.data })
                 onConfirm?.()
             }
         } catch (error) {
@@ -100,9 +100,9 @@ const StarterPrompts = ({ dialogProps, onConfirm }) => {
     }
 
     useEffect(() => {
-        if (dialogProps.chatflow && dialogProps.chatflow.chatbotConfig) {
+        if (dialogProps.agentflow && dialogProps.agentflow.chatbotConfig) {
             try {
-                let chatbotConfig = JSON.parse(dialogProps.chatflow.chatbotConfig)
+                let chatbotConfig = JSON.parse(dialogProps.agentflow.chatbotConfig)
                 setChatbotConfig(chatbotConfig || {})
                 if (chatbotConfig.starterPrompts) {
                     let inputFields = []

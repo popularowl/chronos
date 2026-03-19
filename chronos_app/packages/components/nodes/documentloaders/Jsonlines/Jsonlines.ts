@@ -136,11 +136,11 @@ class Jsonlines_DocumentLoaders implements INode {
                 files = [fileName]
             }
             const orgId = options.orgId
-            const chatflowid = options.chatflowid
+            const agentflowid = options.agentflowid
 
             for (const file of files) {
                 if (!file) continue
-                const fileData = await getFileFromStorage(file, orgId, chatflowid)
+                const fileData = await getFileFromStorage(file, orgId, agentflowid)
                 const blob = new Blob([new Uint8Array(fileData)])
                 const loader = new JSONLinesLoader(blob, pointer, metadata)
 

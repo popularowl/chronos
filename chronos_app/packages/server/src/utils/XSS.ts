@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express'
 import sanitizeHtml from 'sanitize-html'
-import { isPredictionRequest, extractChatflowId, validateChatflowDomain } from './domainValidation'
+import { isPredictionRequest, extractAgentflowId, validateAgentflowDomain } from './domainValidation'
 import logger from './logger'
 
 export function sanitizeMiddleware(req: Request, res: Response, next: NextFunction): void {
@@ -55,19 +55,19 @@ export function getCorsOptions(): any {
                 const globallyAllowed = allowedOrigins === '*' || allowedList.includes(originLc)
 
                 if (isPredictionReq) {
-                    // Per-chatflow allowlist OR globally allowed
-                    const chatflowId = extractChatflowId(req.url)
-                    let chatflowAllowed = false
-                    if (chatflowId) {
+                    // Per-agentflow allowlist OR globally allowed
+                    const agentflowId = extractAgentflowId(req.url)
+                    let agentflowAllowed = false
+                    if (agentflowId) {
                         try {
-                            chatflowAllowed = await validateChatflowDomain(chatflowId, originLc)
+                            agentflowAllowed = await validateAgentflowDomain(agentflowId, originLc)
                         } catch (error) {
                             // Log error and deny on failure
                             logger.error('Domain validation error:', error)
-                            chatflowAllowed = false
+                            agentflowAllowed = false
                         }
                     }
-                    return originCallback(null, globallyAllowed || chatflowAllowed)
+                    return originCallback(null, globallyAllowed || agentflowAllowed)
                 }
 
                 // Non-prediction: rely on global policy only

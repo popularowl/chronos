@@ -205,8 +205,8 @@ const EvalsEvaluation = () => {
                     evalRows[i].average_metrics =
                         typeof evalRow.average_metrics === 'object' ? evalRow.average_metrics : JSON.parse(evalRow.average_metrics)
                     evalRows[i].usedFlows =
-                        typeof evalRow.chatflowName === 'object' ? evalRow.chatflowName : JSON.parse(evalRow.chatflowName)
-                    evalRows[i].chatIds = typeof evalRow.chatflowId === 'object' ? evalRow.chatflowId : JSON.parse(evalRow.chatflowId)
+                        typeof evalRow.agentflowName === 'object' ? evalRow.agentflowName : JSON.parse(evalRow.agentflowName)
+                    evalRows[i].chatIds = typeof evalRow.agentflowId === 'object' ? evalRow.agentflowId : JSON.parse(evalRow.agentflowId)
                 }
                 setRows(evalRows)
             }
@@ -222,8 +222,9 @@ const EvalsEvaluation = () => {
                 evalRows[i].runDate = moment(evalRow.runDate).format('DD-MMM-YYYY, hh:mm:ss A')
                 evalRows[i].average_metrics =
                     typeof evalRow.average_metrics === 'object' ? evalRow.average_metrics : JSON.parse(evalRow.average_metrics)
-                evalRows[i].usedFlows = typeof evalRow.chatflowName === 'object' ? evalRow.chatflowName : JSON.parse(evalRow.chatflowName)
-                evalRows[i].chatIds = typeof evalRow.chatflowId === 'object' ? evalRow.chatflowId : JSON.parse(evalRow.chatflowId)
+                evalRows[i].usedFlows =
+                    typeof evalRow.agentflowName === 'object' ? evalRow.agentflowName : JSON.parse(evalRow.agentflowName)
+                evalRows[i].chatIds = typeof evalRow.agentflowId === 'object' ? evalRow.agentflowId : JSON.parse(evalRow.agentflowId)
             }
             setRows(evalRows)
         }
@@ -756,7 +757,7 @@ function EvaluationRunRow(props) {
                         <StyledTableCell colSpan={12} sx={{ p: 2 }}>
                             <Collapse in={open} timeout='auto' unmountOnExit>
                                 <Box sx={{ borderRadius: 2, border: 1, borderColor: theme.palette.grey[900] + 25, overflow: 'hidden' }}>
-                                    <Table aria-label='chatflow table'>
+                                    <Table aria-label='agentflow table'>
                                         <TableHead style={{ height: 10 }}>
                                             <TableRow>
                                                 <TableCell padding='checkbox'>

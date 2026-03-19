@@ -105,7 +105,7 @@ const VectorStoreDialog = ({ show, dialogProps, onCancel, onIndexResult }) => {
         if (codeLang === 'Python') {
             return `import requests
 
-API_URL = "${baseURL}/api/v1/vector/upsert/${dialogProps.chatflowid}"
+API_URL = "${baseURL}/api/v1/vector/upsert/${dialogProps.agentflowid}"
 
 def query(payload):
     response = requests.post(API_URL, json=payload)
@@ -124,7 +124,7 @@ output = query({
         } else if (codeLang === 'JavaScript') {
             return `async function query(data) {
     const response = await fetch(
-        "${baseURL}/api/v1/vector/upsert/${dialogProps.chatflowid}",
+        "${baseURL}/api/v1/vector/upsert/${dialogProps.agentflowid}",
         {
             method: "POST",
             headers: {
@@ -150,7 +150,7 @@ query({
 });
 `
         } else if (codeLang === 'cURL') {
-            return `curl ${baseURL}/api/v1/vector/upsert/${dialogProps.chatflowid} \\
+            return `curl ${baseURL}/api/v1/vector/upsert/${dialogProps.agentflowid} \\
       -X POST \\
       ${
           isMultiple
@@ -174,7 +174,7 @@ query({
             if (fileType.includes(',')) fileType = fileType.split(',')[0]
             return `import requests
 
-API_URL = "${baseURL}/api/v1/vector/upsert/${dialogProps.chatflowid}"
+API_URL = "${baseURL}/api/v1/vector/upsert/${dialogProps.agentflowid}"
 
 # use form data to upload files
 form_data = {
@@ -194,7 +194,7 @@ let formData = new FormData();
 ${getConfigExamplesForJS(configData, 'formData', isMultiple, vectorNodeId)}
 async function query(formData) {
     const response = await fetch(
-        "${baseURL}/api/v1/vector/upsert/${dialogProps.chatflowid}",
+        "${baseURL}/api/v1/vector/upsert/${dialogProps.agentflowid}",
         {
             method: "POST",
             body: formData
@@ -209,7 +209,7 @@ query(formData).then((response) => {
 });
 `
         } else if (codeLang === 'cURL') {
-            return `curl ${baseURL}/api/v1/vector/upsert/${dialogProps.chatflowid} \\
+            return `curl ${baseURL}/api/v1/vector/upsert/${dialogProps.agentflowid} \\
      -X POST \\${getConfigExamplesForCurl(configData, 'formData', isMultiple, vectorNodeId)} \\
      -H "Content-Type: multipart/form-data"`
         }
@@ -281,7 +281,7 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
         if (Object.keys(checkboxNodes).includes(vectorNodeId)) checkboxNodes[vectorNodeId] = !checkboxNodes[vectorNodeId]
         else checkboxNodes[vectorNodeId] = true
 
-        if (checkboxNodes[vectorNodeId] === true) getConfigApi.request(dialogProps.chatflowid)
+        if (checkboxNodes[vectorNodeId] === true) getConfigApi.request(dialogProps.agentflowid)
         setCheckboxExpanded(checkboxNodes)
         setExpandedVectorNodeId(vectorNodeId)
 
@@ -302,7 +302,7 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
     const onUpsertClicked = async (vectorStoreNode) => {
         setLoading(true)
         try {
-            const res = await vectorstoreApi.upsertVectorStore(dialogProps.chatflowid, { stopNodeId: vectorStoreNode.data.id })
+            const res = await vectorstoreApi.upsertVectorStore(dialogProps.agentflowid, { stopNodeId: vectorStoreNode.data.id })
             enqueueSnackbar({
                 message: 'Succesfully upserted vector store. You can start chatting now!',
                 options: {
@@ -568,7 +568,7 @@ formData.append("openAIApiKey[openAIEmbeddings_0]", "sk-my-openai-2nd-key")`
                                                                             }}
                                                                         >
                                                                             {
-                                                                                'For security reason, override config is disabled by default. You can change this by going into Chatflow Configuration -> Security tab, and enable the property you want to override.'
+                                                                                'For security reason, override config is disabled by default. You can change this by going into Agentflow Configuration -> Security tab, and enable the property you want to override.'
                                                                             }
                                                                             &nbsp;Refer{' '}
                                                                             <a

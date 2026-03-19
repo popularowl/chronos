@@ -38,14 +38,14 @@ export function feedbackRouteTest() {
         })
 
         describe('POST /api/v1/feedback', () => {
-            it('should require valid chatflow id', async () => {
+            it('should require valid agentflow id', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/feedback')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({})
 
-                // May require chatflowId
+                // May require agentflowId
                 expect([200, 400, 412, 500]).toContain(response.status)
             })
 
@@ -55,7 +55,7 @@ export function feedbackRouteTest() {
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
-                        chatflowid: 'test-flow-id',
+                        agentflowid: 'test-flow-id',
                         chatId: 'test-chat-id',
                         messageId: 'test-msg-id',
                         rating: 'THUMBS_UP'
@@ -70,7 +70,7 @@ export function feedbackRouteTest() {
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
                     .send({
-                        chatflowid: 'test-flow-id',
+                        agentflowid: 'test-flow-id',
                         chatId: 'test-chat-id',
                         messageId: 'test-msg-id',
                         rating: 'THUMBS_DOWN',
@@ -103,9 +103,9 @@ export function feedbackRouteTest() {
                 expect([200, 404]).toContain(response.status)
             })
 
-            it('should handle fetch feedback with chatflowId', async () => {
+            it('should handle fetch feedback with agentflowId', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/fetch-feedback?chatflowId=test-id')
+                    .get('/api/v1/fetch-feedback?agentflowId=test-id')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 

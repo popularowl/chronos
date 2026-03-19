@@ -6,16 +6,16 @@ import { IChatMessageFeedback } from '../../Interface'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 
-// Get all chatmessage feedback from chatflowid
+// Get all chatmessage feedback from agentflowid
 const getAllChatMessageFeedback = async (
-    chatflowid: string,
+    agentflowid: string,
     chatId: string | undefined,
     sortOrder: string | undefined,
     startDate: string | undefined,
     endDate: string | undefined
 ) => {
     try {
-        const dbResponse = await utilGetChatMessageFeedback(chatflowid, chatId, sortOrder, startDate, endDate)
+        const dbResponse = await utilGetChatMessageFeedback(agentflowid, chatId, sortOrder, startDate, endDate)
         return dbResponse
     } catch (error) {
         throw new InternalChronosError(
@@ -26,33 +26,33 @@ const getAllChatMessageFeedback = async (
 }
 
 // Add chatmessage feedback
-const createChatMessageFeedbackForChatflow = async (requestBody: Partial<IChatMessageFeedback>): Promise<any> => {
+const createChatMessageFeedbackForAgentflow = async (requestBody: Partial<IChatMessageFeedback>): Promise<any> => {
     try {
         const dbResponse = await utilAddChatMessageFeedback(requestBody)
         return dbResponse
     } catch (error) {
         throw new InternalChronosError(
             StatusCodes.INTERNAL_SERVER_ERROR,
-            `Error: feedbackService.createChatMessageFeedbackForChatflow - ${getErrorMessage(error)}`
+            `Error: feedbackService.createChatMessageFeedbackForAgentflow - ${getErrorMessage(error)}`
         )
     }
 }
 
 // Add chatmessage feedback
-const updateChatMessageFeedbackForChatflow = async (feedbackId: string, requestBody: Partial<IChatMessageFeedback>): Promise<any> => {
+const updateChatMessageFeedbackForAgentflow = async (feedbackId: string, requestBody: Partial<IChatMessageFeedback>): Promise<any> => {
     try {
         const dbResponse = await utilUpdateChatMessageFeedback(feedbackId, requestBody)
         return dbResponse
     } catch (error) {
         throw new InternalChronosError(
             StatusCodes.INTERNAL_SERVER_ERROR,
-            `Error: feedbackService.updateChatMessageFeedbackForChatflow - ${getErrorMessage(error)}`
+            `Error: feedbackService.updateChatMessageFeedbackForAgentflow - ${getErrorMessage(error)}`
         )
     }
 }
 
 export default {
     getAllChatMessageFeedback,
-    createChatMessageFeedbackForChatflow,
-    updateChatMessageFeedbackForChatflow
+    createChatMessageFeedbackForAgentflow,
+    updateChatMessageFeedbackForAgentflow
 }

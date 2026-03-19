@@ -16,30 +16,30 @@ async function getAuthToken(): Promise<string> {
 }
 
 /**
- * Helper function to create a test chatflow
+ * Helper function to create a test agentflow
  */
-async function createTestChatflow(authToken: string): Promise<string> {
-    const newChatflow = {
-        name: 'Prediction Test Chatflow ' + Date.now(),
+async function createTestAgentflow(authToken: string): Promise<string> {
+    const newAgentflow = {
+        name: 'Prediction Test Agentflow ' + Date.now(),
         type: 'AGENTFLOW',
         flowData: JSON.stringify({ nodes: [], edges: [] })
     }
 
     const response = await supertest(getRunningExpressApp().app)
-        .post('/api/v1/chatflows')
+        .post('/api/v1/agentflows')
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-request-from', 'internal')
-        .send(newChatflow)
+        .send(newAgentflow)
 
     return response.body.id
 }
 
 /**
- * Helper function to delete a test chatflow
+ * Helper function to delete a test agentflow
  */
-async function deleteTestChatflow(authToken: string, chatflowId: string): Promise<void> {
+async function deleteTestAgentflow(authToken: string, agentflowId: string): Promise<void> {
     await supertest(getRunningExpressApp().app)
-        .delete(`/api/v1/chatflows/${chatflowId}`)
+        .delete(`/api/v1/agentflows/${agentflowId}`)
         .set('Authorization', `Bearer ${authToken}`)
         .set('x-request-from', 'internal')
 }
@@ -53,7 +53,7 @@ export function predictionsRouteTest() {
         const baseRoute = '/api/v1/prediction'
 
         describe('Validation Tests', () => {
-            it('should return error when chatflow does not exist', async () => {
+            it('should return error when agentflow does not exist', async () => {
                 const fakeId = '00000000-0000-0000-0000-000000000000'
                 // prediction is whitelisted, no auth needed
                 const response = await supertest(getRunningExpressApp().app)
@@ -65,120 +65,120 @@ export function predictionsRouteTest() {
             })
         })
 
-        describe('Prediction Tests with Chatflow', () => {
+        describe('Prediction Tests with Agentflow', () => {
             it('should return 412 when body is empty', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
                 // prediction is whitelisted, no auth needed
-                const response = await supertest(getRunningExpressApp().app).post(`${baseRoute}/${chatflowId}`)
+                const response = await supertest(getRunningExpressApp().app).post(`${baseRoute}/${agentflowId}`)
 
                 expect(response.status).toEqual(StatusCodes.PRECONDITION_FAILED)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
 
-            it('should attempt prediction on valid chatflow', async () => {
+            it('should attempt prediction on valid agentflow', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
                 // prediction is whitelisted, no auth needed
                 const response = await supertest(getRunningExpressApp().app)
-                    .post(`${baseRoute}/${chatflowId}`)
+                    .post(`${baseRoute}/${agentflowId}`)
                     .send({ question: 'Hello', streaming: false })
 
-                // Empty chatflows will fail during execution, but should get past validation
+                // Empty agentflows will fail during execution, but should get past validation
                 expect([StatusCodes.OK, StatusCodes.INTERNAL_SERVER_ERROR]).toContain(response.status)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
 
             it('should handle streaming parameter as string', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .post(`${baseRoute}/${chatflowId}`)
+                    .post(`${baseRoute}/${agentflowId}`)
                     .send({ question: 'Hello', streaming: 'false' })
 
                 expect([StatusCodes.OK, StatusCodes.INTERNAL_SERVER_ERROR]).toContain(response.status)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
 
             it('should allow requests without origin header', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .post(`${baseRoute}/${chatflowId}`)
+                    .post(`${baseRoute}/${agentflowId}`)
                     .send({ question: 'Hello', streaming: false })
 
-                // Request should be processed (may fail due to empty chatflow, but not due to origin)
+                // Request should be processed (may fail due to empty agentflow, but not due to origin)
                 expect(response.status).not.toEqual(StatusCodes.FORBIDDEN)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
 
             it('should process request with origin header', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .post(`${baseRoute}/${chatflowId}`)
+                    .post(`${baseRoute}/${agentflowId}`)
                     .set('Origin', 'http://localhost:3000')
                     .send({ question: 'Hello', streaming: false })
 
                 expect([StatusCodes.OK, StatusCodes.INTERNAL_SERVER_ERROR]).toContain(response.status)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
 
             it('should not rate limit single request', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .post(`${baseRoute}/${chatflowId}`)
+                    .post(`${baseRoute}/${agentflowId}`)
                     .send({ question: 'Rate limit test', streaming: false })
 
                 expect(response.status).not.toEqual(StatusCodes.TOO_MANY_REQUESTS)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
 
             it('should handle chatId parameter', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .post(`${baseRoute}/${chatflowId}`)
+                    .post(`${baseRoute}/${agentflowId}`)
                     .send({ question: 'Hello', streaming: false, chatId: 'test-chat-123' })
 
                 expect([StatusCodes.OK, StatusCodes.INTERNAL_SERVER_ERROR]).toContain(response.status)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
 
             it('should handle sessionId parameter', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .post(`${baseRoute}/${chatflowId}`)
+                    .post(`${baseRoute}/${agentflowId}`)
                     .send({ question: 'Hello', streaming: false, sessionId: 'test-session-123' })
 
                 expect([StatusCodes.OK, StatusCodes.INTERNAL_SERVER_ERROR]).toContain(response.status)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
 
             it('should handle overrideConfig parameter', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .post(`${baseRoute}/${chatflowId}`)
+                    .post(`${baseRoute}/${agentflowId}`)
                     .send({
                         question: 'Hello',
                         streaming: false,
@@ -187,15 +187,15 @@ export function predictionsRouteTest() {
 
                 expect([StatusCodes.OK, StatusCodes.INTERNAL_SERVER_ERROR]).toContain(response.status)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
 
             it('should handle history parameter', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
                 const response = await supertest(getRunningExpressApp().app)
-                    .post(`${baseRoute}/${chatflowId}`)
+                    .post(`${baseRoute}/${agentflowId}`)
                     .send({
                         question: 'Hello',
                         streaming: false,
@@ -204,14 +204,14 @@ export function predictionsRouteTest() {
 
                 expect([StatusCodes.OK, StatusCodes.INTERNAL_SERVER_ERROR]).toContain(response.status)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
 
             it('should handle uploads parameter', async () => {
                 const authToken = await getAuthToken()
-                const chatflowId = await createTestChatflow(authToken)
+                const agentflowId = await createTestAgentflow(authToken)
 
-                const response = await supertest(getRunningExpressApp().app).post(`${baseRoute}/${chatflowId}`).send({
+                const response = await supertest(getRunningExpressApp().app).post(`${baseRoute}/${agentflowId}`).send({
                     question: 'Hello',
                     streaming: false,
                     uploads: []
@@ -219,7 +219,7 @@ export function predictionsRouteTest() {
 
                 expect([StatusCodes.OK, StatusCodes.INTERNAL_SERVER_ERROR]).toContain(response.status)
 
-                await deleteTestChatflow(authToken, chatflowId)
+                await deleteTestAgentflow(authToken, agentflowId)
             })
         })
     })

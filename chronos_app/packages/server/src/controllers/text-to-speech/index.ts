@@ -2,7 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { convertTextToSpeechStream } from 'chronos-components'
 import { StatusCodes } from 'http-status-codes'
 import { InternalChronosError } from '../../errors/internalChronosError'
-import chatflowsService from '../../services/chatflows'
+import agentflowsService from '../../services/agentflows'
 import textToSpeechService from '../../services/text-to-speech'
 import { databaseEntities } from '../../utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
@@ -11,7 +11,7 @@ const generateTextToSpeech = async (req: Request, res: Response) => {
     try {
         const {
             chatId,
-            chatflowId,
+            agentflowId,
             chatMessageId,
             text,
             provider: bodyProvider,
@@ -29,17 +29,17 @@ const generateTextToSpeech = async (req: Request, res: Response) => {
 
         let provider: string, credentialId: string, voice: string, model: string
 
-        if (chatflowId) {
-            // Get TTS config from chatflow
-            const chatflow = await chatflowsService.getChatflowById(chatflowId)
-            const ttsConfig = JSON.parse(chatflow.textToSpeech)
+        if (agentflowId) {
+            // Get TTS config from agentflow
+            const agentflow = await agentflowsService.getAgentflowById(agentflowId)
+            const ttsConfig = JSON.parse(agentflow.textToSpeech)
 
             // Find the provider with status: true
             const activeProviderKey = Object.keys(ttsConfig).find((key) => ttsConfig[key].status === true)
             if (!activeProviderKey) {
                 throw new InternalChronosError(
                     StatusCodes.BAD_REQUEST,
-                    `Error: textToSpeechController.generateTextToSpeech - no active TTS provider configured in chatflow!`
+                    `Error: textToSpeechController.generateTextToSpeech - no active TTS provider configured in agentflow!`
                 )
             }
 
@@ -79,7 +79,7 @@ const generateTextToSpeech = async (req: Request, res: Response) => {
         const appServer = getRunningExpressApp()
         const options = {
             orgId: '',
-            chatflowid: chatflowId || '',
+            agentflowid: agentflowId || '',
             chatId: chatId || '',
             appDataSource: appServer.AppDataSource,
             databaseEntities: databaseEntities
@@ -156,7 +156,7 @@ const generateTextToSpeech = async (req: Request, res: Response) => {
 
 const abortTextToSpeech = async (req: Request, res: Response) => {
     try {
-        const { chatId, chatMessageId, chatflowId } = req.body
+        const { chatId, chatMessageId, agentflowId } = req.body
 
         if (!chatId) {
             throw new InternalChronosError(
@@ -172,10 +172,10 @@ const abortTextToSpeech = async (req: Request, res: Response) => {
             )
         }
 
-        if (!chatflowId) {
+        if (!agentflowId) {
             throw new InternalChronosError(
                 StatusCodes.BAD_REQUEST,
-                `Error: textToSpeechController.abortTextToSpeech - chatflowId not provided!`
+                `Error: textToSpeechController.abortTextToSpeech - agentflowId not provided!`
             )
         }
 
@@ -185,10 +185,10 @@ const abortTextToSpeech = async (req: Request, res: Response) => {
         const ttsAbortId = `tts_${chatId}_${chatMessageId}`
         appServer.abortControllerPool.abort(ttsAbortId)
 
-        // Also abort the main chat flow AbortController for auto-TTS
-        const chatFlowAbortId = `${chatflowId}_${chatId}`
-        if (appServer.abortControllerPool.get(chatFlowAbortId)) {
-            appServer.abortControllerPool.abort(chatFlowAbortId)
+        // Also abort the main agent flow AbortController for auto-TTS
+        const agentFlowAbortId = `${agentflowId}_${chatId}`
+        if (appServer.abortControllerPool.get(agentFlowAbortId)) {
+            appServer.abortControllerPool.abort(agentFlowAbortId)
             appServer.sseStreamer.streamMetadataEvent(chatId, { chatId, chatMessageId })
         }
 

@@ -39,7 +39,7 @@ const getAllCustomTemplates = async (req: Request, res: Response, next: NextFunc
 
 const saveCustomTemplate = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        if ((!req.body && !(req.body.chatflowId || req.body.tool)) || !req.body.name) {
+        if ((!req.body && !(req.body.agentflowId || req.body.tool)) || !req.body.name) {
             throw new InternalChronosError(
                 StatusCodes.PRECONDITION_FAILED,
                 `Error: templatesService.saveCustomTemplate - body not provided!`

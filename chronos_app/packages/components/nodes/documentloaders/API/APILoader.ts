@@ -148,8 +148,8 @@ class API_DocumentLoaders implements INode {
             file = file.replace('[', '')
             file = file.replace(']', '')
             const orgId = options.orgId
-            const chatflowid = options.chatflowid
-            const fileData = await getFileFromStorage(file, orgId, chatflowid)
+            const agentflowid = options.agentflowid
+            const fileData = await getFileFromStorage(file, orgId, agentflowid)
             apiLoaderParam.ca = fileData.toString()
         } else {
             const splitDataURI = caFileBase64.split(',')

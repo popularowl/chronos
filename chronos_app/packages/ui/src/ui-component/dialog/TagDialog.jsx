@@ -58,7 +58,7 @@ const TagDialog = ({ isOpen, dialogProps, onClose, onSubmit }) => {
             aria-describedby='category-dialog-description'
         >
             <DialogTitle sx={{ fontSize: '1rem' }} id='alert-dialog-title'>
-                Set Chatflow Category Tags
+                Set Agentflow Category Tags
             </DialogTitle>
             <DialogContent>
                 <Box>

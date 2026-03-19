@@ -27,7 +27,7 @@ export function getUploadFileRouteTest() {
         })
 
         describe('GET /api/v1/get-upload-file', () => {
-            it('should return 500 when chatflowId is not provided', async () => {
+            it('should return 500 when agentflowId is not provided', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/get-upload-file')
                     .set('Authorization', `Bearer ${authToken}`)
@@ -39,7 +39,7 @@ export function getUploadFileRouteTest() {
             it('should return 500 when chatId is not provided', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/get-upload-file')
-                    .query({ chatflowId: 'test-chatflow-id' })
+                    .query({ agentflowId: 'test-agentflow-id' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -49,7 +49,7 @@ export function getUploadFileRouteTest() {
             it('should return 500 when fileName is not provided', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/get-upload-file')
-                    .query({ chatflowId: 'test-chatflow-id', chatId: 'test-chat-id' })
+                    .query({ agentflowId: 'test-agentflow-id', chatId: 'test-chat-id' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -59,7 +59,7 @@ export function getUploadFileRouteTest() {
             it('should handle all required params', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/get-upload-file')
-                    .query({ chatflowId: 'test-chatflow-id', chatId: 'test-chat-id', fileName: 'test.txt' })
+                    .query({ agentflowId: 'test-agentflow-id', chatId: 'test-chat-id', fileName: 'test.txt' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -69,7 +69,7 @@ export function getUploadFileRouteTest() {
             it('should handle download param true', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/get-upload-file')
-                    .query({ chatflowId: 'test-chatflow-id', chatId: 'test-chat-id', fileName: 'test.txt', download: 'true' })
+                    .query({ agentflowId: 'test-agentflow-id', chatId: 'test-chat-id', fileName: 'test.txt', download: 'true' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -79,17 +79,17 @@ export function getUploadFileRouteTest() {
             it('should handle download param false', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/get-upload-file')
-                    .query({ chatflowId: 'test-chatflow-id', chatId: 'test-chat-id', fileName: 'test.txt', download: 'false' })
+                    .query({ agentflowId: 'test-agentflow-id', chatId: 'test-chat-id', fileName: 'test.txt', download: 'false' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
                 expect([200, 404, 500]).toContain(response.status)
             })
 
-            it('should handle non-existent chatflow', async () => {
+            it('should handle non-existent agentflow', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/get-upload-file')
-                    .query({ chatflowId: 'non-existent-chatflow', chatId: 'test-chat-id', fileName: 'test.txt' })
+                    .query({ agentflowId: 'non-existent-agentflow', chatId: 'test-chat-id', fileName: 'test.txt' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 

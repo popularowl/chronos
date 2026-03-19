@@ -868,27 +868,27 @@ export const formatDataGridRows = (rows) => {
     }
 }
 
-export const setLocalStorageChatflow = (chatflowid, chatId, saveObj = {}) => {
-    const chatDetails = localStorage.getItem(`${chatflowid}_INTERNAL`)
+export const setLocalStorageAgentflow = (agentflowid, chatId, saveObj = {}) => {
+    const chatDetails = localStorage.getItem(`${agentflowid}_INTERNAL`)
     const obj = { ...saveObj }
     if (chatId) obj.chatId = chatId
 
     if (!chatDetails) {
-        localStorage.setItem(`${chatflowid}_INTERNAL`, JSON.stringify(obj))
+        localStorage.setItem(`${agentflowid}_INTERNAL`, JSON.stringify(obj))
     } else {
         try {
             const parsedChatDetails = JSON.parse(chatDetails)
-            localStorage.setItem(`${chatflowid}_INTERNAL`, JSON.stringify({ ...parsedChatDetails, ...obj }))
+            localStorage.setItem(`${agentflowid}_INTERNAL`, JSON.stringify({ ...parsedChatDetails, ...obj }))
         } catch (e) {
             const chatId = chatDetails
             obj.chatId = chatId
-            localStorage.setItem(`${chatflowid}_INTERNAL`, JSON.stringify(obj))
+            localStorage.setItem(`${agentflowid}_INTERNAL`, JSON.stringify(obj))
         }
     }
 }
 
-export const getLocalStorageChatflow = (chatflowid) => {
-    const chatDetails = localStorage.getItem(`${chatflowid}_INTERNAL`)
+export const getLocalStorageAgentflow = (agentflowid) => {
+    const chatDetails = localStorage.getItem(`${agentflowid}_INTERNAL`)
     if (!chatDetails) return {}
     try {
         return JSON.parse(chatDetails)
@@ -897,18 +897,18 @@ export const getLocalStorageChatflow = (chatflowid) => {
     }
 }
 
-export const removeLocalStorageChatHistory = (chatflowid) => {
-    const chatDetails = localStorage.getItem(`${chatflowid}_INTERNAL`)
+export const removeLocalStorageChatHistory = (agentflowid) => {
+    const chatDetails = localStorage.getItem(`${agentflowid}_INTERNAL`)
     if (!chatDetails) return
     try {
         const parsedChatDetails = JSON.parse(chatDetails)
         if (parsedChatDetails.lead) {
             // Dont remove lead when chat is cleared
             const obj = { lead: parsedChatDetails.lead }
-            localStorage.removeItem(`${chatflowid}_INTERNAL`)
-            localStorage.setItem(`${chatflowid}_INTERNAL`, JSON.stringify(obj))
+            localStorage.removeItem(`${agentflowid}_INTERNAL`)
+            localStorage.setItem(`${agentflowid}_INTERNAL`, JSON.stringify(obj))
         } else {
-            localStorage.removeItem(`${chatflowid}_INTERNAL`)
+            localStorage.removeItem(`${agentflowid}_INTERNAL`)
         }
     } catch (e) {
         return

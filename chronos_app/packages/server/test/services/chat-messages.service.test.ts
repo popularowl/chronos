@@ -109,7 +109,7 @@ export function chatMessagesServiceTest() {
         describe('createChatMessage', () => {
             it('should create a new chat message', async () => {
                 const newMessage = {
-                    chatflowid: 'flow-123',
+                    agentflowid: 'flow-123',
                     content: 'Hello, world!',
                     role: 'userMessage',
                     chatId: 'chat-456'
@@ -126,14 +126,14 @@ export function chatMessagesServiceTest() {
             it('should propagate errors from utilAddChatMessage', async () => {
                 mockUtilAddChatMessage.mockRejectedValue(new Error('Database error'))
 
-                await expect(chatMessagesService.createChatMessage({ chatflowid: 'flow-1' })).rejects.toThrow(
+                await expect(chatMessagesService.createChatMessage({ agentflowid: 'flow-1' })).rejects.toThrow(
                     'chatMessagesService.createChatMessage'
                 )
             })
         })
 
         describe('getAllChatMessages', () => {
-            it('should return all chat messages for a chatflow', async () => {
+            it('should return all chat messages for an agentflow', async () => {
                 const mockMessages = [
                     { id: 'msg-1', content: 'Hello', role: 'userMessage' },
                     { id: 'msg-2', content: 'Hi there!', role: 'apiMessage' }
@@ -144,7 +144,7 @@ export function chatMessagesServiceTest() {
 
                 expect(result).toEqual(mockMessages)
                 expect(mockUtilGetChatMessage).toHaveBeenCalledWith({
-                    chatflowid: 'flow-123',
+                    agentflowid: 'flow-123',
                     chatTypes: undefined,
                     sortOrder: 'ASC',
                     chatId: undefined,
@@ -180,7 +180,7 @@ export function chatMessagesServiceTest() {
                 )
 
                 expect(mockUtilGetChatMessage).toHaveBeenCalledWith({
-                    chatflowid: 'flow-123',
+                    agentflowid: 'flow-123',
                     chatTypes: [ChatType.INTERNAL],
                     sortOrder: 'DESC',
                     chatId: 'chat-456',
@@ -215,7 +215,7 @@ export function chatMessagesServiceTest() {
                 expect(result).toEqual(mockMessages)
                 expect(mockUtilGetChatMessage).toHaveBeenCalledWith(
                     expect.objectContaining({
-                        chatflowid: 'flow-123',
+                        agentflowid: 'flow-123',
                         chatTypes: [ChatType.INTERNAL]
                     })
                 )
@@ -239,7 +239,7 @@ export function chatMessagesServiceTest() {
                 )
 
                 expect(mockUtilGetChatMessage).toHaveBeenCalledWith({
-                    chatflowid: 'flow-123',
+                    agentflowid: 'flow-123',
                     chatTypes: [ChatType.INTERNAL],
                     sortOrder: 'DESC',
                     chatId: 'chat-456',
@@ -285,7 +285,7 @@ export function chatMessagesServiceTest() {
                 const result = await chatMessagesService.removeAllChatMessages(
                     'chat-456',
                     'flow-123',
-                    { chatflowid: 'flow-123' },
+                    { agentflowid: 'flow-123' },
                     mockUsageCacheManager
                 )
 
@@ -297,7 +297,7 @@ export function chatMessagesServiceTest() {
                 mockChatMessageFeedbackRepository.delete.mockResolvedValue({ affected: 0 })
                 mockChatMessageRepository.delete.mockResolvedValue({ affected: 1 })
 
-                await chatMessagesService.removeAllChatMessages('', 'flow-123', { chatflowid: 'flow-123' }, mockUsageCacheManager)
+                await chatMessagesService.removeAllChatMessages('', 'flow-123', { agentflowid: 'flow-123' }, mockUsageCacheManager)
 
                 expect(mockRemoveFilesFromStorage).not.toHaveBeenCalled()
             })
@@ -389,51 +389,51 @@ export function chatMessagesServiceTest() {
             })
         })
 
-        describe('getMessagesByChatflowIds', () => {
-            it('should return messages for multiple chatflow IDs', async () => {
+        describe('getMessagesByAgentflowIds', () => {
+            it('should return messages for multiple agentflow IDs', async () => {
                 const mockMessages = [
-                    { id: 'msg-1', chatflowid: 'flow-1' },
-                    { id: 'msg-2', chatflowid: 'flow-2' }
+                    { id: 'msg-1', agentflowid: 'flow-1' },
+                    { id: 'msg-2', agentflowid: 'flow-2' }
                 ]
                 mockChatMessageRepository.find.mockResolvedValue(mockMessages)
 
-                const result = await chatMessagesService.getMessagesByChatflowIds(['flow-1', 'flow-2'])
+                const result = await chatMessagesService.getMessagesByAgentflowIds(['flow-1', 'flow-2'])
 
                 expect(result).toEqual(mockMessages)
                 expect(mockChatMessageRepository.find).toHaveBeenCalledWith({
-                    where: { chatflowid: expect.anything() }
+                    where: { agentflowid: expect.anything() }
                 })
             })
 
             it('should return empty array when no messages found', async () => {
                 mockChatMessageRepository.find.mockResolvedValue([])
 
-                const result = await chatMessagesService.getMessagesByChatflowIds(['flow-999'])
+                const result = await chatMessagesService.getMessagesByAgentflowIds(['flow-999'])
 
                 expect(result).toEqual([])
             })
         })
 
-        describe('getMessagesFeedbackByChatflowIds', () => {
-            it('should return feedback for multiple chatflow IDs', async () => {
+        describe('getMessagesFeedbackByAgentflowIds', () => {
+            it('should return feedback for multiple agentflow IDs', async () => {
                 const mockFeedback = [
-                    { id: 'fb-1', chatflowid: 'flow-1', rating: 'THUMBS_UP' },
-                    { id: 'fb-2', chatflowid: 'flow-2', rating: 'THUMBS_DOWN' }
+                    { id: 'fb-1', agentflowid: 'flow-1', rating: 'THUMBS_UP' },
+                    { id: 'fb-2', agentflowid: 'flow-2', rating: 'THUMBS_DOWN' }
                 ]
                 mockChatMessageFeedbackRepository.find.mockResolvedValue(mockFeedback)
 
-                const result = await chatMessagesService.getMessagesFeedbackByChatflowIds(['flow-1', 'flow-2'])
+                const result = await chatMessagesService.getMessagesFeedbackByAgentflowIds(['flow-1', 'flow-2'])
 
                 expect(result).toEqual(mockFeedback)
                 expect(mockChatMessageFeedbackRepository.find).toHaveBeenCalledWith({
-                    where: { chatflowid: expect.anything() }
+                    where: { agentflowid: expect.anything() }
                 })
             })
 
             it('should return empty array when no feedback found', async () => {
                 mockChatMessageFeedbackRepository.find.mockResolvedValue([])
 
-                const result = await chatMessagesService.getMessagesFeedbackByChatflowIds(['flow-999'])
+                const result = await chatMessagesService.getMessagesFeedbackByAgentflowIds(['flow-999'])
 
                 expect(result).toEqual([])
             })

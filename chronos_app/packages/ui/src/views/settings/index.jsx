@@ -19,7 +19,7 @@ import { useAuth } from '@/hooks/useAuth'
 
 // ==============================|| SETTINGS ||============================== //
 
-const Settings = ({ chatflow, isSettingsOpen, anchorEl, isAgentCanvas, onSettingsItemClick, onUploadFile, onClose }) => {
+const Settings = ({ agentflow, isSettingsOpen, anchorEl, isAgentCanvas, onSettingsItemClick, onUploadFile, onClose }) => {
     const theme = useTheme()
     const [settingsMenu, setSettingsMenu] = useState([])
     const customization = useSelector((state) => state.customization)
@@ -44,15 +44,15 @@ const Settings = ({ chatflow, isSettingsOpen, anchorEl, isAgentCanvas, onSetting
     }
 
     useEffect(() => {
-        if (chatflow && !chatflow.id) {
+        if (agentflow && !agentflow.id) {
             const menus = isAgentCanvas ? agentsettings : settings
-            const settingsMenu = menus.children.filter((menu) => menu.id === 'loadChatflow')
+            const settingsMenu = menus.children.filter((menu) => menu.id === 'loadAgentflow')
             setSettingsMenu(settingsMenu)
-        } else if (chatflow && chatflow.id) {
+        } else if (agentflow && agentflow.id) {
             const menus = isAgentCanvas ? agentsettings : settings
             setSettingsMenu(menus.children)
         }
-    }, [chatflow, isAgentCanvas])
+    }, [agentflow, isAgentCanvas])
 
     useEffect(() => {
         setOpen(isSettingsOpen)
@@ -86,7 +86,7 @@ const Settings = ({ chatflow, isSettingsOpen, anchorEl, isAgentCanvas, onSetting
                     pl: `24px`
                 }}
                 onClick={() => {
-                    if (menu.id === 'loadChatflow' && inputFile) {
+                    if (menu.id === 'loadAgentflow' && inputFile) {
                         inputFile?.current.click()
                     } else {
                         onSettingsItemClick(menu.id)
@@ -149,7 +149,7 @@ const Settings = ({ chatflow, isSettingsOpen, anchorEl, isAgentCanvas, onSetting
 }
 
 Settings.propTypes = {
-    chatflow: PropTypes.object,
+    agentflow: PropTypes.object,
     isSettingsOpen: PropTypes.bool,
     anchorEl: PropTypes.any,
     onSettingsItemClick: PropTypes.func,

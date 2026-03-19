@@ -5,13 +5,13 @@ const getRunningExpressAppExports = require('../../src/utils/getRunningExpressAp
 export function updateChatMessageFeedbackUtilTest() {
     describe('updateChatMessageFeedback util', () => {
         const mockFeedbackRepo = createMockRepository()
-        const mockChatFlowRepo = createMockRepository()
+        const mockAgentFlowRepo = createMockRepository()
         const mockAppServer = {
             AppDataSource: {
                 getRepository: jest.fn((entity: any) => {
                     const name = typeof entity === 'function' ? entity.name : entity
                     if (name === 'ChatMessageFeedback') return mockFeedbackRepo
-                    if (name === 'ChatFlow') return mockChatFlowRepo
+                    if (name === 'AgentFlow') return mockAgentFlowRepo
                     return mockFeedbackRepo
                 })
             }
@@ -22,7 +22,7 @@ export function updateChatMessageFeedbackUtilTest() {
             getRunningExpressAppExports.getRunningExpressApp = jest.fn().mockReturnValue(mockAppServer)
             mockFeedbackRepo.update.mockReset()
             mockFeedbackRepo.findOne.mockReset()
-            mockChatFlowRepo.findOne.mockReset()
+            mockAgentFlowRepo.findOne.mockReset()
         })
 
         afterEach(() => {
@@ -34,8 +34,8 @@ export function updateChatMessageFeedbackUtilTest() {
         it('should update feedback and return OK', async () => {
             const feedbackData = { rating: 'THUMBS_UP', content: 'Great response' }
             mockFeedbackRepo.update.mockResolvedValue({ affected: 1 })
-            mockFeedbackRepo.findOne.mockResolvedValue({ id: 'fb-1', chatflowid: 'flow-1', ...feedbackData })
-            mockChatFlowRepo.findOne.mockResolvedValue({ id: 'flow-1', analytic: '{}' })
+            mockFeedbackRepo.findOne.mockResolvedValue({ id: 'fb-1', agentflowid: 'flow-1', ...feedbackData })
+            mockAgentFlowRepo.findOne.mockResolvedValue({ id: 'flow-1', analytic: '{}' })
 
             const result = await utilUpdateChatMessageFeedback('fb-1', feedbackData)
 
@@ -43,10 +43,10 @@ export function updateChatMessageFeedbackUtilTest() {
             expect(mockFeedbackRepo.update).toHaveBeenCalledWith({ id: 'fb-1' }, feedbackData)
         })
 
-        it('should handle chatflow with no analytic data', async () => {
+        it('should handle agentflow with no analytic data', async () => {
             mockFeedbackRepo.update.mockResolvedValue({ affected: 1 })
-            mockFeedbackRepo.findOne.mockResolvedValue({ id: 'fb-1', chatflowid: 'flow-1', rating: 'THUMBS_DOWN' })
-            mockChatFlowRepo.findOne.mockResolvedValue({ id: 'flow-1', analytic: null })
+            mockFeedbackRepo.findOne.mockResolvedValue({ id: 'fb-1', agentflowid: 'flow-1', rating: 'THUMBS_DOWN' })
+            mockAgentFlowRepo.findOne.mockResolvedValue({ id: 'flow-1', analytic: null })
 
             const result = await utilUpdateChatMessageFeedback('fb-1', { rating: 'THUMBS_DOWN' })
 

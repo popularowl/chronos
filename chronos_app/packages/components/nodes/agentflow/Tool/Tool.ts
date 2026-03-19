@@ -275,7 +275,7 @@ class Tool_Agentflow implements INode {
         }
 
         const flowConfig = {
-            chatflowId: options.chatflowid,
+            agentflowId: options.agentflowid,
             sessionId: options.sessionId,
             chatId: options.chatId,
             input: input,

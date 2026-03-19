@@ -1,6 +1,6 @@
 import { NextFunction, Request, Response } from 'express'
 import { rateLimit, RateLimitRequestHandler } from 'express-rate-limit'
-import { IChatFlow, MODE } from '../Interface'
+import { IAgentFlow, MODE } from '../Interface'
 import { Mutex } from 'async-mutex'
 import { RedisStore } from 'rate-limit-redis'
 import Redis from 'ioredis'
@@ -134,9 +134,9 @@ export class RateLimiterManager {
         }
     }
 
-    public async updateRateLimiter(chatFlow: IChatFlow, isInitialized?: boolean): Promise<void> {
-        if (!chatFlow.apiConfig) return
-        const apiConfig = JSON.parse(chatFlow.apiConfig)
+    public async updateRateLimiter(agentFlow: IAgentFlow, isInitialized?: boolean): Promise<void> {
+        if (!agentFlow.apiConfig) return
+        const apiConfig = JSON.parse(agentFlow.apiConfig)
 
         const rateLimit: { limitDuration: number; limitMax: number; limitMsg: string; status?: boolean } = apiConfig.rateLimit
         if (!rateLimit) return
@@ -149,21 +149,21 @@ export class RateLimiterManager {
                 limitDuration,
                 limitMax,
                 limitMsg,
-                id: chatFlow.id
+                id: agentFlow.id
             })
         } else {
             if (status === false) {
-                this.removeRateLimiter(chatFlow.id)
+                this.removeRateLimiter(agentFlow.id)
             } else if (limitMax && limitDuration && limitMsg) {
-                await this.addRateLimiter(chatFlow.id, limitDuration, limitMax, limitMsg)
+                await this.addRateLimiter(agentFlow.id, limitDuration, limitMax, limitMsg)
             }
         }
     }
 
-    public async initializeRateLimiters(chatflows: IChatFlow[]): Promise<void> {
+    public async initializeRateLimiters(agentflows: IAgentFlow[]): Promise<void> {
         await Promise.all(
-            chatflows.map(async (chatFlow) => {
-                await this.updateRateLimiter(chatFlow, true)
+            agentflows.map(async (agentFlow) => {
+                await this.updateRateLimiter(agentFlow, true)
             })
         )
 

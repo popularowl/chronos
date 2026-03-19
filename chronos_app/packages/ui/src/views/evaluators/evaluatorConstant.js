@@ -80,9 +80,9 @@ export const evaluators = [
     },
     {
         type: 'numeric',
-        label: 'Chatflow Latency',
+        label: 'Agentflow Latency',
         name: 'chain',
-        description: 'Actual time spent in executing the chatflow (milliseconds).'
+        description: 'Actual time spent in executing the agentflow (milliseconds).'
     },
     {
         type: 'numeric',
@@ -96,17 +96,17 @@ export const evaluatorTypes = [
     {
         label: 'Evaluate Result (Text Based)',
         name: 'text',
-        description: 'Set of Evaluators to evaluate the result of a Chatflow.'
+        description: 'Set of Evaluators to evaluate the result of an Agentflow.'
     },
     {
         label: 'Evaluate Result (JSON)',
         name: 'json',
-        description: 'Set of Evaluators to evaluate the JSON response of a Chatflow.'
+        description: 'Set of Evaluators to evaluate the JSON response of an Agentflow.'
     },
     {
         label: 'Evaluate Metrics (Numeric)',
         name: 'numeric',
-        description: 'Set of Evaluators that evaluate the metrics (latency, tokens, cost, length of response) of a Chatflow.'
+        description: 'Set of Evaluators that evaluate the metrics (latency, tokens, cost, length of response) of an Agentflow.'
     },
     {
         label: 'LLM based Grading (JSON)',

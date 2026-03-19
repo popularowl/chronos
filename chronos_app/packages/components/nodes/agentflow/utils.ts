@@ -21,7 +21,7 @@ export const addImagesToMessages = async (
             let bf = upload.data
             if (upload.type == 'stored-file') {
                 const fileName = upload.name.replace(/^FILE-STORAGE::/, '')
-                const contents = await getFileFromStorage(fileName, options.orgId, options.chatflowid, options.chatId)
+                const contents = await getFileFromStorage(fileName, options.orgId, options.agentflowid, options.chatId)
                 // as the image is stored in the server, read the file and convert it to base64
                 bf = 'data:' + upload.mime + ';base64,' + contents.toString('base64')
 
@@ -50,7 +50,7 @@ export const addImagesToMessages = async (
 /**
  * Process message array to replace stored file references with base64 image data
  * @param messages Array of messages that may contain image references
- * @param options Common options object containing chatflowid and chatId
+ * @param options Common options object containing agentflowid and chatId
  * @returns Object containing updated messages array and transformed original messages
  */
 export const processMessagesWithImages = async (
@@ -60,7 +60,7 @@ export const processMessagesWithImages = async (
     updatedMessages: BaseMessageLike[]
     transformedMessages: BaseMessageLike[]
 }> => {
-    if (!messages || !options.chatflowid || !options.chatId) {
+    if (!messages || !options.agentflowid || !options.chatId) {
         return {
             updatedMessages: messages,
             transformedMessages: []
@@ -94,7 +94,7 @@ export const processMessagesWithImages = async (
                     try {
                         const fileName = item.name.replace(/^FILE-STORAGE::/, '')
                         // Get file contents from storage
-                        const contents = await getFileFromStorage(fileName, options.orgId, options.chatflowid, options.chatId)
+                        const contents = await getFileFromStorage(fileName, options.orgId, options.agentflowid, options.chatId)
 
                         // Create base64 data URL
                         const base64Data = 'data:' + item.mime + ';base64,' + contents.toString('base64')
@@ -329,7 +329,7 @@ export const getPastChatHistoryImageMessages = async (
                 for (const upload of uploads) {
                     if (upload.type === 'stored-file' && upload.mime.startsWith('image/')) {
                         const fileName = upload.name.replace(/^FILE-STORAGE::/, '')
-                        const fileData = await getFileFromStorage(fileName, options.orgId, options.chatflowid, options.chatId)
+                        const fileData = await getFileFromStorage(fileName, options.orgId, options.agentflowid, options.chatId)
                         // as the image is stored in the server, read the file and convert it to base64
                         const bf = 'data:' + upload.mime + ';base64,' + fileData.toString('base64')
 
@@ -352,7 +352,7 @@ export const getPastChatHistoryImageMessages = async (
                         const fileLoaderNodeInstance = new fileLoaderNodeModule.nodeClass()
                         const nodeOptions = {
                             retrieveAttachmentChatId: true,
-                            chatflowid: options.chatflowid,
+                            agentflowid: options.agentflowid,
                             chatId: options.chatId,
                             orgId: options.orgId
                         }
@@ -535,7 +535,7 @@ export const saveBase64Image = async (
             imageBuffer,
             fileName,
             options.orgId,
-            options.chatflowid,
+            options.agentflowid,
             options.chatId
         )
 
@@ -583,7 +583,7 @@ export const saveGeminiInlineImage = async (
             imageBuffer,
             fileName,
             options.orgId,
-            options.chatflowid,
+            options.agentflowid,
             options.chatId
         )
 
@@ -640,7 +640,7 @@ export const downloadContainerFile = async (
             dataBuffer,
             filename,
             options.orgId,
-            options.chatflowid,
+            options.agentflowid,
             options.chatId
         )
 

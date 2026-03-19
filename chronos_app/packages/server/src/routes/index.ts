@@ -2,9 +2,9 @@ import express from 'express'
 import apikeyRouter from './apikey'
 import attachmentsRouter from './attachments'
 import chatMessageRouter from './chat-messages'
-import chatflowsRouter from './chatflows'
-import chatflowsStreamingRouter from './chatflows-streaming'
-import chatflowsUploadsRouter from './chatflows-uploads'
+import agentflowsRouter from './agentflows'
+import agentflowsStreamingRouter from './agentflows-streaming'
+import agentflowsUploadsRouter from './agentflows-uploads'
 import componentsCredentialsRouter from './components-credentials'
 import componentsCredentialsIconRouter from './components-credentials-icon'
 import credentialsRouter from './credentials'
@@ -66,10 +66,10 @@ const router = express.Router()
 router.use('/ping', pingRouter)
 router.use('/apikey', apikeyRouter)
 router.use('/attachments', attachmentsRouter)
-router.use('/chatflows', chatflowsRouter)
-router.use('/chatflows-streaming', chatflowsStreamingRouter)
+router.use('/agentflows', agentflowsRouter)
+router.use('/agentflows-streaming', agentflowsStreamingRouter)
 router.use('/chatmessage', chatMessageRouter)
-router.use('/chatflows-uploads', chatflowsUploadsRouter)
+router.use('/agentflows-uploads', agentflowsUploadsRouter)
 router.use('/components-credentials', componentsCredentialsRouter)
 router.use('/components-credentials-icon', componentsCredentialsIconRouter)
 router.use('/credentials', credentialsRouter)

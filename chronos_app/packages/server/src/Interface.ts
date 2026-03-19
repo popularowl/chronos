@@ -16,7 +16,7 @@ import { UsageCacheManager } from './UsageCacheManager'
 
 export type MessageType = 'apiMessage' | 'userMessage'
 
-export type ChatflowType = 'ASSISTANT' | 'AGENTFLOW'
+export type AgentflowType = 'ASSISTANT' | 'AGENTFLOW'
 
 export type ExecutionState = 'INPROGRESS' | 'FINISHED' | 'ERROR' | 'TERMINATED' | 'TIMEOUT' | 'STOPPED'
 
@@ -51,7 +51,7 @@ export enum UserPlan {
 /**
  * Databases
  */
-export interface IChatFlow {
+export interface IAgentFlow {
     id: string
     name: string
     flowData: string
@@ -67,7 +67,7 @@ export interface IChatFlow {
     followUpPrompts?: string
     apiConfig?: string
     category?: string
-    type?: ChatflowType
+    type?: AgentflowType
     userId?: string
 }
 
@@ -75,7 +75,7 @@ export interface IChatMessage {
     id: string
     role: MessageType
     content: string
-    chatflowid: string
+    agentflowid: string
     executionId?: string
     sourceDocuments?: string
     usedTools?: string
@@ -96,7 +96,7 @@ export interface IChatMessage {
 export interface IChatMessageFeedback {
     id: string
     content?: string
-    chatflowid: string
+    agentflowid: string
     chatId: string
     messageId: string
     rating: ChatMessageRatingType
@@ -160,14 +160,14 @@ export interface ILead {
     name?: string
     email?: string
     phone?: string
-    chatflowid: string
+    agentflowid: string
     chatId: string
     createdDate: Date
 }
 
 export interface IUpsertHistory {
     id: string
-    chatflowid: string
+    agentflowid: string
     result: string
     flowData: string
     date: Date
@@ -309,7 +309,7 @@ export interface IncomingAgentflowInput extends Omit<IncomingInput, 'question'> 
     humanInput?: IHumanInput
 }
 
-export interface IActiveChatflows {
+export interface IActiveAgentflows {
     [key: string]: {
         startingNodes: IReactFlowNode[]
         endingNodeData?: INodeData
@@ -352,8 +352,8 @@ export interface IUploadFileSizeAndTypes {
 }
 
 export enum AdminScope {
-    CHATFLOWS_READ = 'chatflows:read',
-    CHATFLOWS_WRITE = 'chatflows:write',
+    AGENTFLOWS_READ = 'agentflows:read',
+    AGENTFLOWS_WRITE = 'agentflows:write',
     CREDENTIALS_READ = 'credentials:read',
     CREDENTIALS_WRITE = 'credentials:write',
     APIKEYS_READ = 'apikeys:read',
@@ -393,8 +393,8 @@ export interface ICustomTemplate {
 }
 
 export interface IFlowConfig {
-    chatflowid: string
-    chatflowId: string
+    agentflowid: string
+    agentflowId: string
     chatId: string
     sessionId: string
     chatHistory: IMessage[]
@@ -415,7 +415,7 @@ export interface IPredictionQueueAppServer {
 
 export interface IExecuteFlowParams extends IPredictionQueueAppServer {
     incomingInput: IncomingInput
-    chatflow: IChatFlow
+    agentflow: IAgentFlow
     chatId: string
     baseURL: string
     isInternal: boolean

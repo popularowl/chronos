@@ -1,6 +1,6 @@
 import { StatusCodes } from 'http-status-codes'
 import { generateAPIKey, generateSecretHash } from '../../utils/apiKey'
-import { addChatflowsCount } from '../../utils/addChatflowsCount'
+import { addAgentflowsCount } from '../../utils/addAgentflowsCount'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
@@ -16,12 +16,12 @@ const getAllApiKeysFromDB = async (page: number = -1, limit: number = -1) => {
         queryBuilder.take(limit)
     }
     const [data, total] = await queryBuilder.getManyAndCount()
-    const keysWithChatflows = await addChatflowsCount(data)
+    const keysWithAgentflows = await addAgentflowsCount(data)
 
     if (page > 0 && limit > 0) {
-        return { total, data: keysWithChatflows }
+        return { total, data: keysWithAgentflows }
     } else {
-        return keysWithChatflows
+        return keysWithAgentflows
     }
 }
 

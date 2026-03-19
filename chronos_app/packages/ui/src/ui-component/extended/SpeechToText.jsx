@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux'
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_CHATFLOW } from '@/store/actions'
+import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_AGENTFLOW } from '@/store/actions'
 
 // material-ui
 import { Typography, Box, Button, FormControl, ListItem, ListItemAvatar, ListItemText, MenuItem, Select } from '@mui/material'
@@ -25,7 +25,7 @@ import groqPng from '@/assets/images/groq.png'
 import useNotifier from '@/utils/useNotifier'
 
 // API
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 // If implementing a new provider, this must be updated in
 // components/src/speechToText.ts as well
@@ -254,7 +254,7 @@ const SpeechToText = ({ dialogProps, onConfirm }) => {
     const onSave = async () => {
         const speechToText = setValue(true, selectedProvider, 'status')
         try {
-            const saveResp = await chatflowsApi.updateChatflow(dialogProps.chatflow.id, {
+            const saveResp = await agentflowsApi.updateAgentflow(dialogProps.agentflow.id, {
                 speechToText: JSON.stringify(speechToText)
             })
             if (saveResp.data) {
@@ -270,7 +270,7 @@ const SpeechToText = ({ dialogProps, onConfirm }) => {
                         )
                     }
                 })
-                dispatch({ type: SET_CHATFLOW, chatflow: saveResp.data })
+                dispatch({ type: SET_AGENTFLOW, agentflow: saveResp.data })
                 onConfirm?.()
             }
         } catch (error) {
@@ -322,9 +322,9 @@ const SpeechToText = ({ dialogProps, onConfirm }) => {
     }
 
     useEffect(() => {
-        if (dialogProps.chatflow && dialogProps.chatflow.speechToText) {
+        if (dialogProps.agentflow && dialogProps.agentflow.speechToText) {
             try {
-                const speechToText = JSON.parse(dialogProps.chatflow.speechToText)
+                const speechToText = JSON.parse(dialogProps.agentflow.speechToText)
                 let selectedProvider = 'none'
                 Object.keys(speechToTextProviders).forEach((key) => {
                     const providerConfig = speechToText[key]

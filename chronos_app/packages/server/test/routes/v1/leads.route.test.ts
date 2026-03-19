@@ -28,7 +28,7 @@ export function leadsRouteTest() {
 
         describe('GET /api/v1/leads/:id', () => {
             it('should handle request without auth', async () => {
-                const response = await supertest(getRunningExpressApp().app).get('/api/v1/leads/test-chatflow-id')
+                const response = await supertest(getRunningExpressApp().app).get('/api/v1/leads/test-agentflow-id')
 
                 expect([200, 401, 403, 404, 500]).toContain(response.status)
             })
@@ -51,18 +51,18 @@ export function leadsRouteTest() {
                 expect([200, 404, 412, 500]).toContain(response.status)
             })
 
-            it('should handle non-existent chatflow id', async () => {
+            it('should handle non-existent agentflow id', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/leads/non-existent-chatflow')
+                    .get('/api/v1/leads/non-existent-agentflow')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
                 expect([200, 404, 500]).toContain(response.status)
             })
 
-            it('should handle valid chatflow id', async () => {
+            it('should handle valid agentflow id', async () => {
                 const response = await supertest(getRunningExpressApp().app)
-                    .get('/api/v1/leads/valid-chatflow-id')
+                    .get('/api/v1/leads/valid-agentflow-id')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 
@@ -100,7 +100,7 @@ export function leadsRouteTest() {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/leads')
                     .send({
-                        chatflowid: 'test-chatflow-id',
+                        agentflowid: 'test-agentflow-id',
                         name: 'Test Lead',
                         email: 'testlead@example.com',
                         phone: '1234567890'
@@ -114,7 +114,7 @@ export function leadsRouteTest() {
             it('should handle lead with minimal fields', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .post('/api/v1/leads')
-                    .send({ chatflowid: 'test-chatflow-id' })
+                    .send({ agentflowid: 'test-agentflow-id' })
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 

@@ -1,7 +1,7 @@
 import { IChatMessageFeedback } from '../Interface'
 import { getRunningExpressApp } from '../utils/getRunningExpressApp'
 import { ChatMessageFeedback } from '../database/entities/ChatMessageFeedback'
-import { ChatFlow } from '../database/entities/ChatFlow'
+import { AgentFlow } from '../database/entities/AgentFlow'
 import lunary from 'lunary'
 
 /**
@@ -19,8 +19,8 @@ export const utilUpdateChatMessageFeedback = async (id: string, chatMessageFeedb
     // Fetch the updated entity
     const updatedFeedback = await appServer.AppDataSource.getRepository(ChatMessageFeedback).findOne({ where: { id } })
 
-    const chatflow = await appServer.AppDataSource.getRepository(ChatFlow).findOne({ where: { id: updatedFeedback?.chatflowid } })
-    const analytic = JSON.parse(chatflow?.analytic ?? '{}')
+    const agentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOne({ where: { id: updatedFeedback?.agentflowid } })
+    const analytic = JSON.parse(agentflow?.analytic ?? '{}')
 
     if (analytic?.lunary?.status === true && updatedFeedback?.rating) {
         lunary.trackFeedback(updatedFeedback.messageId, {

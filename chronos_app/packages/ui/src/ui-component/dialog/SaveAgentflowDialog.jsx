@@ -5,16 +5,16 @@ import PropTypes from 'prop-types'
 import { Button, Dialog, DialogActions, DialogContent, OutlinedInput, DialogTitle } from '@mui/material'
 import { StyledButton } from '@/ui-component/button/StyledButton'
 
-const SaveChatflowDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
+const SaveAgentflowDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const portalElement = document.getElementById('portal')
 
-    const [chatflowName, setChatflowName] = useState('')
+    const [agentflowName, setAgentflowName] = useState('')
     const [isReadyToSave, setIsReadyToSave] = useState(false)
 
     useEffect(() => {
-        if (chatflowName) setIsReadyToSave(true)
+        if (agentflowName) setIsReadyToSave(true)
         else setIsReadyToSave(false)
-    }, [chatflowName])
+    }, [agentflowName])
 
     const component = show ? (
         <Dialog
@@ -34,12 +34,12 @@ const SaveChatflowDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                     // eslint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                     sx={{ mt: 1 }}
-                    id='chatflow-name'
+                    id='agentflow-name'
                     type='text'
                     fullWidth
-                    placeholder='My New Chatflow'
-                    value={chatflowName}
-                    onChange={(e) => setChatflowName(e.target.value)}
+                    placeholder='My New Agentflow'
+                    value={agentflowName}
+                    onChange={(e) => setAgentflowName(e.target.value)}
                     onKeyDown={(e) => {
                         if (isReadyToSave && e.key === 'Enter') onConfirm(e.target.value)
                     }}
@@ -47,7 +47,7 @@ const SaveChatflowDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             </DialogContent>
             <DialogActions>
                 <Button onClick={onCancel}>{dialogProps.cancelButtonName}</Button>
-                <StyledButton disabled={!isReadyToSave} variant='contained' onClick={() => onConfirm(chatflowName)}>
+                <StyledButton disabled={!isReadyToSave} variant='contained' onClick={() => onConfirm(agentflowName)}>
                     {dialogProps.confirmButtonName}
                 </StyledButton>
             </DialogActions>
@@ -57,11 +57,11 @@ const SaveChatflowDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     return createPortal(component, portalElement)
 }
 
-SaveChatflowDialog.propTypes = {
+SaveAgentflowDialog.propTypes = {
     show: PropTypes.bool,
     dialogProps: PropTypes.object,
     onCancel: PropTypes.func,
     onConfirm: PropTypes.func
 }
 
-export default SaveChatflowDialog
+export default SaveAgentflowDialog

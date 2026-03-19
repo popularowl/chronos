@@ -79,7 +79,7 @@ const ViewLeadsDialog = ({ show, dialogProps, onCancel }) => {
         const blob = new Blob([dataStr], { type: 'application/json' })
         const dataUri = URL.createObjectURL(blob)
 
-        const exportFileDefaultName = `${dialogProps.chatflow.id}-leads.json`
+        const exportFileDefaultName = `${dialogProps.agentflow.id}-leads.json`
 
         let linkElement = document.createElement('a')
         linkElement.setAttribute('href', dataUri)
@@ -94,8 +94,8 @@ const ViewLeadsDialog = ({ show, dialogProps, onCancel }) => {
     }, [getLeadsApi.data])
 
     useEffect(() => {
-        if (dialogProps.chatflow) {
-            getLeadsApi.request(dialogProps.chatflow.id)
+        if (dialogProps.agentflow) {
+            getLeadsApi.request(dialogProps.agentflow.id)
         }
 
         return () => {

@@ -8,7 +8,7 @@ import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { IReactFlowEdge, IReactFlowNode } from '../../Interface'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
-import chatflowsService from '../chatflows'
+import agentflowsService from '../agentflows'
 
 type ITemplate = {
     badge: string
@@ -196,9 +196,9 @@ const saveCustomTemplate = async (body: any): Promise<any> => {
         const customTemplate = new CustomTemplate()
         Object.assign(customTemplate, body)
 
-        if (body.chatflowId) {
-            const chatflow = await chatflowsService.getChatflowById(body.chatflowId)
-            const flowData = JSON.parse(chatflow.flowData)
+        if (body.agentflowId) {
+            const agentflow = await agentflowsService.getAgentflowById(body.agentflowId)
+            const flowData = JSON.parse(agentflow.flowData)
             const { framework, exportJson } = _generateExportFlowData(flowData)
             flowDataStr = JSON.stringify(exportJson)
             customTemplate.framework = framework

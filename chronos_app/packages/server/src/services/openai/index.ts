@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid'
 import { StatusCodes } from 'http-status-codes'
-import { ChatFlow } from '../../database/entities/ChatFlow'
+import { AgentFlow } from '../../database/entities/AgentFlow'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
@@ -56,9 +56,9 @@ interface OpenAIModelObject {
 /**
  * Resolve an agentflow by model ID (UUID).
  */
-const resolveAgentflow = async (modelId: string): Promise<ChatFlow> => {
+const resolveAgentflow = async (modelId: string): Promise<AgentFlow> => {
     const appServer = getRunningExpressApp()
-    const agentflow = await appServer.AppDataSource.getRepository(ChatFlow).findOneBy({ id: modelId })
+    const agentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({ id: modelId })
     if (!agentflow) {
         throw new InternalChronosError(StatusCodes.NOT_FOUND, `Model '${modelId}' not found`)
     }
@@ -174,7 +174,7 @@ const buildStreamChunk = (
 const listModels = async (): Promise<{ object: string; data: OpenAIModelObject[] }> => {
     try {
         const appServer = getRunningExpressApp()
-        const agentflows = await appServer.AppDataSource.getRepository(ChatFlow).find({
+        const agentflows = await appServer.AppDataSource.getRepository(AgentFlow).find({
             where: { type: 'AGENTFLOW' as any },
             order: { updatedDate: 'DESC' }
         })

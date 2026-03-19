@@ -1,7 +1,7 @@
 import { useDispatch } from 'react-redux'
 import { useState, useEffect } from 'react'
 import PropTypes from 'prop-types'
-import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_CHATFLOW } from '@/store/actions'
+import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction, SET_AGENTFLOW } from '@/store/actions'
 
 // material-ui
 import {
@@ -36,7 +36,7 @@ import elevenLabsSVG from '@/assets/images/elevenlabs.svg'
 import useNotifier from '@/utils/useNotifier'
 
 // API
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 import ttsApi from '@/api/tts'
 
 const TextToSpeechType = {
@@ -124,7 +124,7 @@ const TextToSpeech = ({ dialogProps }) => {
     const onSave = async () => {
         const textToSpeechConfig = setValue(true, selectedProvider, 'status')
         try {
-            const saveResp = await chatflowsApi.updateChatflow(dialogProps.chatflow.id, {
+            const saveResp = await agentflowsApi.updateAgentflow(dialogProps.agentflow.id, {
                 textToSpeech: JSON.stringify(textToSpeechConfig)
             })
             if (saveResp.data) {
@@ -140,7 +140,7 @@ const TextToSpeech = ({ dialogProps }) => {
                         )
                     }
                 })
-                dispatch({ type: SET_CHATFLOW, chatflow: saveResp.data })
+                dispatch({ type: SET_AGENTFLOW, agentflow: saveResp.data })
             }
         } catch (error) {
             enqueueSnackbar({
@@ -388,9 +388,9 @@ const TextToSpeech = ({ dialogProps }) => {
     }, [testAudioSrc, testAudioRef])
 
     useEffect(() => {
-        if (dialogProps.chatflow && dialogProps.chatflow.textToSpeech) {
+        if (dialogProps.agentflow && dialogProps.agentflow.textToSpeech) {
             try {
-                const textToSpeechConfig = JSON.parse(dialogProps.chatflow.textToSpeech)
+                const textToSpeechConfig = JSON.parse(dialogProps.agentflow.textToSpeech)
                 let selectedProvider = 'none'
                 Object.keys(textToSpeechProviders).forEach((key) => {
                     const providerConfig = textToSpeechConfig[key]

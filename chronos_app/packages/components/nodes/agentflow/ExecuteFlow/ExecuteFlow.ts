@@ -41,7 +41,7 @@ class ExecuteFlow_Agentflow implements INode {
             label: 'Connect Credential',
             name: 'credential',
             type: 'credential',
-            credentialNames: ['chatflowApi'],
+            credentialNames: ['agentflowApi'],
             optional: true
         }
         this.inputs = [
@@ -129,13 +129,13 @@ class ExecuteFlow_Agentflow implements INode {
             }
 
             const searchOptions = options.searchOptions || {}
-            const chatflows = await appDataSource.getRepository(databaseEntities['ChatFlow']).findBy(searchOptions)
+            const agentflows = await appDataSource.getRepository(databaseEntities['AgentFlow']).findBy(searchOptions)
 
-            for (let i = 0; i < chatflows.length; i += 1) {
-                const cfType = chatflows[i].type === 'ASSISTANT' ? 'Assistant' : 'Agentflow'
+            for (let i = 0; i < agentflows.length; i += 1) {
+                const cfType = agentflows[i].type === 'ASSISTANT' ? 'Assistant' : 'Agentflow'
                 const data = {
-                    label: chatflows[i].name,
-                    name: chatflows[i].id,
+                    label: agentflows[i].name,
+                    name: agentflows[i].id,
                     description: cfType
                 } as INodeOptionsValue
                 returnData.push(data)
@@ -175,15 +175,15 @@ class ExecuteFlow_Agentflow implements INode {
 
         try {
             const credentialData = await getCredentialData(nodeData.credential ?? '', options)
-            const chatflowApiKey = getCredentialParam('chatflowApiKey', credentialData, nodeData)
+            const agentflowApiKey = getCredentialParam('agentflowApiKey', credentialData, nodeData)
 
-            if (selectedFlowId === options.chatflowid) throw new Error('Cannot call the same agentflow!')
+            if (selectedFlowId === options.agentflowid) throw new Error('Cannot call the same agentflow!')
 
             let headers: Record<string, string> = {
                 'Content-Type': 'application/json',
                 'chronos-tool': 'true'
             }
-            if (chatflowApiKey) headers = { ...headers, Authorization: `Bearer ${chatflowApiKey}` }
+            if (agentflowApiKey) headers = { ...headers, Authorization: `Bearer ${agentflowApiKey}` }
 
             const finalUrl = `${baseURL}/api/v1/prediction/${selectedFlowId}`
             const requestConfig: AxiosRequestConfig = {

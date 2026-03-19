@@ -20,14 +20,14 @@ import Button from '@mui/material/Button'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 import { IconX } from '@tabler/icons-react'
 
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 import useApi from '@/hooks/useApi'
 import useConfirm from '@/hooks/useConfirm'
 import { uiBaseURL } from '@/store/constant'
 import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction } from '@/store/actions'
 
-import SaveChatflowDialog from '@/ui-component/dialog/SaveChatflowDialog'
+import SaveAgentflowDialog from '@/ui-component/dialog/SaveAgentflowDialog'
 import TagDialog from '@/ui-component/dialog/TagDialog'
 import StarterPromptsDialog from '@/ui-component/dialog/StarterPromptsDialog'
 
@@ -74,10 +74,10 @@ const StyledMenu = styled((props) => (
     }
 }))
 
-export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, setError, updateFlowsApi, currentPage, pageLimit }) {
+export default function FlowListMenu({ agentflow, isAgentCanvas, isAgentflowV2, setError, updateFlowsApi, currentPage, pageLimit }) {
     const { confirm } = useConfirm()
     const dispatch = useDispatch()
-    const updateChatflowApi = useApi(chatflowsApi.updateChatflow)
+    const updateAgentflowApi = useApi(agentflowsApi.updateAgentflow)
 
     useNotifier()
     const enqueueSnackbar = (...args) => dispatch(enqueueSnackbarAction(...args))
@@ -100,7 +100,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
     const [exportTemplateDialogOpen, setExportTemplateDialogOpen] = useState(false)
     const [exportTemplateDialogProps, setExportTemplateDialogProps] = useState({})
 
-    const title = isAgentCanvas ? 'Agents' : 'Chatflow'
+    const title = isAgentCanvas ? 'Agents' : 'Agentflow'
 
     const refreshFlows = async () => {
         try {
@@ -136,8 +136,8 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
     const handleFlowStarterPrompts = () => {
         setAnchorEl(null)
         setConversationStartersDialogProps({
-            title: 'Starter Prompts - ' + chatflow.name,
-            chatflow: chatflow
+            title: 'Starter Prompts - ' + agentflow.name,
+            agentflow: agentflow
         })
         setConversationStartersDialogOpen(true)
     }
@@ -145,7 +145,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
     const handleExportTemplate = () => {
         setAnchorEl(null)
         setExportTemplateDialogProps({
-            chatflow: chatflow
+            agentflow: agentflow
         })
         setExportTemplateDialogOpen(true)
     }
@@ -153,8 +153,8 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
     const handleFlowChatFeedback = () => {
         setAnchorEl(null)
         setChatFeedbackDialogProps({
-            title: 'Chat Feedback - ' + chatflow.name,
-            chatflow: chatflow
+            title: 'Chat Feedback - ' + agentflow.name,
+            agentflow: agentflow
         })
         setChatFeedbackDialogOpen(true)
     }
@@ -162,8 +162,8 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
     const handleAllowedDomains = () => {
         setAnchorEl(null)
         setAllowedDomainsDialogProps({
-            title: 'Allowed Domains - ' + chatflow.name,
-            chatflow: chatflow
+            title: 'Allowed Domains - ' + agentflow.name,
+            agentflow: agentflow
         })
         setAllowedDomainsDialogOpen(true)
     }
@@ -171,19 +171,19 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
     const handleSpeechToText = () => {
         setAnchorEl(null)
         setSpeechToTextDialogProps({
-            title: 'Speech To Text - ' + chatflow.name,
-            chatflow: chatflow
+            title: 'Speech To Text - ' + agentflow.name,
+            agentflow: agentflow
         })
         setSpeechToTextDialogOpen(true)
     }
 
-    const saveFlowRename = async (chatflowName) => {
+    const saveFlowRename = async (agentflowName) => {
         const updateBody = {
-            name: chatflowName,
-            chatflow
+            name: agentflowName,
+            agentflow
         }
         try {
-            await updateChatflowApi.request(chatflow.id, updateBody)
+            await updateAgentflowApi.request(agentflow.id, updateBody)
             const params = {
                 page: currentPage,
                 limit: pageLimit
@@ -215,9 +215,9 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
 
     const handleFlowCategory = () => {
         setAnchorEl(null)
-        if (chatflow.category) {
+        if (agentflow.category) {
             setCategoryDialogProps({
-                category: chatflow.category.split(';')
+                category: agentflow.category.split(';')
             })
         }
         setCategoryDialogOpen(true)
@@ -229,10 +229,10 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
         const categoryTags = categories.join(';')
         const updateBody = {
             category: categoryTags,
-            chatflow
+            agentflow
         }
         try {
-            await updateChatflowApi.request(chatflow.id, updateBody)
+            await updateAgentflowApi.request(agentflow.id, updateBody)
             const params = {
                 page: currentPage,
                 limit: pageLimit
@@ -264,7 +264,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
         setAnchorEl(null)
         const confirmPayload = {
             title: `Delete`,
-            description: `Delete ${title} ${chatflow.name}?`,
+            description: `Delete ${title} ${agentflow.name}?`,
             confirmButtonName: 'Delete',
             cancelButtonName: 'Cancel'
         }
@@ -272,7 +272,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
 
         if (isConfirmed) {
             try {
-                await chatflowsApi.deleteChatflow(chatflow.id)
+                await agentflowsApi.deleteAgentflow(agentflow.id)
                 const params = {
                     page: currentPage,
                     limit: pageLimit
@@ -306,7 +306,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
     const handleDuplicate = () => {
         setAnchorEl(null)
         try {
-            localStorage.setItem('duplicatedFlowData', chatflow.flowData)
+            localStorage.setItem('duplicatedFlowData', agentflow.flowData)
             if (isAgentflowV2) {
                 window.open(`${uiBaseURL}/v2/agentcanvas`, '_blank')
             } else if (isAgentCanvas) {
@@ -322,13 +322,13 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
     const handleExport = () => {
         setAnchorEl(null)
         try {
-            const flowData = JSON.parse(chatflow.flowData)
+            const flowData = JSON.parse(agentflow.flowData)
             let dataStr = JSON.stringify(generateExportFlowData(flowData), null, 2)
             //let dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr)
             const blob = new Blob([dataStr], { type: 'application/json' })
             const dataUri = URL.createObjectURL(blob)
 
-            let exportFileDefaultName = `${chatflow.name} ${title}.json`
+            let exportFileDefaultName = `${agentflow.name} ${title}.json`
 
             let linkElement = document.createElement('a')
             linkElement.setAttribute('href', dataUri)
@@ -362,7 +362,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
                 onClose={handleClose}
             >
                 <PermissionMenuItem
-                    permissionId={isAgentCanvas ? 'agentflows:update' : 'chatflows:update'}
+                    permissionId={isAgentCanvas ? 'agentflows:update' : 'agentflows:update'}
                     onClick={handleFlowRename}
                     disableRipple
                 >
@@ -370,7 +370,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
                     Rename
                 </PermissionMenuItem>
                 <PermissionMenuItem
-                    permissionId={isAgentCanvas ? 'agentflows:duplicate' : 'chatflows:duplicate'}
+                    permissionId={isAgentCanvas ? 'agentflows:duplicate' : 'agentflows:duplicate'}
                     onClick={handleDuplicate}
                     disableRipple
                 >
@@ -378,7 +378,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
                     Duplicate
                 </PermissionMenuItem>
                 <PermissionMenuItem
-                    permissionId={isAgentCanvas ? 'agentflows:export' : 'chatflows:export'}
+                    permissionId={isAgentCanvas ? 'agentflows:export' : 'agentflows:export'}
                     onClick={handleExport}
                     disableRipple
                 >
@@ -391,7 +391,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
                 </PermissionMenuItem>
                 <Divider sx={{ my: 0.5 }} />
                 <PermissionMenuItem
-                    permissionId={isAgentCanvas ? 'agentflows:config' : 'chatflows:config'}
+                    permissionId={isAgentCanvas ? 'agentflows:config' : 'agentflows:config'}
                     onClick={handleFlowStarterPrompts}
                     disableRipple
                 >
@@ -399,7 +399,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
                     Starter Prompts
                 </PermissionMenuItem>
                 <PermissionMenuItem
-                    permissionId={isAgentCanvas ? 'agentflows:config' : 'chatflows:config'}
+                    permissionId={isAgentCanvas ? 'agentflows:config' : 'agentflows:config'}
                     onClick={handleFlowChatFeedback}
                     disableRipple
                 >
@@ -407,7 +407,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
                     Chat Feedback
                 </PermissionMenuItem>
                 <PermissionMenuItem
-                    permissionId={isAgentCanvas ? 'agentflows:domains' : 'chatflows:domains'}
+                    permissionId={isAgentCanvas ? 'agentflows:domains' : 'agentflows:domains'}
                     onClick={handleAllowedDomains}
                     disableRipple
                 >
@@ -415,7 +415,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
                     Allowed Domains
                 </PermissionMenuItem>
                 <PermissionMenuItem
-                    permissionId={isAgentCanvas ? 'agentflows:config' : 'chatflows:config'}
+                    permissionId={isAgentCanvas ? 'agentflows:config' : 'agentflows:config'}
                     onClick={handleSpeechToText}
                     disableRipple
                 >
@@ -423,7 +423,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
                     Speech To Text
                 </PermissionMenuItem>
                 <PermissionMenuItem
-                    permissionId={isAgentCanvas ? 'agentflows:update' : 'chatflows:update'}
+                    permissionId={isAgentCanvas ? 'agentflows:update' : 'agentflows:update'}
                     onClick={handleFlowCategory}
                     disableRipple
                 >
@@ -432,7 +432,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
                 </PermissionMenuItem>
                 <Divider sx={{ my: 0.5 }} />
                 <PermissionMenuItem
-                    permissionId={isAgentCanvas ? 'agentflows:delete' : 'chatflows:delete'}
+                    permissionId={isAgentCanvas ? 'agentflows:delete' : 'agentflows:delete'}
                     onClick={handleDelete}
                     disableRipple
                 >
@@ -440,7 +440,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
                     Delete
                 </PermissionMenuItem>
             </StyledMenu>
-            <SaveChatflowDialog
+            <SaveAgentflowDialog
                 show={flowDialogOpen}
                 dialogProps={{
                     title: `Rename ${title}`,
@@ -492,7 +492,7 @@ export default function FlowListMenu({ chatflow, isAgentCanvas, isAgentflowV2, s
 }
 
 FlowListMenu.propTypes = {
-    chatflow: PropTypes.object,
+    agentflow: PropTypes.object,
     isAgentCanvas: PropTypes.bool,
     isAgentflowV2: PropTypes.bool,
     setError: PropTypes.func,

@@ -19,10 +19,10 @@ export class Evaluation implements IEvaluation {
     evaluationType: string
 
     @Column()
-    chatflowId: string
+    agentflowId: string
 
     @Column()
-    chatflowName: string
+    agentflowName: string
 
     @Column()
     datasetId: string

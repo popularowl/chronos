@@ -339,11 +339,11 @@ const Templates = () => {
         setShowSkillDialog(true)
     }
 
-    const goToCanvas = (selectedChatflow) => {
-        if (selectedChatflow.type === 'AgentflowV2') {
-            navigate(`/v2/template/${selectedChatflow.id}`, { state: selectedChatflow })
+    const goToCanvas = (selectedAgentflow) => {
+        if (selectedAgentflow.type === 'AgentflowV2') {
+            navigate(`/v2/template/${selectedAgentflow.id}`, { state: selectedAgentflow })
         } else {
-            navigate(`/template/${selectedChatflow.id}`, { state: selectedChatflow })
+            navigate(`/template/${selectedAgentflow.id}`, { state: selectedAgentflow })
         }
     }
 
@@ -697,7 +697,7 @@ const Templates = () => {
                                                                     badgeContent={data.badge}
                                                                     color={data.badge === 'POPULAR' ? 'primary' : 'error'}
                                                                 >
-                                                                    {(data.type === 'Chatflow' ||
+                                                                    {(data.type === 'Agentflow' ||
                                                                         data.type === 'Agentflow' ||
                                                                         data.type === 'AgentflowV2') && (
                                                                         <ItemCard
@@ -716,7 +716,7 @@ const Templates = () => {
                                                                 </Badge>
                                                             )}
                                                             {!data.badge &&
-                                                                (data.type === 'Chatflow' ||
+                                                                (data.type === 'Agentflow' ||
                                                                     data.type === 'Agentflow' ||
                                                                     data.type === 'AgentflowV2') && (
                                                                     <ItemCard
@@ -836,7 +836,7 @@ const Templates = () => {
                                                                     badgeContent={data.badge}
                                                                     color={data.badge === 'POPULAR' ? 'primary' : 'error'}
                                                                 >
-                                                                    {(data.type === 'Chatflow' ||
+                                                                    {(data.type === 'Agentflow' ||
                                                                         data.type === 'Agentflow' ||
                                                                         data.type === 'AgentflowV2') && (
                                                                         <ItemCard
@@ -855,7 +855,7 @@ const Templates = () => {
                                                                 </Badge>
                                                             )}
                                                             {!data.badge &&
-                                                                (data.type === 'Chatflow' ||
+                                                                (data.type === 'Agentflow' ||
                                                                     data.type === 'Agentflow' ||
                                                                     data.type === 'AgentflowV2') && (
                                                                     <ItemCard

@@ -38,18 +38,18 @@ const dirSize = async (directoryPath: string) => {
 
 export const addBase64FilesToStorage = async (
     fileBase64: string,
-    chatflowid: string,
+    agentflowid: string,
     fileNames: string[],
     orgId: string
 ): Promise<{ path: string; totalSize: number }> => {
-    // Validate chatflowid
-    if (!chatflowid || !isValidUUID(chatflowid)) {
-        throw new Error('Invalid chatflowId format - must be a valid UUID')
+    // Validate agentflowid
+    if (!agentflowid || !isValidUUID(agentflowid)) {
+        throw new Error('Invalid agentflowId format - must be a valid UUID')
     }
 
     // Check for path traversal attempts
-    if (isPathTraversal(chatflowid)) {
-        throw new Error('Invalid path characters detected in chatflowId')
+    if (isPathTraversal(agentflowid)) {
+        throw new Error('Invalid path characters detected in agentflowId')
     }
 
     const storageType = getStorageType()
@@ -62,7 +62,7 @@ export const addBase64FilesToStorage = async (
         const mime = splitDataURI[0].split(':')[1].split(';')[0]
 
         const sanitizedFilename = _sanitizeFilename(filename)
-        const Key = orgId + '/' + chatflowid + '/' + sanitizedFilename
+        const Key = orgId + '/' + agentflowid + '/' + sanitizedFilename
 
         const putObjCmd = new PutObjectCommand({
             Bucket,
@@ -84,9 +84,9 @@ export const addBase64FilesToStorage = async (
         const bf = Buffer.from(splitDataURI.pop() || '', 'base64')
         const mime = splitDataURI[0].split(':')[1].split(';')[0]
         const sanitizedFilename = _sanitizeFilename(filename)
-        const normalizedChatflowid = chatflowid.replace(/\\/g, '/')
+        const normalizedAgentflowid = agentflowid.replace(/\\/g, '/')
         const normalizedFilename = sanitizedFilename.replace(/\\/g, '/')
-        const filePath = `${normalizedChatflowid}/${normalizedFilename}`
+        const filePath = `${normalizedAgentflowid}/${normalizedFilename}`
         const file = bucket.file(filePath)
         await new Promise<void>((resolve, reject) => {
             file.createWriteStream({ contentType: mime, metadata: { contentEncoding: 'base64' } })
@@ -99,7 +99,7 @@ export const addBase64FilesToStorage = async (
 
         return { path: 'FILE-STORAGE::' + JSON.stringify(fileNames), totalSize: totalSize / 1024 / 1024 }
     } else {
-        const dir = path.join(getStoragePath(), orgId, chatflowid)
+        const dir = path.join(getStoragePath(), orgId, agentflowid)
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, { recursive: true })
         }
@@ -669,12 +669,12 @@ export const removeFolderFromStorage = async (...paths: string[]) => {
     }
 }
 
-const _deleteLocalFolderRecursive = async (directory: string, deleteParentChatflowFolder?: boolean) => {
+const _deleteLocalFolderRecursive = async (directory: string, deleteParentAgentflowFolder?: boolean) => {
     try {
         // Check if the path exists
         await fs.promises.access(directory)
 
-        if (deleteParentChatflowFolder) {
+        if (deleteParentAgentflowFolder) {
             await fs.promises.rm(directory, { recursive: true })
         }
 
@@ -743,19 +743,19 @@ const _deleteS3Folder = async (location: string) => {
 }
 
 export const streamStorageFile = async (
-    chatflowId: string,
+    agentflowId: string,
     chatId: string,
     fileName: string,
     orgId: string
 ): Promise<fs.ReadStream | Buffer | undefined> => {
-    // Validate chatflowId
-    if (!chatflowId || !isValidUUID(chatflowId)) {
-        throw new Error('Invalid chatflowId format - must be a valid UUID')
+    // Validate agentflowId
+    if (!agentflowId || !isValidUUID(agentflowId)) {
+        throw new Error('Invalid agentflowId format - must be a valid UUID')
     }
 
     // Check for path traversal attempts
-    if (isPathTraversal(chatflowId) || isPathTraversal(chatId)) {
-        throw new Error('Invalid path characters detected in chatflowId or chatId')
+    if (isPathTraversal(agentflowId) || isPathTraversal(chatId)) {
+        throw new Error('Invalid path characters detected in agentflowId or chatId')
     }
 
     const storageType = getStorageType()
@@ -763,7 +763,7 @@ export const streamStorageFile = async (
     if (storageType === 's3') {
         const { s3Client, Bucket } = getS3Config()
 
-        const Key = orgId + '/' + chatflowId + '/' + chatId + '/' + sanitizedFilename
+        const Key = orgId + '/' + agentflowId + '/' + chatId + '/' + sanitizedFilename
         const getParams = {
             Bucket,
             Key
@@ -777,7 +777,7 @@ export const streamStorageFile = async (
             }
         } catch (error) {
             // Fallback: Check if file exists without orgId
-            const fallbackKey = chatflowId + '/' + chatId + '/' + sanitizedFilename
+            const fallbackKey = agentflowId + '/' + chatId + '/' + sanitizedFilename
             try {
                 const fallbackParams = {
                     Bucket,
@@ -818,7 +818,7 @@ export const streamStorageFile = async (
                     )
 
                     // Check if the directory is empty and delete recursively if needed
-                    await _cleanEmptyS3Folders(s3Client, Bucket, chatflowId)
+                    await _cleanEmptyS3Folders(s3Client, Bucket, agentflowId)
 
                     return fileContent
                 }
@@ -829,17 +829,17 @@ export const streamStorageFile = async (
         }
     } else if (storageType === 'gcs') {
         const { bucket } = getGcsClient()
-        const normalizedChatflowId = chatflowId.replace(/\\/g, '/')
+        const normalizedAgentflowId = agentflowId.replace(/\\/g, '/')
         const normalizedChatId = chatId.replace(/\\/g, '/')
         const normalizedFilename = sanitizedFilename.replace(/\\/g, '/')
-        const filePath = `${orgId}/${normalizedChatflowId}/${normalizedChatId}/${normalizedFilename}`
+        const filePath = `${orgId}/${normalizedAgentflowId}/${normalizedChatId}/${normalizedFilename}`
 
         try {
             const [buffer] = await bucket.file(filePath).download()
             return buffer
         } catch (error) {
             // Fallback: Check if file exists without orgId
-            const fallbackPath = `${normalizedChatflowId}/${normalizedChatId}/${normalizedFilename}`
+            const fallbackPath = `${normalizedAgentflowId}/${normalizedChatId}/${normalizedFilename}`
             try {
                 const fallbackFile = bucket.file(fallbackPath)
                 const [buffer] = await fallbackFile.download()
@@ -858,7 +858,7 @@ export const streamStorageFile = async (
                     await fallbackFile.delete()
 
                     // Check if the directory is empty and delete recursively if needed
-                    await _cleanEmptyGCSFolders(bucket, normalizedChatflowId)
+                    await _cleanEmptyGCSFolders(bucket, normalizedAgentflowId)
 
                     return buffer
                 }
@@ -868,7 +868,7 @@ export const streamStorageFile = async (
             }
         }
     } else {
-        const filePath = path.join(getStoragePath(), orgId, chatflowId, chatId, sanitizedFilename)
+        const filePath = path.join(getStoragePath(), orgId, agentflowId, chatId, sanitizedFilename)
         //raise error if file path is not absolute
         if (!path.isAbsolute(filePath)) throw new Error(`Invalid file path`)
         //raise error if file path contains '..'
@@ -880,7 +880,7 @@ export const streamStorageFile = async (
             return fs.createReadStream(filePath)
         } else {
             // Fallback: Check if file exists without orgId
-            const fallbackPath = path.join(getStoragePath(), chatflowId, chatId, sanitizedFilename)
+            const fallbackPath = path.join(getStoragePath(), agentflowId, chatId, sanitizedFilename)
 
             if (fs.existsSync(fallbackPath)) {
                 // Create directory if it doesn't exist
@@ -896,7 +896,7 @@ export const streamStorageFile = async (
                 fs.unlinkSync(fallbackPath)
 
                 // Clean up empty directories recursively
-                _cleanEmptyLocalFolders(path.join(getStoragePath(), chatflowId, chatId))
+                _cleanEmptyLocalFolders(path.join(getStoragePath(), agentflowId, chatId))
 
                 return fs.createReadStream(filePath)
             } else {

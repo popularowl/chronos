@@ -1,17 +1,17 @@
 import client from './client'
 
-const getInternalChatmessageFromChatflow = (id, params = {}) =>
+const getInternalChatmessageFromAgentflow = (id, params = {}) =>
     client.get(`/internal-chatmessage/${id}`, { params: { feedback: true, ...params } })
-const getAllChatmessageFromChatflow = (id, params = {}) =>
+const getAllChatmessageFromAgentflow = (id, params = {}) =>
     client.get(`/chatmessage/${id}`, { params: { order: 'DESC', feedback: true, ...params } })
 const getChatmessageFromPK = (id, params = {}) => client.get(`/chatmessage/${id}`, { params: { order: 'ASC', feedback: true, ...params } })
 const deleteChatmessage = (id, params = {}) => client.delete(`/chatmessage/${id}`, { params: { ...params } })
 const getStoragePath = () => client.get(`/get-upload-path`)
-const abortMessage = (chatflowid, chatid) => client.put(`/chatmessage/abort/${chatflowid}/${chatid}`)
+const abortMessage = (agentflowid, chatid) => client.put(`/chatmessage/abort/${agentflowid}/${chatid}`)
 
 export default {
-    getInternalChatmessageFromChatflow,
-    getAllChatmessageFromChatflow,
+    getInternalChatmessageFromAgentflow,
+    getAllChatmessageFromAgentflow,
     getChatmessageFromPK,
     deleteChatmessage,
     getStoragePath,

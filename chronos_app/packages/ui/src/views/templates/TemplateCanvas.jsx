@@ -52,7 +52,7 @@ const TemplateCanvas = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [flowData])
 
-    const onChatflowCopy = (flowData) => {
+    const onAgentflowCopy = (flowData) => {
         const isAgentCanvas = (flowData?.nodes || []).some(
             (node) => node.data.category === 'Multi Agents' || node.data.category === 'Sequential Agents'
         )
@@ -76,7 +76,7 @@ const TemplateCanvas = () => {
                         <TemplateCanvasHeader
                             flowName={name}
                             flowData={JSON.parse(flowData)}
-                            onChatflowCopy={(flowData) => onChatflowCopy(flowData)}
+                            onAgentflowCopy={(flowData) => onAgentflowCopy(flowData)}
                         />
                     </Toolbar>
                 </AppBar>

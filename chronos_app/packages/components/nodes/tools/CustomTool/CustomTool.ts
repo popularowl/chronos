@@ -23,7 +23,7 @@ class CustomTool_Tools implements INode {
         this.type = 'CustomTool'
         this.icon = 'customtool.svg'
         this.category = 'Tools'
-        this.description = `Use custom tool you've created in Chronos within chatflow`
+        this.description = `Use custom tool you've created in Chronos within agentflow`
         this.inputs = [
             {
                 label: 'Select Tool',
@@ -125,7 +125,7 @@ class CustomTool_Tools implements INode {
 
             const variables = await getVars(appDataSource, databaseEntities, nodeData, options)
 
-            const flow = { chatflowId: options.chatflowid }
+            const flow = { agentflowId: options.agentflowid }
 
             let dynamicStructuredTool = new DynamicStructuredTool(obj)
             dynamicStructuredTool.setVariables(variables)

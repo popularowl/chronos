@@ -33,16 +33,16 @@ export function getChatMessageUtilTest() {
 
         const { utilGetChatMessage } = require('../../src/utils/getChatMessage')
 
-        it('should return messages for a chatflow without filters', async () => {
-            const mockMessages = [{ id: 'msg-1', chatflowid: 'flow-1', content: 'Hello' }]
+        it('should return messages for a agentflow without filters', async () => {
+            const mockMessages = [{ id: 'msg-1', agentflowid: 'flow-1', content: 'Hello' }]
             mockRepository.find.mockResolvedValue(mockMessages)
 
-            const result = await utilGetChatMessage({ chatflowid: 'flow-1' })
+            const result = await utilGetChatMessage({ agentflowid: 'flow-1' })
 
             expect(result).toEqual(mockMessages)
             expect(mockRepository.find).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    where: expect.objectContaining({ chatflowid: 'flow-1' }),
+                    where: expect.objectContaining({ agentflowid: 'flow-1' }),
                     order: expect.objectContaining({ createdDate: 'ASC' })
                 })
             )
@@ -51,7 +51,7 @@ export function getChatMessageUtilTest() {
         it('should support DESC sort order', async () => {
             mockRepository.find.mockResolvedValue([])
 
-            await utilGetChatMessage({ chatflowid: 'flow-1', sortOrder: 'DESC' })
+            await utilGetChatMessage({ agentflowid: 'flow-1', sortOrder: 'DESC' })
 
             expect(mockRepository.find).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -63,11 +63,11 @@ export function getChatMessageUtilTest() {
         it('should filter by chatId', async () => {
             mockRepository.find.mockResolvedValue([])
 
-            await utilGetChatMessage({ chatflowid: 'flow-1', chatId: 'chat-123' })
+            await utilGetChatMessage({ agentflowid: 'flow-1', chatId: 'chat-123' })
 
             expect(mockRepository.find).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    where: expect.objectContaining({ chatflowid: 'flow-1', chatId: 'chat-123' })
+                    where: expect.objectContaining({ agentflowid: 'flow-1', chatId: 'chat-123' })
                 })
             )
         })
@@ -76,7 +76,7 @@ export function getChatMessageUtilTest() {
             mockRepository.find.mockResolvedValue([])
 
             await utilGetChatMessage({
-                chatflowid: 'flow-1',
+                agentflowid: 'flow-1',
                 startDate: '2024-01-01',
                 endDate: '2024-12-31'
             })
@@ -84,7 +84,7 @@ export function getChatMessageUtilTest() {
             expect(mockRepository.find).toHaveBeenCalledWith(
                 expect.objectContaining({
                     where: expect.objectContaining({
-                        chatflowid: 'flow-1',
+                        agentflowid: 'flow-1',
                         createdDate: expect.anything()
                     })
                 })
@@ -94,7 +94,7 @@ export function getChatMessageUtilTest() {
         it('should filter by startDate only', async () => {
             mockRepository.find.mockResolvedValue([])
 
-            await utilGetChatMessage({ chatflowid: 'flow-1', startDate: '2024-01-01' })
+            await utilGetChatMessage({ agentflowid: 'flow-1', startDate: '2024-01-01' })
 
             expect(mockRepository.find).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -108,7 +108,7 @@ export function getChatMessageUtilTest() {
         it('should filter by endDate only', async () => {
             mockRepository.find.mockResolvedValue([])
 
-            await utilGetChatMessage({ chatflowid: 'flow-1', endDate: '2024-12-31' })
+            await utilGetChatMessage({ agentflowid: 'flow-1', endDate: '2024-12-31' })
 
             expect(mockRepository.find).toHaveBeenCalledWith(
                 expect.objectContaining({
@@ -123,7 +123,7 @@ export function getChatMessageUtilTest() {
             mockRepository.find.mockResolvedValue([])
 
             await utilGetChatMessage({
-                chatflowid: 'flow-1',
+                agentflowid: 'flow-1',
                 memoryType: 'bufferMemory',
                 sessionId: 'session-1'
             })
@@ -142,7 +142,7 @@ export function getChatMessageUtilTest() {
             mockQueryBuilder.getMany.mockResolvedValue([])
 
             await utilGetChatMessage({
-                chatflowid: 'flow-1',
+                agentflowid: 'flow-1',
                 feedback: true,
                 sessionId: 'session-1'
             })
@@ -163,7 +163,7 @@ export function getChatMessageUtilTest() {
             ])
 
             await utilGetChatMessage({
-                chatflowid: 'flow-1',
+                agentflowid: 'flow-1',
                 feedback: true,
                 page: 1,
                 pageSize: 10
@@ -177,7 +177,7 @@ export function getChatMessageUtilTest() {
             mockQueryBuilder.getRawMany.mockResolvedValue([])
 
             const result = await utilGetChatMessage({
-                chatflowid: 'flow-1',
+                agentflowid: 'flow-1',
                 feedback: true,
                 page: 1,
                 pageSize: 10
@@ -191,7 +191,7 @@ export function getChatMessageUtilTest() {
             mockQueryBuilder.getMany.mockResolvedValue([])
 
             await utilGetChatMessage({
-                chatflowid: 'flow-1',
+                agentflowid: 'flow-1',
                 feedback: true,
                 feedbackTypes: ['THUMBS_UP' as any],
                 page: 1,
@@ -206,7 +206,7 @@ export function getChatMessageUtilTest() {
             mockQueryBuilder.getMany.mockResolvedValue([])
 
             await utilGetChatMessage({
-                chatflowid: 'flow-1',
+                agentflowid: 'flow-1',
                 feedback: true,
                 chatTypes: ['INTERNAL' as any],
                 page: 1,

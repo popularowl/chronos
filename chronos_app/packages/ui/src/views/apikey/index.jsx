@@ -128,10 +128,10 @@ function APIKeyRow(props) {
                     </Popover>
                 </StyledTableCell>
                 <StyledTableCell>
-                    {props.apiKey.chatFlows.length}{' '}
-                    {props.apiKey.chatFlows.length > 0 && (
+                    {props.apiKey.agentFlows.length}{' '}
+                    {props.apiKey.agentFlows.length > 0 && (
                         <IconButton aria-label='expand row' size='small' color='inherit' onClick={() => setOpen(!open)}>
-                            {props.apiKey.chatFlows.length > 0 && open ? <IconChevronsUp /> : <IconChevronsDown />}
+                            {props.apiKey.agentFlows.length > 0 && open ? <IconChevronsUp /> : <IconChevronsDown />}
                         </IconButton>
                     )}
                 </StyledTableCell>
@@ -156,16 +156,16 @@ function APIKeyRow(props) {
                     <StyledTableCell sx={{ p: 2 }} colSpan={6}>
                         <Collapse in={open} timeout='auto' unmountOnExit>
                             <Box sx={{ borderRadius: 2, border: 1, borderColor: theme.palette.grey[900] + 25, overflow: 'hidden' }}>
-                                <Table aria-label='chatflow table'>
+                                <Table aria-label='agentflow table'>
                                     <TableHead sx={{ height: 48 }}>
                                         <TableRow>
-                                            <StyledTableCell sx={{ width: '30%' }}>Chatflow Name</StyledTableCell>
+                                            <StyledTableCell sx={{ width: '30%' }}>Agentflow Name</StyledTableCell>
                                             <StyledTableCell sx={{ width: '20%' }}>Modified On</StyledTableCell>
                                             <StyledTableCell sx={{ width: '50%' }}>Category</StyledTableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {props.apiKey.chatFlows.map((flow, index) => (
+                                        {props.apiKey.agentFlows.map((flow, index) => (
                                             <TableRow key={index}>
                                                 <StyledTableCell>{flow.flowName}</StyledTableCell>
                                                 <StyledTableCell>{moment(flow.updatedDate).format('MMMM Do, YYYY')}</StyledTableCell>
@@ -320,9 +320,9 @@ const APIKey = () => {
         const confirmPayload = {
             title: `Delete`,
             description:
-                key.chatFlows.length === 0
+                key.agentFlows.length === 0
                     ? `Delete key [${key.keyName}] ? `
-                    : `Delete key [${key.keyName}] ?\n There are ${key.chatFlows.length} chatflows using this key.`,
+                    : `Delete key [${key.keyName}] ?\n There are ${key.agentFlows.length} agentflows using this key.`,
             confirmButtonName: 'Delete',
             cancelButtonName: 'Cancel',
             customBtnId: 'btn_initiateDeleteApiKey'

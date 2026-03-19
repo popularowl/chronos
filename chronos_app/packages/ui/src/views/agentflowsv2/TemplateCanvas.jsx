@@ -59,7 +59,7 @@ const TemplateCanvasV2 = () => {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [flowData])
 
-    const onChatflowCopy = (flowData) => {
+    const onAgentflowCopy = (flowData) => {
         const templateFlowData = JSON.stringify(flowData)
         navigate('/v2/agentcanvas', { state: { templateFlowData } })
     }
@@ -97,7 +97,7 @@ const TemplateCanvasV2 = () => {
                         <TemplateCanvasHeader
                             flowName={name}
                             flowData={JSON.parse(flowData)}
-                            onChatflowCopy={(flowData) => onChatflowCopy(flowData)}
+                            onAgentflowCopy={(flowData) => onAgentflowCopy(flowData)}
                         />
                     </Toolbar>
                 </AppBar>

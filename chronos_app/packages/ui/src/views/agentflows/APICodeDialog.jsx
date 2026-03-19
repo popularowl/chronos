@@ -14,7 +14,7 @@ import { Available } from '@/ui-component/rbac/available'
 
 // Const
 import { baseURL } from '@/store/constant'
-import { SET_CHATFLOW } from '@/store/actions'
+import { SET_AGENTFLOW } from '@/store/actions'
 
 // Images
 import pythonSVG from '@/assets/images/python.svg'
@@ -22,7 +22,7 @@ import javascriptSVG from '@/assets/images/javascript.svg'
 import cURLSVG from '@/assets/images/cURL.svg'
 // API
 import apiKeyApi from '@/api/apikey'
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 
 // Hooks
 import useApi from '@/hooks/useApi'
@@ -62,12 +62,12 @@ const APICodeDialog = ({ show, dialogProps, onCancel }) => {
     const codes = ['Python', 'JavaScript', 'cURL']
     const [value, setValue] = useState(0)
     const [apiKeys, setAPIKeys] = useState([])
-    const [chatflowApiKeyId, setChatflowApiKeyId] = useState('')
+    const [agentflowApiKeyId, setAgentflowApiKeyId] = useState('')
     const [selectedApiKey, setSelectedApiKey] = useState({})
 
     const getAllAPIKeysApi = useApi(apiKeyApi.getAllAPIKeys)
-    const updateChatflowApi = useApi(chatflowsApi.updateChatflow)
-    const getIsChatflowStreamingApi = useApi(chatflowsApi.getIsChatflowStreaming)
+    const updateAgentflowApi = useApi(agentflowsApi.updateAgentflow)
+    const getIsAgentflowStreamingApi = useApi(agentflowsApi.getIsAgentflowStreaming)
     const isGlobal = useSelector((state) => state.auth.isGlobal)
     const { hasPermission } = useAuth()
 
@@ -104,20 +104,20 @@ const APICodeDialog = ({ show, dialogProps, onCancel }) => {
             navigate('/apikey')
             return
         }
-        setChatflowApiKeyId(keyValue)
+        setAgentflowApiKeyId(keyValue)
         const selectedKey = apiKeys.find((key) => key.id === keyValue)
         setSelectedApiKey(selectedKey || {})
         const updateBody = {
             apikeyid: keyValue
         }
-        updateChatflowApi.request(dialogProps.chatflowid, updateBody)
+        updateAgentflowApi.request(dialogProps.agentflowid, updateBody)
     }
 
     useEffect(() => {
-        if (updateChatflowApi.data) {
-            dispatch({ type: SET_CHATFLOW, chatflow: updateChatflowApi.data })
+        if (updateAgentflowApi.data) {
+            dispatch({ type: SET_AGENTFLOW, agentflow: updateAgentflowApi.data })
         }
-    }, [updateChatflowApi.data, dispatch])
+    }, [updateAgentflowApi.data, dispatch])
 
     const handleChange = (event, newValue) => {
         setValue(newValue)
@@ -133,7 +133,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="${dialogProps.chatflowid}",
+    model="${dialogProps.agentflowid}",
     messages=[
         {"role": "user", "content": "Hey, how are you?"}
     ]
@@ -149,7 +149,7 @@ const client = new OpenAI({
 });
 
 const response = await client.chat.completions.create({
-    model: "${dialogProps.chatflowid}",
+    model: "${dialogProps.agentflowid}",
     messages: [
         { role: "user", content: "Hey, how are you?" }
     ]
@@ -161,7 +161,7 @@ console.log(response.choices[0].message.content);
      -X POST \\
      -H "Content-Type: application/json" \\
      -d '{
-       "model": "${dialogProps.chatflowid}",
+       "model": "${dialogProps.agentflowid}",
        "messages": [
          {"role": "user", "content": "Hey, how are you?"}
        ]
@@ -180,7 +180,7 @@ client = OpenAI(
 )
 
 response = client.chat.completions.create(
-    model="${dialogProps.chatflowid}",
+    model="${dialogProps.agentflowid}",
     messages=[
         {"role": "user", "content": "Hey, how are you?"}
     ]
@@ -196,7 +196,7 @@ const client = new OpenAI({
 });
 
 const response = await client.chat.completions.create({
-    model: "${dialogProps.chatflowid}",
+    model: "${dialogProps.agentflowid}",
     messages: [
         { role: "user", content: "Hey, how are you?" }
     ]
@@ -209,7 +209,7 @@ console.log(response.choices[0].message.content);
      -H "Content-Type: application/json" \\
      -H "Authorization: Bearer ${selectedApiKey?.apiKey}" \\
      -d '{
-       "model": "${dialogProps.chatflowid}",
+       "model": "${dialogProps.agentflowid}",
        "messages": [
          {"role": "user", "content": "Hey, how are you?"}
        ]
@@ -246,9 +246,9 @@ console.log(response.choices[0].message.content);
         if (getAllAPIKeysApi.data) {
             setAPIKeys(getAllAPIKeysApi.data)
 
-            if (dialogProps.chatflowApiKeyId) {
-                setChatflowApiKeyId(dialogProps.chatflowApiKeyId)
-                setSelectedApiKey(getAllAPIKeysApi.data.find((key) => key.id === dialogProps.chatflowApiKeyId))
+            if (dialogProps.agentflowApiKeyId) {
+                setAgentflowApiKeyId(dialogProps.agentflowApiKeyId)
+                setSelectedApiKey(getAllAPIKeysApi.data.find((key) => key.id === dialogProps.agentflowApiKeyId))
             }
         }
     }, [dialogProps, getAllAPIKeysApi.data])
@@ -256,7 +256,7 @@ console.log(response.choices[0].message.content);
     useEffect(() => {
         if (show) {
             getAllAPIKeysApi.request()
-            getIsChatflowStreamingApi.request(dialogProps.chatflowid)
+            getIsAgentflowStreamingApi.request(dialogProps.agentflowid)
         }
 
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -292,13 +292,13 @@ console.log(response.choices[0].message.content);
                         </Tabs>
                     </div>
                     <div style={{ flex: 20 }}>
-                        <Available permission={'chatflows:update,agentflows:update'}>
+                        <Available permission={'agentflows:update'}>
                             <Dropdown
                                 name='SelectKey'
                                 disableClearable={true}
                                 options={keyOptions}
                                 onSelect={(newValue) => onApiKeySelected(newValue)}
-                                value={dialogProps.chatflowApiKeyId ?? chatflowApiKeyId ?? 'Choose an API key'}
+                                value={dialogProps.agentflowApiKeyId ?? agentflowApiKeyId ?? 'Choose an API key'}
                             />
                         </Available>
                     </div>
@@ -308,12 +308,12 @@ console.log(response.choices[0].message.content);
                     <TabPanel key={index} value={value} index={index}>
                         <CopyBlock
                             theme={atomOneDark}
-                            text={chatflowApiKeyId ? getCodeWithAuthorization(codeLang) : getCode(codeLang)}
+                            text={agentflowApiKeyId ? getCodeWithAuthorization(codeLang) : getCode(codeLang)}
                             language={getLang(codeLang)}
                             showLineNumbers={false}
                             wrapLines
                         />
-                        {getIsChatflowStreamingApi.data?.isStreaming && (
+                        {getIsAgentflowStreamingApi.data?.isStreaming && (
                             <p>
                                 Read&nbsp;
                                 <a rel='noreferrer' target='_blank' href='https://intelligex.com/using-chronos/streaming'>

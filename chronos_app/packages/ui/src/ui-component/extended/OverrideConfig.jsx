@@ -24,7 +24,7 @@ import { StyledButton } from '@/ui-component/button/StyledButton'
 import { TooltipWithParser } from '@/ui-component/tooltip/TooltipWithParser'
 import { SwitchInput } from '@/ui-component/switch/Switch'
 import useNotifier from '@/utils/useNotifier'
-import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction, SET_CHATFLOW } from '@/store/actions'
+import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction, SET_AGENTFLOW } from '@/store/actions'
 
 // Icons
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
@@ -32,7 +32,7 @@ import { IconX, IconBox, IconVariable } from '@tabler/icons-react'
 
 // API
 import useApi from '@/hooks/useApi'
-import chatflowsApi from '@/api/chatflows'
+import agentflowsApi from '@/api/agentflows'
 import configApi from '@/api/config'
 import variablesApi from '@/api/variables'
 
@@ -119,9 +119,9 @@ OverrideConfigTable.propTypes = {
 
 const OverrideConfig = ({ dialogProps }) => {
     const dispatch = useDispatch()
-    const chatflow = useSelector((state) => state.canvas.chatflow)
-    const chatflowid = chatflow.id
-    const apiConfig = chatflow.apiConfig ? JSON.parse(chatflow.apiConfig) : {}
+    const agentflow = useSelector((state) => state.canvas.agentflow)
+    const agentflowid = agentflow.id
+    const apiConfig = agentflow.apiConfig ? JSON.parse(agentflow.apiConfig) : {}
 
     useNotifier()
     const theme = useTheme()
@@ -149,7 +149,7 @@ const OverrideConfig = ({ dialogProps }) => {
     }
 
     const formatObj = () => {
-        let apiConfig = JSON.parse(dialogProps.chatflow.apiConfig)
+        let apiConfig = JSON.parse(dialogProps.agentflow.apiConfig)
         if (apiConfig === null || apiConfig === undefined) {
             apiConfig = {}
         }
@@ -297,7 +297,7 @@ const OverrideConfig = ({ dialogProps }) => {
 
     const onOverrideConfigSave = async () => {
         try {
-            const saveResp = await chatflowsApi.updateChatflow(chatflowid, {
+            const saveResp = await agentflowsApi.updateAgentflow(agentflowid, {
                 apiConfig: JSON.stringify(formatObj())
             })
             if (saveResp.data) {
@@ -313,7 +313,7 @@ const OverrideConfig = ({ dialogProps }) => {
                         )
                     }
                 })
-                dispatch({ type: SET_CHATFLOW, chatflow: saveResp.data })
+                dispatch({ type: SET_AGENTFLOW, agentflow: saveResp.data })
             }
         } catch (error) {
             enqueueSnackbar({
@@ -335,8 +335,8 @@ const OverrideConfig = ({ dialogProps }) => {
     }
 
     useEffect(() => {
-        if (dialogProps.chatflow) {
-            getConfigApi.request(dialogProps.chatflow.id)
+        if (dialogProps.agentflow) {
+            getConfigApi.request(dialogProps.agentflow.id)
             getAllVariablesApi.request()
         }
 
