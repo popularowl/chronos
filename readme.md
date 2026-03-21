@@ -8,13 +8,13 @@
 [![LangGraph](https://img.shields.io/badge/%40langchain%2Flanggraph-^1.2.2-blue)](https://www.npmjs.com/package/@langchain/langgraph)
 [![MCP SDK](https://img.shields.io/badge/%40modelcontextprotocol%2Fsdk-^1.27.1-blue)](https://www.npmjs.com/package/@modelcontextprotocol/sdk)
 
+> Build, run, and debug AI agents on your own infrastructure — with full visibility and control. The self-hosted, production-ready alternative to SaaS AI agent builders
+
 <div align="center" style="padding-bottom: 35px;">
   <img src="./resources/chronos_main_page.gif" width="600" />
 </div><div style="page-break-after: always;">&nbsp;</div>
 
-> Build, run, and debug AI agents on your own infrastructure — with full visibility and control. The self-hosted, production-ready alternative to SaaS AI agent builders
-
-Chronos is a visual AI agent workflow builder designed for teams and companies who want to own their infrastructure.
+[Chronos](https://intelligex.com/chronos) is a visual AI agent workflow builder designed for teams who own their infrastructure.
 
 - Visual builder for complex agent workflows
 - Fully self-hosted (local, on-prem, private cloud)
@@ -44,18 +44,14 @@ Most AI agent tools are great for demos — but fall apart in production. Chrono
 Get Chronos running locally in under 5 minutes.
 The fastest way to try it is to build and run `all‑in‑one` Chronos Docker image.
 
-### 1. Clone the repository
-
 ```bash
+# clone the repository
 git clone git@github.com:intelligexhq/chronos.git
-cd chronos
-```
-### 2. Build and run the Docker image localy 
-
-```bash
 cd chronos_app/docker
+
 # build local image
 docker build -f Dockerfile.local -t chronos:local ..
+
 # run Chronos
 docker run -d --name chronos -p 3001:3000 chronos:local
 # chronos is now available at:
@@ -67,7 +63,7 @@ For more advanced hosting examples, including vectorstores, Ollama, queue modes 
 ## Get involved
 
 - ⭐ Star this repo to support development  
-- Contribute via PRs and issues. Suggest features and use cases.  
+- Contribute via PRs; Sugest issues, features and use cases.  
 
 ## Backlog
 
