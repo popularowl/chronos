@@ -247,7 +247,7 @@ const CostDashboard = () => {
         inputTokens: theme.palette.primary.main,
         outputTokens: theme.palette.secondary.main,
         avgLatency: theme.palette.info.main,
-        p95Latency: alpha(theme.palette.warning.main, 0.3)
+        p95Latency: alpha(theme.palette.info.main, 0.15)
     }
 
     const seriesData = timeseries?.series || []
@@ -457,7 +457,14 @@ const CostDashboard = () => {
                                 contentStyle={tooltipStyle}
                             />
                             <Legend iconSize={10} wrapperStyle={{ fontSize: 12 }} />
-                            <Area type='monotone' dataKey='p95DurationMs' name='p95' fill={chartColors.p95Latency} stroke='none' />
+                            <Area
+                                type='monotone'
+                                dataKey='p95DurationMs'
+                                name='p95'
+                                fill={chartColors.p95Latency}
+                                stroke={alpha(theme.palette.info.main, 0.4)}
+                                strokeWidth={1}
+                            />
                             <Line
                                 type='monotone'
                                 dataKey='avgDurationMs'

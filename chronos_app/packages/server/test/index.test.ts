@@ -107,6 +107,8 @@ import { evaluatorServiceTest } from './services/evaluator.service.test'
 import { documentstoreServiceTest } from './services/documentstore.service.test'
 import { oauthClientServiceTest } from './services/oauth-client.service.test'
 import { openaiServiceTest } from './services/openai.service.test'
+import { webhooksServiceTest } from './services/webhooks.service.test'
+import { webhookDispatcherServiceTest } from './services/webhook-dispatcher.service.test'
 import { apiKeyTest } from './utils/api-key.util.test'
 import { sanitizeUtilTest } from './utils/sanitize.util.test'
 import { domainValidationUtilTest } from './utils/domain-validation.util.test'
@@ -255,6 +257,8 @@ describe('Services Test', () => {
     userScopingServiceTest()
     metricsCollectorServiceTest()
     metricsAggregatorServiceTest()
+    webhooksServiceTest()
+    webhookDispatcherServiceTest()
 })
 
 describe('Utils Test', () => {

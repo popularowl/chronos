@@ -24,6 +24,7 @@ import {
     removeSpecificFileFromUpload
 } from 'chronos-components'
 import { collectExecutionMetrics } from '../services/metrics-collector'
+import { dispatchWebhooks } from '../services/webhook-dispatcher'
 import { StatusCodes } from 'http-status-codes'
 import {
     IncomingAgentflowInput,
@@ -2198,6 +2199,20 @@ export const executeAgentFlow = async ({
                     } as any,
                     triggerType
                 ).catch((err) => logger.warn(`[Agentflow Engine] Metrics collection failed: ${err}`))
+                dispatchWebhooks(
+                    appDataSource,
+                    {
+                        id: newExecution.id,
+                        agentflowId: agentflowid,
+                        executionData: JSON.stringify(agentFlowExecutedData),
+                        state: errorStatus,
+                        sessionId: chatId,
+                        createdDate: newExecution.createdDate,
+                        updatedDate: new Date(),
+                        stoppedDate: newExecution.stoppedDate
+                    } as any,
+                    triggerType
+                ).catch((err) => logger.warn(`[Agentflow Engine] Webhook dispatch failed: ${err}`))
             }
 
             throw new Error(errorMessage)
@@ -2245,6 +2260,20 @@ export const executeAgentFlow = async ({
             } as any,
             triggerType
         ).catch((err) => logger.warn(`[Agentflow Engine] Metrics collection failed: ${err}`))
+        dispatchWebhooks(
+            appDataSource,
+            {
+                id: newExecution.id,
+                agentflowId: agentflowid,
+                executionData: JSON.stringify(agentFlowExecutedData),
+                state: status,
+                sessionId: chatId,
+                createdDate: newExecution.createdDate,
+                updatedDate: new Date(),
+                stoppedDate: newExecution.stoppedDate
+            } as any,
+            triggerType
+        ).catch((err) => logger.warn(`[Agentflow Engine] Webhook dispatch failed: ${err}`))
     }
 
     logger.debug(`[Agentflow Engine] Flow execution completed. Status: ${status}`)

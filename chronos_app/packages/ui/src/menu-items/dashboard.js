@@ -26,7 +26,8 @@ import {
     IconShieldLock,
     IconListCheck,
     IconSparkles,
-    IconCalendarTime
+    IconCalendarTime,
+    IconWebhook
 } from '@tabler/icons-react'
 
 // constant
@@ -57,7 +58,8 @@ const icons = {
     IconShieldLock,
     IconListCheck,
     IconSparkles,
-    IconCalendarTime
+    IconCalendarTime,
+    IconWebhook
 }
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
@@ -98,6 +100,16 @@ const dashboard = {
                     icon: icons.IconCalendarTime,
                     breadcrumbs: true,
                     permission: 'schedules:view'
+                },
+                {
+                    id: 'webhooks',
+                    title: 'Webhooks',
+                    type: 'item',
+                    url: '/webhooks',
+                    icon: icons.IconWebhook,
+                    breadcrumbs: true,
+                    permission: 'webhooks:view',
+                    display: 'feat:webhooks'
                 },
                 {
                     id: 'templates',

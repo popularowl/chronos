@@ -203,6 +203,39 @@ export interface ISchedule {
     updatedDate: Date
 }
 
+export type WebhookEvent = 'execution.completed' | 'execution.failed' | 'execution.timeout'
+
+export interface IWebhook {
+    id: string
+    name: string
+    url: string
+    agentflowId: string
+    events: string
+    secret?: string
+    enabled: boolean
+    maxRetries: number
+    timeoutMs: number
+    userId?: string
+    createdDate: Date
+    updatedDate: Date
+}
+
+export interface IWebhookDelivery {
+    id: string
+    webhookId: string
+    executionId: string
+    agentflowId: string
+    event: string
+    payload: string
+    statusCode?: number
+    responseBody?: string
+    attempt: number
+    success: boolean
+    errorMessage?: string
+    deliveredAt?: Date
+    createdDate: Date
+}
+
 export interface IComponentNodes {
     [key: string]: INode
 }
@@ -377,6 +410,8 @@ export enum AdminScope {
     APIKEYS_WRITE = 'apikeys:write',
     SCHEDULES_READ = 'schedules:read',
     SCHEDULES_WRITE = 'schedules:write',
+    WEBHOOKS_READ = 'webhooks:read',
+    WEBHOOKS_WRITE = 'webhooks:write',
     ADMIN_FULL = 'admin:full'
 }
 
