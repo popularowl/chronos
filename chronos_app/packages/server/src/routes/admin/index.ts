@@ -9,6 +9,7 @@ import credentialsRouter from './credentials'
 import apikeysRouter from './apikeys'
 import oauthClientsRouter from './oauth-clients'
 import schedulesRouter from './schedules'
+import webhooksRouter from './webhooks'
 
 const router = express.Router()
 
@@ -20,5 +21,6 @@ router.use('/credentials', credentialsRouter)
 router.use('/apikeys', apikeysRouter)
 router.use('/oauth-clients', oauthClientsRouter)
 router.use('/schedules', schedulesRouter)
+router.use('/webhooks', webhooksRouter)
 
 export default router

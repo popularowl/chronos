@@ -97,7 +97,6 @@ export async function initTracing(): Promise<void> {
                     '@opentelemetry/instrumentation-express': { enabled: true },
                     '@opentelemetry/instrumentation-http': { enabled: true },
                     '@opentelemetry/instrumentation-pg': { enabled: true },
-                    '@opentelemetry/instrumentation-mysql2': { enabled: true },
                     '@opentelemetry/instrumentation-ioredis': { enabled: true },
                     // Disable noisy / unused instrumentations
                     '@opentelemetry/instrumentation-fs': { enabled: false },

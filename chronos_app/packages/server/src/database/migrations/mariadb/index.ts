@@ -1,5 +1,0 @@
-import { ConsolidatedBaseline1800000000000 } from './1800000000000-ConsolidatedBaseline'
-import { AddSchedule1800000000001 } from './1800000000001-AddSchedule'
-import { AddDashboardMetrics1800000000002 } from './1800000000002-AddDashboardMetrics'
-
-export const mariadbMigrations = [ConsolidatedBaseline1800000000000, AddSchedule1800000000001, AddDashboardMetrics1800000000002]

@@ -11,7 +11,8 @@ const getSettings = async () => {
         const featureFlags = {
             SCHEDULES_ENABLED: process.env.ENABLE_SCHEDULES === 'true',
             EVALUATIONS_ENABLED: process.env.ENABLE_EVALUATIONS === 'true',
-            DASHBOARD_ENABLED: process.env.ENABLE_DASHBOARD !== 'false'
+            DASHBOARD_ENABLED: process.env.ENABLE_DASHBOARD !== 'false',
+            WEBHOOKS_ENABLED: process.env.ENABLE_WEBHOOKS === 'true'
         }
 
         switch (platformType) {

@@ -11,6 +11,7 @@ services:
         CHRONOS_INITIAL_USER: admin@admin.com:test1234:admin
         DEBUG: true
         ENABLE_SCHEDULES: true 
+        ENABLE_WEBHOOKS: true
         LOG_SANITIZE_HEADER_FIELDS: authorization,x-api-key,x-auth-token,cookie
         LOG_SANITIZE_BODY_FIELDS: password,pwd,pass,secret,token,apikey,api_key,accesstoken,access_token,refreshtoken
       ports:

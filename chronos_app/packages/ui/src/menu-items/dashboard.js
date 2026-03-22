@@ -26,7 +26,8 @@ import {
     IconShieldLock,
     IconListCheck,
     IconSparkles,
-    IconCalendarTime
+    IconCalendarTime,
+    IconWebhook
 } from '@tabler/icons-react'
 
 // constant
@@ -57,7 +58,8 @@ const icons = {
     IconShieldLock,
     IconListCheck,
     IconSparkles,
-    IconCalendarTime
+    IconCalendarTime,
+    IconWebhook
 }
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
@@ -100,6 +102,16 @@ const dashboard = {
                     permission: 'schedules:view'
                 },
                 {
+                    id: 'webhooks',
+                    title: 'Webhooks',
+                    type: 'item',
+                    url: '/webhooks',
+                    icon: icons.IconWebhook,
+                    breadcrumbs: true,
+                    permission: 'webhooks:view',
+                    display: 'feat:webhooks'
+                },
+                {
                     id: 'templates',
                     title: 'Templates',
                     type: 'item',
@@ -127,15 +139,6 @@ const dashboard = {
                     permission: 'tools:view'
                 },
                 {
-                    id: 'credentials',
-                    title: 'Credentials',
-                    type: 'item',
-                    url: '/credentials',
-                    icon: icons.IconLock,
-                    breadcrumbs: true,
-                    permission: 'credentials:view'
-                },
-                {
                     id: 'variables',
                     title: 'Variables',
                     type: 'item',
@@ -145,15 +148,6 @@ const dashboard = {
                     permission: 'variables:view'
                 },
                 {
-                    id: 'apikey',
-                    title: 'API Credentials',
-                    type: 'item',
-                    url: '/apikey',
-                    icon: icons.IconKey,
-                    breadcrumbs: true,
-                    permission: 'apikeys:view'
-                },
-                {
                     id: 'document-stores',
                     title: 'Document Stores',
                     type: 'item',
@@ -161,16 +155,6 @@ const dashboard = {
                     icon: icons.IconFiles,
                     breadcrumbs: true,
                     permission: 'documentStores:view'
-                },
-                {
-                    id: 'cost-dashboard',
-                    title: 'Cost Dashboard',
-                    type: 'item',
-                    url: '/dashboard',
-                    icon: icons.IconChartBar,
-                    breadcrumbs: true,
-                    permission: 'dashboard:view',
-                    display: 'feat:dashboard'
                 }
             ]
         },
@@ -212,7 +196,42 @@ const dashboard = {
             ]
         },
         {
-            id: 'management',
+            id: 'mgmt',
+            title: 'Management',
+            type: 'group',
+            children: [
+                {
+                    id: 'apikey',
+                    title: 'API Credentials',
+                    type: 'item',
+                    url: '/apikey',
+                    icon: icons.IconKey,
+                    breadcrumbs: true,
+                    permission: 'apikeys:view'
+                },
+                {
+                    id: 'credentials',
+                    title: 'Credentials',
+                    type: 'item',
+                    url: '/credentials',
+                    icon: icons.IconLock,
+                    breadcrumbs: true,
+                    permission: 'credentials:view'
+                },
+                {
+                    id: 'cost-dashboard',
+                    title: 'Cost Dashboard',
+                    type: 'item',
+                    url: '/dashboard',
+                    icon: icons.IconChartBar,
+                    breadcrumbs: true,
+                    permission: 'dashboard:view',
+                    display: 'feat:dashboard'
+                }
+            ]
+        },
+        {
+            id: 'administration',
             title: 'Administration',
             type: 'group',
             children: [

@@ -13,6 +13,7 @@ export const ConfigProvider = ({ children }) => {
     const [schedulesEnabled, setSchedulesEnabled] = useState(false)
     const [evaluationsEnabled, setEvaluationsEnabled] = useState(false)
     const [dashboardEnabled, setDashboardEnabled] = useState(false)
+    const [webhooksEnabled, setWebhooksEnabled] = useState(false)
 
     useEffect(() => {
         const userSettings = platformsettingsApi.getSettings()
@@ -41,6 +42,7 @@ export const ConfigProvider = ({ children }) => {
                 setSchedulesEnabled(!!finalData.SCHEDULES_ENABLED)
                 setEvaluationsEnabled(!!finalData.EVALUATIONS_ENABLED)
                 setDashboardEnabled(!!finalData.DASHBOARD_ENABLED)
+                setWebhooksEnabled(!!finalData.WEBHOOKS_ENABLED)
                 setLoading(false)
             })
             .catch((error) => {
@@ -51,7 +53,17 @@ export const ConfigProvider = ({ children }) => {
 
     return (
         <ConfigContext.Provider
-            value={{ config, loading, isEnterpriseLicensed, isCloud, isOpenSource, schedulesEnabled, evaluationsEnabled, dashboardEnabled }}
+            value={{
+                config,
+                loading,
+                isEnterpriseLicensed,
+                isCloud,
+                isOpenSource,
+                schedulesEnabled,
+                evaluationsEnabled,
+                dashboardEnabled,
+                webhooksEnabled
+            }}
         >
             {children}
         </ConfigContext.Provider>

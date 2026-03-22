@@ -40,6 +40,7 @@ import publicExecutionsRouter from './public-executions'
 import settingsRouter from './settings'
 import statsRouter from './stats'
 import schedulesRouter from './schedules'
+import webhooksRouter from './webhooks'
 import skillsRouter from './skills'
 import toolsRouter from './tools'
 import upsertHistoryRouter from './upsert-history'
@@ -103,6 +104,7 @@ router.use('/prompts-list', promptListsRouter)
 router.use('/public-executions', publicExecutionsRouter)
 router.use('/stats', statsRouter)
 router.use('/schedules', schedulesRouter)
+router.use('/webhooks', webhooksRouter)
 router.use('/skills', skillsRouter)
 router.use('/tools', toolsRouter)
 router.use('/variables', variablesRouter)

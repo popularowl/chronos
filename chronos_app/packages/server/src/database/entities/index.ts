@@ -23,6 +23,8 @@ import { Skill } from './Skill'
 import { Schedule } from './Schedule'
 import { ExecutionMetrics } from './ExecutionMetrics'
 import { DailyMetrics } from './DailyMetrics'
+import { Webhook } from './Webhook'
+import { WebhookDelivery } from './WebhookDelivery'
 
 export const entities = {
     AgentFlow,
@@ -49,5 +51,7 @@ export const entities = {
     Skill,
     Schedule,
     ExecutionMetrics,
-    DailyMetrics
+    DailyMetrics,
+    Webhook,
+    WebhookDelivery
 }

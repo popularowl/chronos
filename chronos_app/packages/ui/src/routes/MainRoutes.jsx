@@ -22,6 +22,9 @@ const APIKey = Loadable(lazy(() => import('@/views/apikey')))
 // schedules routing
 const Schedules = Loadable(lazy(() => import('@/views/schedules')))
 
+// webhooks routing
+const Webhooks = Loadable(lazy(() => import('@/views/webhooks')))
+
 // skills routing
 const Skills = Loadable(lazy(() => import('@/views/skills')))
 
@@ -125,6 +128,14 @@ const MainRoutes = {
             element: (
                 <RequireAuth permission={'schedules:view'}>
                     <Schedules />
+                </RequireAuth>
+            )
+        },
+        {
+            path: '/webhooks',
+            element: (
+                <RequireAuth permission={'webhooks:view'} display={'feat:webhooks'}>
+                    <Webhooks />
                 </RequireAuth>
             )
         },
