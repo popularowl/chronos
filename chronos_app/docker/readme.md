@@ -24,8 +24,8 @@ git clone git@github.com:intelligexhq/chronos.git
 cd chronos/chronos_app/docker
 docker build -f Dockerfile.local -t chronos:local ..
 docker run -d --name chronos -p 3001:3000 chronos:local
-# docker run --name chronos3 -p 3003:3000 -e CHRONOS_INITIAL_USER=admin@admin.com:test1234:admin chronos:local
-# docker run --name chronos3 -p 3003:3000 -e ENABLE_SCHEDULES=true -e CHRONOS_INITIAL_USER=admin@admin.com:test1234:admin chronos:local
+# docker run --name chronos2 -p 3003:3000 -e CHRONOS_INITIAL_USER=admin@admin.com:test1234:admin chronos:local
+# docker run --name chronos2 -p 3003:3000 -e ENABLE_SCHEDULES=true -e CHRONOS_INITIAL_USER=admin@admin.com:test1234:admin chronos:local
 # chronos is now accessable on http://localhost:3001
 ```
 
