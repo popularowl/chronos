@@ -73,16 +73,6 @@ const dashboard = {
             type: 'group',
             children: [
                 {
-                    id: 'cost-dashboard',
-                    title: 'Dashboard',
-                    type: 'item',
-                    url: '/dashboard',
-                    icon: icons.IconChartBar,
-                    breadcrumbs: true,
-                    permission: 'dashboard:view',
-                    display: 'feat:dashboard'
-                },
-                {
                     id: 'agentflows',
                     title: 'Agentflows',
                     type: 'item',
@@ -171,6 +161,16 @@ const dashboard = {
                     icon: icons.IconFiles,
                     breadcrumbs: true,
                     permission: 'documentStores:view'
+                },
+                {
+                    id: 'cost-dashboard',
+                    title: 'Cost Dashboard',
+                    type: 'item',
+                    url: '/dashboard',
+                    icon: icons.IconChartBar,
+                    breadcrumbs: true,
+                    permission: 'dashboard:view',
+                    display: 'feat:dashboard'
                 }
             ]
         },

@@ -63,28 +63,27 @@ const getAgents = async (
 ): Promise<any> => {
     try {
         const currency = getPricingCurrency()
-        const dailyRepo = appDataSource.getRepository(DailyMetrics)
+        const metricsRepo = appDataSource.getRepository(ExecutionMetrics)
 
-        const qb = dailyRepo
-            .createQueryBuilder('dm')
-            .select('dm.agentflowId', 'agentflowId')
-            .addSelect('SUM(dm.executionCount)', 'executionCount')
-            .addSelect('SUM(dm.successCount)', 'successCount')
-            .addSelect('SUM(dm.errorCount)', 'errorCount')
-            .addSelect('SUM(dm.totalTokens)', 'totalTokens')
-            .addSelect('SUM(dm.totalCostUsd)', 'totalCost')
-            .addSelect('AVG(dm.avgDurationMs)', 'avgDurationMs')
-            .where('dm.date >= :startDate', { startDate })
-            .andWhere('dm.date <= :endDate', { endDate })
-            .groupBy('dm.agentflowId')
+        const qb = metricsRepo
+            .createQueryBuilder('em')
+            .select('em.agentflowId', 'agentflowId')
+            .addSelect('COUNT(*)', 'executionCount')
+            .addSelect('SUM(CASE WHEN em.state = :finished THEN 1 ELSE 0 END)', 'successCount')
+            .addSelect('SUM(CASE WHEN em.state IN (:...errorStates) THEN 1 ELSE 0 END)', 'errorCount')
+            .addSelect('SUM(em.totalTokens)', 'totalTokens')
+            .addSelect('SUM(em.estimatedCostUsd)', 'totalCost')
+            .addSelect('AVG(em.durationMs)', 'avgDurationMs')
+            .where('em.createdDate >= :start', { start: new Date(`${startDate}T00:00:00`) })
+            .andWhere('em.createdDate <= :end', { end: new Date(`${endDate}T23:59:59.999`) })
+            .setParameters({ finished: 'FINISHED', errorStates: ['ERROR', 'TERMINATED'] })
+            .groupBy('em.agentflowId')
 
-        // Validate sort column
         const allowedSorts: Record<string, string> = {
-            executionCount: 'SUM(dm."executionCount")',
-            totalCost: 'SUM(dm."totalCostUsd")',
-            avgDurationMs: 'AVG(dm."avgDurationMs")',
-            successRate: 'successCount',
-            totalTokens: 'SUM(dm."totalTokens")'
+            executionCount: 'executionCount',
+            totalCost: 'totalCost',
+            avgDurationMs: 'avgDurationMs',
+            totalTokens: 'totalTokens'
         }
 
         const rawResults = await qb.getRawMany()
@@ -142,8 +141,8 @@ const getExport = async (appDataSource: DataSource, startDate: string, endDate: 
         const metricsRepo = appDataSource.getRepository(ExecutionMetrics)
         const qb = metricsRepo
             .createQueryBuilder('em')
-            .where('em.createdDate >= :startDate', { startDate: `${startDate}T00:00:00` })
-            .andWhere('em.createdDate <= :endDate', { endDate: `${endDate}T23:59:59` })
+            .where('em.createdDate >= :startDate', { startDate: new Date(`${startDate}T00:00:00`) })
+            .andWhere('em.createdDate <= :endDate', { endDate: new Date(`${endDate}T23:59:59.999`) })
             .orderBy('em.createdDate', 'DESC')
 
         if (agentflowId) {
@@ -167,16 +166,26 @@ const getIntraDaySummary = async (
     currency: string
 ): Promise<any> => {
     const metricsRepo = appDataSource.getRepository(ExecutionMetrics)
+    const startOfDay = new Date(`${date}T00:00:00`)
+    const endOfDay = new Date(`${date}T23:59:59.999`)
     const qb = metricsRepo
         .createQueryBuilder('em')
-        .where('em.createdDate >= :start', { start: `${date}T00:00:00` })
-        .andWhere('em.createdDate <= :end', { end: `${date}T23:59:59` })
+        .where('em.createdDate >= :start', { start: startOfDay })
+        .andWhere('em.createdDate <= :end', { end: endOfDay })
 
     if (agentflowId) {
         qb.andWhere('em.agentflowId = :agentflowId', { agentflowId })
     }
 
     const metrics = await qb.getMany()
+
+    logger.info(`[DashboardService] Intra-day query date=${date} found ${metrics.length} execution_metrics rows`)
+
+    // Also check total rows in execution_metrics for debugging
+    if (metrics.length === 0) {
+        const totalRows = await metricsRepo.count()
+        logger.info(`[DashboardService] Total execution_metrics rows in DB: ${totalRows}`)
+    }
 
     const totalExecutions = metrics.length
     const successCount = metrics.filter((m) => m.state === 'FINISHED').length
@@ -232,8 +241,8 @@ const getHourlyTimeseries = async (
     const metricsRepo = appDataSource.getRepository(ExecutionMetrics)
     const qb = metricsRepo
         .createQueryBuilder('em')
-        .where('em.createdDate >= :start', { start: `${startDate}T00:00:00` })
-        .andWhere('em.createdDate <= :end', { end: `${endDate}T23:59:59` })
+        .where('em.createdDate >= :start', { start: new Date(`${startDate}T00:00:00`) })
+        .andWhere('em.createdDate <= :end', { end: new Date(`${endDate}T23:59:59.999`) })
         .orderBy('em.createdDate', 'ASC')
 
     if (agentflowId) {

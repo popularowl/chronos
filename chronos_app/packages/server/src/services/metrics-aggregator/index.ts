@@ -92,8 +92,8 @@ export class MetricsAggregator {
             const rawResults = await metricsRepo
                 .createQueryBuilder('em')
                 .select('DISTINCT em.agentflowId', 'agentflowId')
-                .where('em.createdDate >= :start', { start: `${dateStr}T00:00:00` })
-                .andWhere('em.createdDate <= :end', { end: `${dateStr}T23:59:59` })
+                .where('em.createdDate >= :start', { start: new Date(`${dateStr}T00:00:00`) })
+                .andWhere('em.createdDate <= :end', { end: new Date(`${dateStr}T23:59:59.999`) })
                 .getRawMany()
             agentflowIds = rawResults.map((r: any) => r.agentflowId)
         } catch {
@@ -118,8 +118,8 @@ export class MetricsAggregator {
         const metrics = (await metricsRepo
             .createQueryBuilder('em')
             .where('em.agentflowId = :agentflowId', { agentflowId })
-            .andWhere('em.createdDate >= :start', { start: `${dateStr}T00:00:00` })
-            .andWhere('em.createdDate <= :end', { end: `${dateStr}T23:59:59` })
+            .andWhere('em.createdDate >= :start', { start: new Date(`${dateStr}T00:00:00`) })
+            .andWhere('em.createdDate <= :end', { end: new Date(`${dateStr}T23:59:59.999`) })
             .getMany()) as ExecutionMetrics[]
 
         if (metrics.length === 0) return

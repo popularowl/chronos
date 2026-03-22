@@ -19,11 +19,13 @@ pnpm dev
 *Build and run a local Docker container image:*
 
 ```bash
+# clone & go to docker directory
 git clone git@github.com:intelligexhq/chronos.git
-# go to docker directory
 cd chronos/chronos_app/docker
 docker build -f Dockerfile.local -t chronos:local ..
 docker run -d --name chronos -p 3001:3000 chronos:local
+# docker run --name chronos3 -p 3003:3000 -e CHRONOS_INITIAL_USER=admin@admin.com:test1234:admin chronos:local
+# docker run --name chronos3 -p 3003:3000 -e ENABLE_SCHEDULES=true -e CHRONOS_INITIAL_USER=admin@admin.com:test1234:admin chronos:local
 # chronos is now accessable on http://localhost:3001
 ```
 
@@ -39,7 +41,6 @@ docker compose ls
 docker-compose down # or docker-compose down --volumes
 # chronos is now accessable on http://localhost:3001
 ```
-
 
 *Worker mode with redis queues for horizontal scalability of agent request processing:*
 

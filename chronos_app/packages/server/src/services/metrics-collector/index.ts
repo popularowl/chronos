@@ -151,10 +151,13 @@ export const collectExecutionMetrics = async (
         const modelBreakdown: Record<string, ModelBreakdownEntry> = {}
 
         for (const node of executedNodes) {
-            const output = node.data?.output as Record<string, any> | undefined
-            if (!output) continue
+            const nodeData = node.data as Record<string, any> | undefined
+            if (!nodeData) continue
 
-            const usageMetadata = output.usageMetadata
+            // Node data structure: { id, name, input, output: { usageMetadata, ... }, state, chatHistory }
+            // usageMetadata may be on output (LLM/Agent nodes) or directly on nodeData
+            const output = nodeData.output as Record<string, any> | undefined
+            const usageMetadata = output?.usageMetadata || nodeData.usageMetadata
             if (!usageMetadata) continue
 
             llmCallCount++
@@ -167,7 +170,7 @@ export const collectExecutionMetrics = async (
             totalOutputTokens += outputTokens
             totalTokensAll += nodeTotal
 
-            const modelName = extractModelName(output)
+            const modelName = extractModelName(output || nodeData)
 
             if (modelName) {
                 const price = pricing.get(modelName)
@@ -218,10 +221,20 @@ export const collectExecutionMetrics = async (
 
         await metricsRepo.save(metrics)
 
-        logger.debug(
+        logger.info(
             `[MetricsCollector] Collected metrics for execution ${execution.id}: ` +
-                `${totalTokensAll} tokens, $${estimatedCostUsd.toFixed(6)}, ${durationMs}ms`
+                `${totalTokensAll} tokens, $${estimatedCostUsd.toFixed(6)}, ${durationMs}ms, ` +
+                `${llmCallCount} LLM calls, ${executedNodes.length} nodes`
         )
+        if (llmCallCount === 0 && executedNodes.length > 0) {
+            const nodeKeys = executedNodes.map((n: any) => ({
+                label: n.nodeLabel,
+                dataKeys: n.data ? Object.keys(n.data) : [],
+                hasOutput: !!n.data?.output,
+                outputKeys: n.data?.output ? Object.keys(n.data.output) : []
+            }))
+            logger.info(`[MetricsCollector] No LLM calls detected. Node structure: ${JSON.stringify(nodeKeys)}`)
+        }
     } catch (error) {
         logger.warn(`[MetricsCollector] Failed to collect metrics for execution ${execution.id}: ${error}`)
     }

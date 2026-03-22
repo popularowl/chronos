@@ -2177,6 +2177,29 @@ export const executeAgentFlow = async ({
                 rootSpan.end()
             }
 
+            // Collect error metrics before throwing
+            if (!isRecursive) {
+                await updateExecution(appDataSource, newExecution.id, {
+                    executionData: JSON.stringify(agentFlowExecutedData),
+                    state: errorStatus
+                })
+                sseStreamer?.streamAgentFlowEvent(chatId, errorStatus)
+                const triggerType = evaluationRunId ? 'evaluation' : isInternal ? 'api' : 'manual'
+                collectExecutionMetrics(
+                    appDataSource,
+                    {
+                        id: newExecution.id,
+                        agentflowId: agentflowid,
+                        executionData: JSON.stringify(agentFlowExecutedData),
+                        state: errorStatus,
+                        createdDate: newExecution.createdDate,
+                        updatedDate: new Date(),
+                        stoppedDate: newExecution.stoppedDate
+                    } as any,
+                    triggerType
+                ).catch((err) => logger.warn(`[Agentflow Engine] Metrics collection failed: ${err}`))
+            }
+
             throw new Error(errorMessage)
         }
 
@@ -2221,7 +2244,7 @@ export const executeAgentFlow = async ({
                 stoppedDate: newExecution.stoppedDate
             } as any,
             triggerType
-        ).catch(() => {})
+        ).catch((err) => logger.warn(`[Agentflow Engine] Metrics collection failed: ${err}`))
     }
 
     logger.debug(`[Agentflow Engine] Flow execution completed. Status: ${status}`)

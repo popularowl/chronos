@@ -767,6 +767,7 @@ class DeepAgent_Agentflow implements INode {
             const toolStreamHandler = sseStreamer ? new DeepAgentToolStreamHandler(sseStreamer, chatId) : undefined
             const callbacks = toolStreamHandler ? [toolStreamHandler] : undefined
 
+            const startTime = Date.now()
             const result = await agent.invoke(
                 { messages: inputMessages },
                 {
@@ -775,6 +776,7 @@ class DeepAgent_Agentflow implements INode {
                     callbacks
                 }
             )
+            const endTime = Date.now()
 
             // ── Extract response ──
             const responseMessages = result.messages || []
@@ -933,6 +935,41 @@ class DeepAgent_Agentflow implements INode {
                 return serialized
             })
 
+            // ── Accumulate token usage from all AI messages ──
+            let totalInputTokens = 0
+            let totalOutputTokens = 0
+            let totalTokens = 0
+            let lastModelName: string | undefined
+            const tokenBreakdown: ICommonObject[] = []
+            let llmCallIndex = 0
+            for (const msg of responseMessages) {
+                const msgType = msg._getType?.() || msg.type || 'unknown'
+                if (msgType === 'ai' && msg.usage_metadata) {
+                    llmCallIndex++
+                    const inputTk = msg.usage_metadata.input_tokens || 0
+                    const outputTk = msg.usage_metadata.output_tokens || 0
+                    const totalTk = msg.usage_metadata.total_tokens || inputTk + outputTk
+                    totalInputTokens += inputTk
+                    totalOutputTokens += outputTk
+                    totalTokens += totalTk
+
+                    // Determine the role of this LLM call
+                    const hasToolCalls = msg.tool_calls && msg.tool_calls.length > 0
+                    const callRole = hasToolCalls ? 'tool_call' : llmCallIndex === 1 ? 'initial' : 'response'
+                    tokenBreakdown.push({
+                        call: llmCallIndex,
+                        role: callRole,
+                        model: msg.response_metadata?.model || lastModelName || undefined,
+                        input_tokens: inputTk,
+                        output_tokens: outputTk,
+                        total_tokens: totalTk
+                    })
+                }
+                if (msgType === 'ai' && msg.response_metadata?.model) {
+                    lastModelName = msg.response_metadata.model
+                }
+            }
+
             // ── Build output with full detail for Executions panel ──
             const output: ICommonObject = {
                 content: responseContent,
@@ -944,10 +981,31 @@ class DeepAgent_Agentflow implements INode {
                     input: s.input,
                     output: s.output,
                     ...(s.todos && { todos: s.todos })
-                }))
+                })),
+                timeMetadata: {
+                    start: startTime,
+                    end: endTime,
+                    delta: endTime - startTime
+                }
+            }
+            if (totalTokens > 0 || totalInputTokens > 0 || totalOutputTokens > 0) {
+                output.usageMetadata = {
+                    input_tokens: totalInputTokens,
+                    output_tokens: totalOutputTokens,
+                    total_tokens: totalTokens || totalInputTokens + totalOutputTokens
+                }
+                output.tokenBreakdown = tokenBreakdown
+            }
+            if (lastModelName) {
+                output.responseMetadata = { model: lastModelName }
             }
             if (usedTools.length > 0) output.usedTools = usedTools
             if (artifacts.length > 0) output.artifacts = artifacts
+
+            // Stream usage metadata to chat widget
+            if (sseStreamer && output.usageMetadata) {
+                sseStreamer.streamUsageMetadataEvent(chatId, output.usageMetadata)
+            }
 
             return {
                 id: nodeData.id,
