@@ -92,7 +92,6 @@ export const stringify = (object) => {
 export const exportData = (exportAllData) => {
     try {
         return {
-            AgentFlow: sanitizeAgentflow(exportAllData.AgentFlow),
             AgentFlowV2: sanitizeAgentflow(exportAllData.AgentFlowV2),
             ChatMessage: exportAllData.ChatMessage,
             ChatMessageFeedback: exportAllData.ChatMessageFeedback,
@@ -100,6 +99,7 @@ export const exportData = (exportAllData) => {
             DocumentStore: sanitizeDocumentStore(exportAllData.DocumentStore),
             DocumentStoreFileChunk: exportAllData.DocumentStoreFileChunk,
             Execution: sanitizeExecution(exportAllData.Execution),
+            Skill: exportAllData.Skill,
             Tool: sanitizeTool(exportAllData.Tool),
             Variable: sanitizeVariable(exportAllData.Variable)
         }

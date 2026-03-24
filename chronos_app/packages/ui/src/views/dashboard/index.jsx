@@ -480,7 +480,7 @@ const CostDashboard = () => {
                 {/* Top Agents Table */}
                 <ChartCard title='Top Agents' loading={loading}>
                     {agents?.agents?.length > 0 ? (
-                        <Box sx={{ overflowX: 'auto', pb: 1 }}>
+                        <Box sx={{ overflowX: 'auto', pb: 2 }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
                                 <thead>
                                     <tr style={{ borderBottom: `1px solid ${theme.palette.divider}` }}>

@@ -139,6 +139,15 @@ const dashboard = {
                     permission: 'tools:view'
                 },
                 {
+                    id: 'credentials',
+                    title: 'Credentials',
+                    type: 'item',
+                    url: '/credentials',
+                    icon: icons.IconLock,
+                    breadcrumbs: true,
+                    permission: 'credentials:view'
+                },
+                {
                     id: 'variables',
                     title: 'Variables',
                     type: 'item',
@@ -208,15 +217,6 @@ const dashboard = {
                     icon: icons.IconKey,
                     breadcrumbs: true,
                     permission: 'apikeys:view'
-                },
-                {
-                    id: 'credentials',
-                    title: 'Credentials',
-                    type: 'item',
-                    url: '/credentials',
-                    icon: icons.IconLock,
-                    breadcrumbs: true,
-                    permission: 'credentials:view'
                 },
                 {
                     id: 'cost-dashboard',

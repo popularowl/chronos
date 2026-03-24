@@ -56,13 +56,12 @@ import { getErrorMessage } from '@/utils/errorHandler'
 
 const dataToExport = [
     'Agentflows',
-    'Agentflows V2',
-    'Agentflows',
     'Chat Messages',
     'Chat Feedbacks',
     'Custom Templates',
     'Document Stores',
     'Executions',
+    'Skills',
     'Tools',
     'Variables'
 ]
@@ -303,14 +302,13 @@ const ProfileSection = ({ handleLogout }) => {
 
     const onExport = (data) => {
         const body = {}
-        if (data.includes('Agentflows')) body.agentflow = true
-        if (data.includes('Agentflows V2')) body.agentflowv2 = true
-        if (data.includes('Agentflows')) body.agentflow = true
+        if (data.includes('Agentflows')) body.agentflowv2 = true
         if (data.includes('Chat Messages')) body.chat_message = true
         if (data.includes('Chat Feedbacks')) body.chat_feedback = true
         if (data.includes('Custom Templates')) body.custom_template = true
         if (data.includes('Document Stores')) body.document_store = true
         if (data.includes('Executions')) body.execution = true
+        if (data.includes('Skills')) body.skill = true
         if (data.includes('Tools')) body.tool = true
         if (data.includes('Variables')) body.variable = true
 
