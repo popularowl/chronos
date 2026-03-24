@@ -20,6 +20,11 @@ RUN apk add --no-cache \
     npm install -g pnpm
 ENV NODE_OPTIONS=--max-old-space-size=8192
 
+# Target Linux platform, skip installing macOS binaries - for prod builds
+# Leave commented out if you dev/test on macOS
+# ENV npm_config_platform=linux
+# ENV npm_config_arch=x64
+
 WORKDIR /app
 
 # Copy all source files (respects .dockerignore)
@@ -54,18 +59,15 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/packages/server/dist ./packages/server/dist
 COPY --from=builder /app/packages/server/package.json ./packages/server/
 COPY --from=builder /app/packages/server/templates ./packages/server/templates
-COPY --from=builder /app/packages/server/node_modules ./packages/server/node_modules
 
 # UI: Vite build output
 COPY --from=builder /app/packages/ui/build ./packages/ui/build
 COPY --from=builder /app/packages/ui/package.json ./packages/ui/
-COPY --from=builder /app/packages/ui/node_modules ./packages/ui/node_modules
 
 # Components: compiled output (includes icons via gulp) + models config
 COPY --from=builder /app/packages/components/dist ./packages/components/dist
 COPY --from=builder /app/packages/components/package.json ./packages/components/
 COPY --from=builder /app/packages/components/models.json ./packages/components/
-COPY --from=builder /app/packages/components/node_modules ./packages/components/node_modules
 
 EXPOSE 3000
 
