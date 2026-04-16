@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Question or help
+    url: https://github.com/intelligexhq/chronos/discussions/categories/q-a
+    about: Ask the community for help using Chronos.
+  - name: Show & tell / ideas
+    url: https://github.com/intelligexhq/chronos/discussions/categories/ideas
+    about: Share what you built or propose ideas.
+  - name: Security vulnerability
+    url: https://github.com/intelligexhq/chronos/security/advisories/new
+    about: Report a security issue privately via GitHub Security Advisories.
+  - name: Commercial support
+    url: https://intelligex.com/about
+    about: Paid deployment, customisation, and training services.

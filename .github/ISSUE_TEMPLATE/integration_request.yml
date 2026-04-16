@@ -1,0 +1,48 @@
+name: New integration / node request
+description: Request support for a new LLM, tool, vector store, or data source.
+title: "[Integration]: "
+labels: ["integration", "triage"]
+body:
+  - type: input
+    id: name
+    attributes:
+      label: Integration name
+      placeholder: e.g. Anthropic Claude, Weaviate, Notion, Brave Search
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Integration type
+      options:
+        - Chat model / LLM
+        - Embeddings
+        - Vector store
+        - Tool
+        - Document loader
+        - Memory
+        - Output parser
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: docs
+    attributes:
+      label: Official docs / SDK link
+    validations:
+      required: true
+
+  - type: textarea
+    id: usecase
+    attributes:
+      label: Why is this valuable?
+      description: What agents/workflows does this unlock?
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd like to implement this myself — point me to the contributor guide.

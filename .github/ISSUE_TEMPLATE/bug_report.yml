@@ -1,0 +1,119 @@
+name: Bug report
+description: Something in Chronos isn't working as expected.
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to file a bug. Please fill out the sections below so we can reproduce it quickly.
+        For security issues, please use [Security Advisories](https://github.com/intelligexhq/chronos/security/advisories/new) instead.
+
+  - type: checkboxes
+    id: prereqs
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I searched existing [issues](https://github.com/intelligexhq/chronos/issues) and [discussions](https://github.com/intelligexhq/chronos/discussions).
+          required: true
+        - label: I am running a supported version (see README).
+          required: true
+
+  - type: textarea
+    id: summary
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected instead.
+      placeholder: When I run an agent with node X, the stream ends after 3 tokens...
+    validations:
+      required: true
+
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce
+      description: Minimal, numbered steps. Attach an exported agent JSON if relevant.
+      placeholder: |
+        1. Start Chronos via `docker run ...`
+        2. Import the attached agent flow
+        3. Send message "hello"
+        4. Observe error in server logs
+    validations:
+      required: true
+
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: How are you running Chronos?
+      options:
+        - Docker (all-in-one local image)
+        - Docker Compose
+        - Source (pnpm dev)
+        - Kubernetes / custom
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Chronos version / commit SHA
+      placeholder: v0.x.y or git SHA
+    validations:
+      required: true
+
+  - type: dropdown
+    id: database
+    attributes:
+      label: Database backend
+      options:
+        - SQLite
+        - PostgreSQL
+        - MySQL/MariaDB
+        - Other/Unknown
+    validations:
+      required: true
+
+  - type: dropdown
+    id: queue
+    attributes:
+      label: Queue mode
+      options:
+        - Main (default)
+        - Worker/Queue mode with Redis
+        - Not applicable
+
+  - type: input
+    id: node_version
+    attributes:
+      label: Node.js version
+      placeholder: v24.x.x
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Docker container
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs / stack trace
+      description: Paste server or browser console logs. Redact secrets.
+      render: shell
+
+  - type: textarea
+    id: trace
+    attributes:
+      label: Trace ID (if observability enabled)
+      description: Helpful if you have `ENABLE_TRACING=true`.
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, exported agent JSON, model/provider used, etc.

@@ -1,0 +1,59 @@
+name: Feature request
+description: Propose a new capability or enhancement.
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: checkboxes
+    id: prereqs
+    attributes:
+      label: Pre-flight checks
+      options:
+        - label: I searched existing issues/discussions and this isn't a duplicate.
+          required: true
+        - label: This is a concrete proposal, not an open-ended question (questions go to Discussions).
+          required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem / use case
+      description: What are you trying to do? What's blocking you today?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+      description: What should Chronos do? UI sketches / pseudo-config welcome.
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Workarounds, other tools, etc.
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      multiple: true
+      options:
+        - Visual builder (UI)
+        - Agent runtime / LangGraph
+        - Nodes / integrations
+        - Observability & tracing
+        - Cost & performance dashboard
+        - Scheduling
+        - Auth / SSO
+        - Deployment / Docker
+        - Docs
+
+  - type: checkboxes
+    id: contribution
+    attributes:
+      label: Contribution
+      options:
+        - label: I'd be willing to open a PR for this (with guidance if needed).
