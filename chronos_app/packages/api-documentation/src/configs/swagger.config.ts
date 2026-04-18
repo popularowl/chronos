@@ -5,7 +5,7 @@ const swaggerUiOptions = {
     baseDir: __dirname, // Base directory which we use to locate your JSDOC files
     exposeApiDocs: true,
     definition: {
-        openapi: '3.0.3',
+        openapi: '3.1.1',
         info: {
             title: 'Chronos APIs',
             summary: 'Interactive swagger-ui auto-generated API docs, based on a openapi specification file',
@@ -14,6 +14,7 @@ const swaggerUiOptions = {
                 'This module serves auto-generated swagger-ui generated API docs from Chronos express backend, based on a swagger.yml file. Swagger is available on: http://localhost:6655/api-docs',
             license: {
                 name: 'Apache 2.0',
+                identifier: 'Apache-2.0',
                 url: 'https://github.com/popularowl/chronos/blob/main/LICENSE.md'
             },
             contact: {
@@ -23,7 +24,7 @@ const swaggerUiOptions = {
         },
         servers: [
             {
-                url: 'http://localhost:3001/api/v1',
+                url: process.env.CHRONOS_API_URL || 'http://localhost:3001/api/v1',
                 description: 'Chronos Server'
             }
         ]
