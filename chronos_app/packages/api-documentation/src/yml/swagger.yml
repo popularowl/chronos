@@ -578,51 +578,41 @@ paths:
                                         format: binary
                                     description: Files to be uploaded
                                 docId:
-                                    type: string
-                                    nullable: true
+                                    type: [string, "null"]
                                     example: '603a7b51-ae7c-4b0a-8865-e454ed2f6766'
                                     description: Document ID to use existing configuration
                                 loader:
-                                    type: string
-                                    nullable: true
+                                    type: [string, "null"]
                                     example: '{"name":"plainText","config":{"text":"why the sky is blue"}}'
                                     description: Loader configurations
                                 splitter:
-                                    type: string
-                                    nullable: true
+                                    type: [string, "null"]
                                     example: '{"name":"recursiveCharacterTextSplitter","config":{"chunkSize":2000}}'
                                     description: Splitter configurations
                                 embedding:
-                                    type: string
-                                    nullable: true
+                                    type: [string, "null"]
                                     example: '{"name":"openAIEmbeddings","config":{"modelName":"text-embedding-ada-002"}}'
                                     description: Embedding configurations
                                 vectorStore:
-                                    type: string
-                                    nullable: true
+                                    type: [string, "null"]
                                     example: '{"name":"faiss"}'
                                     description: Vector Store configurations
                                 recordManager:
-                                    type: string
-                                    nullable: true
+                                    type: [string, "null"]
                                     example: '{"name":"postgresRecordManager"}'
                                     description: Record Manager configurations
                                 metadata:
-                                    type: object
-                                    nullable: true
+                                    type: [object, "null"]
                                     description: Metadata associated with the document
                                     example: { 'foo': 'bar' }
                                 replaceExisting:
-                                    type: boolean
-                                    nullable: true
+                                    type: [boolean, "null"]
                                     description: Whether to replace existing document loader with the new upserted chunks. However this does not delete the existing embeddings in the vector store
                                 createNewDocStore:
-                                    type: boolean
-                                    nullable: true
+                                    type: [boolean, "null"]
                                     description: Whether to create a new document store
                                 docStore:
-                                    type: object
-                                    nullable: true
+                                    type: [object, "null"]
                                     description: Only when createNewDocStore is true, pass in the new document store configuration
                                     properties:
                                         name:
@@ -1460,9 +1450,8 @@ paths:
                                         description: The AI-generated response text
                                         example: 'Artificial intelligence (AI) is a branch of computer science that focuses on creating systems capable of performing tasks that typically require human intelligence.'
                                     json:
-                                        type: object
+                                        type: [object, "null"]
                                         description: The result in JSON format if available (for structured outputs)
-                                        nullable: true
                                     question:
                                         type: string
                                         description: The original question/message sent to the flow
@@ -1476,27 +1465,27 @@ paths:
                                         description: Unique identifier for this specific message
                                         example: 'msg-67890'
                                     sessionId:
-                                        type: string
+                                        type: [string, "null"]
                                         description: Session identifier for conversation continuity
                                         example: 'user-session-123'
-                                        nullable: true
                                     memoryType:
-                                        type: string
+                                        type: [string, "null"]
                                         description: Type of memory used for conversation context
                                         example: 'Buffer Memory'
-                                        nullable: true
                                     sourceDocuments:
-                                        type: array
-                                        description: Documents retrieved from vector store (if RAG is enabled)
-                                        items:
-                                            $ref: '#/components/schemas/Document'
-                                        nullable: true
+                                        oneOf:
+                                            - type: array
+                                              description: Documents retrieved from vector store (if RAG is enabled)
+                                              items:
+                                                  $ref: '#/components/schemas/Document'
+                                            - type: "null"
                                     usedTools:
-                                        type: array
-                                        description: Tools that were invoked during the response generation
-                                        items:
-                                            $ref: '#/components/schemas/UsedTool'
-                                        nullable: true
+                                        oneOf:
+                                            - type: array
+                                              description: Tools that were invoked during the response generation
+                                              items:
+                                                  $ref: '#/components/schemas/UsedTool'
+                                            - type: "null"
                 '400':
                     description: Bad Request - Invalid input provided or request format is incorrect
                     content:
@@ -1916,8 +1905,7 @@ paths:
                                         format: binary
                                     description: Files to be uploaded
                                 modelName:
-                                    type: string
-                                    nullable: true
+                                    type: [string, "null"]
                                     example: ''
                                     description: Other override configurations
                             required:
@@ -2028,35 +2016,41 @@ components:
                     type: string
                     example: 'Hello, how can I help you today?'
                 sourceDocuments:
-                    type: array
-                    nullable: true
-                    items:
-                        $ref: '#/components/schemas/Document'
+                    oneOf:
+                        - type: array
+                          items:
+                              $ref: '#/components/schemas/Document'
+                        - type: "null"
                 usedTools:
-                    type: array
-                    nullable: true
-                    items:
-                        $ref: '#/components/schemas/UsedTool'
+                    oneOf:
+                        - type: array
+                          items:
+                              $ref: '#/components/schemas/UsedTool'
+                        - type: "null"
                 fileAnnotations:
-                    type: array
-                    nullable: true
-                    items:
-                        $ref: '#/components/schemas/FileAnnotation'
+                    oneOf:
+                        - type: array
+                          items:
+                              $ref: '#/components/schemas/FileAnnotation'
+                        - type: "null"
                 agentReasoning:
-                    type: array
-                    nullable: true
-                    items:
-                        $ref: '#/components/schemas/AgentReasoning'
+                    oneOf:
+                        - type: array
+                          items:
+                              $ref: '#/components/schemas/AgentReasoning'
+                        - type: "null"
                 fileUploads:
-                    type: array
-                    nullable: true
-                    items:
-                        $ref: '#/components/schemas/FileUpload'
+                    oneOf:
+                        - type: array
+                          items:
+                              $ref: '#/components/schemas/FileUpload'
+                        - type: "null"
                 action:
-                    type: array
-                    nullable: true
-                    items:
-                        $ref: '#/components/schemas/Action'
+                    oneOf:
+                        - type: array
+                          items:
+                              $ref: '#/components/schemas/Action'
+                        - type: "null"
                 chatType:
                     type: string
                     enum: [INTERNAL, EXTERNAL]
@@ -2065,18 +2059,15 @@ components:
                     type: string
                     example: 'chat12345'
                 memoryType:
-                    type: string
-                    nullable: true
+                    type: [string, "null"]
                 sessionId:
-                    type: string
-                    nullable: true
+                    type: [string, "null"]
                 createdDate:
                     type: string
                     format: date-time
                     example: '2024-08-24T14:15:22Z'
                 leadEmail:
-                    type: string
-                    nullable: true
+                    type: [string, "null"]
                     example: 'user@example.com'
 
         Agentflow:
@@ -2382,17 +2373,14 @@ components:
                     description: Color associated with the tool
                     example: '#FF5733'
                 iconSrc:
-                    type: string
-                    nullable: true
+                    type: [string, "null"]
                     description: Source URL for the tool's icon
                     example: 'https://example.com/icons/date.png'
                 schema:
-                    type: string
-                    nullable: true
+                    type: [string, "null"]
                     description: JSON schema associated with the tool
                 func:
-                    type: string
-                    nullable: true
+                    type: [string, "null"]
                     description: Functionality description or code associated with the tool
                 createdDate:
                     type: string
@@ -2417,9 +2405,8 @@ components:
                     description: Name of the variable
                     example: 'API_KEY'
                 value:
-                    type: string
+                    type: [string, "null"]
                     description: Value of the variable
-                    nullable: true
                     example: 'my-secret-key'
                 type:
                     type: string
@@ -2688,26 +2675,21 @@ components:
             type: object
             properties:
                 docId:
-                    type: string
+                    type: [string, "null"]
                     format: uuid
-                    nullable: true
                     description: Document ID within the store. If provided, existing configuration from the document will be used for the new document
                 metadata:
-                    type: object
-                    nullable: true
+                    type: [object, "null"]
                     description: Metadata associated with the document
                     example: { 'foo': 'bar' }
                 replaceExisting:
-                    type: boolean
-                    nullable: true
+                    type: [boolean, "null"]
                     description: Whether to replace existing document loader with the new upserted chunks. However this does not delete the existing embeddings in the vector store
                 createNewDocStore:
-                    type: boolean
-                    nullable: true
+                    type: [boolean, "null"]
                     description: Whether to create a new document store
                 docStore:
-                    type: object
-                    nullable: true
+                    type: [object, "null"]
                     description: Only when createNewDocStore is true, pass in the new document store configuration
                     properties:
                         name:
@@ -2719,8 +2701,7 @@ components:
                             example: plainText
                             description: Description of the new document store to be created
                 loader:
-                    type: object
-                    nullable: true
+                    type: [object, "null"]
                     properties:
                         name:
                             type: string
@@ -2730,8 +2711,7 @@ components:
                             type: object
                             description: Configuration for the loader
                 splitter:
-                    type: object
-                    nullable: true
+                    type: [object, "null"]
                     properties:
                         name:
                             type: string
@@ -2741,8 +2721,7 @@ components:
                             type: object
                             description: Configuration for the text splitter
                 embedding:
-                    type: object
-                    nullable: true
+                    type: [object, "null"]
                     properties:
                         name:
                             type: string
@@ -2752,8 +2731,7 @@ components:
                             type: object
                             description: Configuration for the embedding generator
                 vectorStore:
-                    type: object
-                    nullable: true
+                    type: [object, "null"]
                     properties:
                         name:
                             type: string
@@ -2763,8 +2741,7 @@ components:
                             type: object
                             description: Configuration for the vector store
                 recordManager:
-                    type: object
-                    nullable: true
+                    type: [object, "null"]
                     properties:
                         name:
                             type: string
