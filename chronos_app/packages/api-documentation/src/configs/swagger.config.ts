@@ -23,7 +23,7 @@ const swaggerUiOptions = {
         },
         servers: [
             {
-                url: 'http://localhost:3001/api/v1',
+                url: process.env.CHRONOS_API_URL || 'http://localhost:3001/api/v1',
                 description: 'Chronos Server'
             }
         ]

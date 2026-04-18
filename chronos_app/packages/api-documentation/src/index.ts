@@ -3,7 +3,7 @@ import swaggerUi from 'swagger-ui-express'
 import { swaggerDocs, swaggerExplorerOptions } from './configs/swagger.config'
 
 const app = express()
-const port = 6655
+const port = parseInt(process.env.API_DOCS_PORT || '6655', 10)
 
 app.get('/', (req: Request, res: Response) => {
     res.redirect('/api-docs')

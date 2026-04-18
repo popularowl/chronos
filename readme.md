@@ -30,7 +30,7 @@ Most AI agent tools are great for demos — but fall apart in production. Chrono
 - *Visibility of agents actions:* Inspect prompts, tool calls, responses, errors, and token usage.
 - *Cost & Performance Dashboard:* Track and optimise agent costs and operations.
 - *Scheduled agents:* Maintain schedules for your agents.
-- *Debug faster:* Opentelemetry helps traicing failures across the entire workflows.
+- *Tracing:* Opentelemetry helps traicing failures across the entire workflows.
 - *From prototype to production:* Build agents and integrate to enterprise systems via embeded OpenAI APIs.
 
 

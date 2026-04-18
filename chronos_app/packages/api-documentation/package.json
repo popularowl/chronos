@@ -9,6 +9,7 @@
     },
     "license": "SEE LICENSE IN LICENSE.md",
     "dependencies": {
+        "express": "^4.21.2",
         "swagger-jsdoc": "^6.2.8",
         "swagger-ui-express": "^5.0.0"
     },
