@@ -1,0 +1,16 @@
+{
+    "mode": "allowlist",
+    "categories": {
+        "Chat Models": ["chatOpenAI", "chatAnthropic", "chatGoogleGenerativeAI", "chatOllama", "chatOpenRouter", "azureAIFoundry"],
+        "Tools": "*",
+        "Tools (MCP)": "*",
+        "Agent Flows": "*",
+        "Document Loaders": "*",
+        "Embeddings": "*",
+        "Vector Stores": "*",
+        "Cache": "*",
+        "Text Splitters": "*",
+        "Record Manager": "*",
+        "Graph": "*"
+    }
+}

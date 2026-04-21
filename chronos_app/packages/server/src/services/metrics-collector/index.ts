@@ -38,7 +38,7 @@ const buildPricingIndex = async (): Promise<Map<string, ModelPrice>> => {
 
     try {
         const checkPaths = [
-            process.env.MODEL_LIST_CONFIG_JSON,
+            process.env.MODEL_LIST_CONFIG_LOCATION,
             path.join(__dirname, '..', '..', '..', '..', 'components', 'models.json'),
             path.join(__dirname, '..', '..', '..', '..', '..', 'components', 'models.json'),
             path.join(__dirname, '..', '..', '..', '..', '..', 'packages', 'components', 'models.json')

@@ -109,6 +109,7 @@ import { oauthClientServiceTest } from './services/oauth-client.service.test'
 import { openaiServiceTest } from './services/openai.service.test'
 import { webhooksServiceTest } from './services/webhooks.service.test'
 import { webhookDispatcherServiceTest } from './services/webhook-dispatcher.service.test'
+import { nodesPoolTest } from './NodesPool.test'
 import { apiKeyTest } from './utils/api-key.util.test'
 import { sanitizeUtilTest } from './utils/sanitize.util.test'
 import { domainValidationUtilTest } from './utils/domain-validation.util.test'
@@ -259,6 +260,7 @@ describe('Services Test', () => {
     metricsAggregatorServiceTest()
     webhooksServiceTest()
     webhookDispatcherServiceTest()
+    nodesPoolTest()
 })
 
 describe('Utils Test', () => {

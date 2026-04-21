@@ -32,10 +32,10 @@ const isValidUrl = (urlString: string) => {
 /**
  * Load the raw model file from either a URL or a local file
  * Default: local models.json file in the components package
- * Can be overridden via MODEL_LIST_CONFIG_JSON env variable (URL or file path)
+ * Can be overridden via MODEL_LIST_CONFIG_LOCATION env variable (URL or file path)
  */
 const getRawModelFile = async () => {
-    const modelFile = process.env.MODEL_LIST_CONFIG_JSON || getModelsJSONPath()
+    const modelFile = process.env.MODEL_LIST_CONFIG_LOCATION || getModelsJSONPath()
     try {
         if (isValidUrl(modelFile)) {
             const resp = await axios.get(modelFile)
