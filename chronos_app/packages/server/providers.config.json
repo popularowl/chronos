@@ -5,9 +5,6 @@
         "chatAnthropic",
         "chatGoogleGenerativeAI",
         "chatOllama",
-        "azureChatOpenAI",
-        "chatMistralAI",
-        "awsChatBedrock",
         "chatOpenRouter",
         "azureAIFoundry"
     ]
