@@ -30,9 +30,9 @@ export const loadEnabledProviders = (): string[] | null => {
             if (raw.mode === 'allowlist' && Array.isArray(raw.providers)) {
                 return raw.providers as string[]
             }
-            logger.warn(`⚠️ [server]: providers.config.json has unrecognised mode "${raw.mode}", allowing all providers`)
+            logger.warn(`[server]: providers.config.json has unrecognised mode "${raw.mode}", allowing all providers`)
         } catch (err) {
-            logger.error(`❌ [server]: Failed to parse providers config at ${configPath}:`, err)
+            logger.error(`[server]: Failed to parse providers config at ${configPath}:`, err)
         }
     }
 
@@ -66,7 +66,7 @@ export class NodesPool {
 
         for (const name of enabledProviders) {
             if (!registeredChatModels.includes(name)) {
-                logger.warn(`⚠️ [server]: Provider "${name}" in allowlist does not match any registered Chat Model node`)
+                logger.warn(`[server]: Provider "${name}" in allowlist does not match any registered Chat Model node`)
             }
         }
     }
@@ -78,7 +78,7 @@ export class NodesPool {
         const disabled_nodes = process.env.DISABLED_NODES ? process.env.DISABLED_NODES.split(',') : []
         const enabled_providers = loadEnabledProviders()
         if (enabled_providers) {
-            logger.info(`✅ [server]: Provider allowlist active — ${enabled_providers.length} providers enabled`)
+            logger.info(`[server]: Provider allowlist active — ${enabled_providers.length} providers enabled`)
         }
         const packagePath = getNodeModulesPackagePath('chronos-components')
         const nodesPath = path.join(packagePath, 'dist', 'nodes')
