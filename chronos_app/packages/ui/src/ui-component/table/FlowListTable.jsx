@@ -122,11 +122,14 @@ export const FlowListTable = ({
                                     Name
                                 </TableSortLabel>
                             </StyledTableCell>
-                            <StyledTableCell style={{ width: '25%' }} key='1'>
+                            <StyledTableCell style={{ width: '20%' }} key='1'>
                                 Category
                             </StyledTableCell>
-                            <StyledTableCell style={{ width: '30%' }} key='2'>
+                            <StyledTableCell style={{ width: '25%' }} key='2'>
                                 Nodes
+                            </StyledTableCell>
+                            <StyledTableCell style={{ width: '10%' }} key='version'>
+                                Deployed
                             </StyledTableCell>
                             <StyledTableCell style={{ width: '15%' }} key='3'>
                                 <TableSortLabel
@@ -160,6 +163,9 @@ export const FlowListTable = ({
                                     <StyledTableCell>
                                         <Skeleton variant='text' />
                                     </StyledTableCell>
+                                    <StyledTableCell>
+                                        <Skeleton variant='text' />
+                                    </StyledTableCell>
                                     {isActionsAvailable && (
                                         <StyledTableCell>
                                             <Skeleton variant='text' />
@@ -167,6 +173,9 @@ export const FlowListTable = ({
                                     )}
                                 </StyledTableRow>
                                 <StyledTableRow>
+                                    <StyledTableCell>
+                                        <Skeleton variant='text' />
+                                    </StyledTableCell>
                                     <StyledTableCell>
                                         <Skeleton variant='text' />
                                     </StyledTableCell>
@@ -314,6 +323,17 @@ export const FlowListTable = ({
                                                         </MoreItemsTooltip>
                                                     )}
                                                 </Box>
+                                            )}
+                                        </StyledTableCell>
+                                        <StyledTableCell key='version'>
+                                            {row.publishedVersion ? (
+                                                <Tooltip title='Currently deployed version' placement='top'>
+                                                    <Chip size='small' color='success' label={`v${row.publishedVersion}`} />
+                                                </Tooltip>
+                                            ) : (
+                                                <Tooltip title='Not yet published' placement='top'>
+                                                    <Chip size='small' variant='outlined' label='Draft' />
+                                                </Tooltip>
                                             )}
                                         </StyledTableCell>
                                         <StyledTableCell key='3'>

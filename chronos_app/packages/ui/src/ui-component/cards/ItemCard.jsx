@@ -3,7 +3,7 @@ import { useSelector } from 'react-redux'
 
 // material-ui
 import { styled } from '@mui/material/styles'
-import { Box, Grid, Tooltip, Typography, useTheme } from '@mui/material'
+import { Box, Chip, Grid, Tooltip, Typography, useTheme } from '@mui/material'
 
 // project imports
 import MainCard from '@/ui-component/cards/MainCard'
@@ -85,11 +85,26 @@ const ItemCard = ({ data, images, icons, onClick }) => {
                                     WebkitLineClamp: 2,
                                     WebkitBoxOrient: 'vertical',
                                     textOverflow: 'ellipsis',
-                                    overflow: 'hidden'
+                                    overflow: 'hidden',
+                                    flex: 1
                                 }}
                             >
                                 {data.templateName || data.name}
                             </Typography>
+                            {data.publishedVersion ? (
+                                <Tooltip title='Currently deployed version' placement='top'>
+                                    <Chip size='small' color='success' label={`v${data.publishedVersion}`} sx={{ ml: 1, flexShrink: 0 }} />
+                                </Tooltip>
+                            ) : data.id ? (
+                                <Tooltip title='Not yet published' placement='top'>
+                                    <Chip
+                                        size='small'
+                                        variant='outlined'
+                                        label='Draft'
+                                        sx={{ ml: 1, flexShrink: 0, color: 'text.secondary' }}
+                                    />
+                                </Tooltip>
+                            ) : null}
                         </div>
                         {data.description && (
                             <span

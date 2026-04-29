@@ -1,5 +1,6 @@
 import { ICommonObject, removeFolderFromStorage } from 'chronos-components'
 import { StatusCodes } from 'http-status-codes'
+import { In } from 'typeorm'
 import { AgentflowType, IReactFlowObject } from '../../Interface'
 import { UserContext } from '../../Interface.Auth'
 import { CHRONOS_COUNTER_STATUS, CHRONOS_METRIC_COUNTERS } from '../../Interface.Metrics'
@@ -110,6 +111,30 @@ const deleteAgentflow = async (agentflowId: string, userContext?: UserContext): 
     }
 }
 
+/**
+ * Look up the version number for each agentflow's currently-published
+ * version row and attach it as `publishedVersion` (number | null).
+ *
+ * One bulk query (IN clause) keeps this O(1) regardless of page size.
+ * `null` means the agentflow has never been published.
+ */
+const attachPublishedVersionNumbers = async (agentflows: AgentFlow[]): Promise<void> => {
+    const versionIds = agentflows.map((af) => af.publishedVersionId).filter((id): id is string => Boolean(id))
+    if (versionIds.length === 0) {
+        agentflows.forEach((af) => ((af as any).publishedVersion = null))
+        return
+    }
+    const appServer = getRunningExpressApp()
+    const rows = await appServer.AppDataSource.getRepository(AgentflowVersion).find({
+        select: ['id', 'version'],
+        where: { id: In(versionIds) }
+    })
+    const map = new Map<string, number>(rows.map((r) => [r.id, r.version]))
+    agentflows.forEach((af) => {
+        ;(af as any).publishedVersion = af.publishedVersionId ? map.get(af.publishedVersionId) ?? null : null
+    })
+}
+
 const getAllAgentflows = async (type?: AgentflowType, page: number = -1, limit: number = -1, userContext?: UserContext) => {
     try {
         const appServer = getRunningExpressApp()
@@ -129,6 +154,8 @@ const getAllAgentflows = async (type?: AgentflowType, page: number = -1, limit: 
             queryBuilder.andWhere('chat_flow.type = :type', { type })
         }
         const [data, total] = await queryBuilder.getManyAndCount()
+
+        await attachPublishedVersionNumbers(data)
 
         if (page > 0 && limit > 0) {
             return { data, total }
@@ -216,6 +243,7 @@ const getAgentflowById = async (agentflowId: string, userContext?: UserContext):
         if (userContext && userContext.role !== 'admin' && dbResponse.userId !== userContext.userId) {
             throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to access this agentflow')
         }
+        await attachPublishedVersionNumbers([dbResponse])
         return dbResponse
     } catch (error) {
         throw new InternalChronosError(
