@@ -10,6 +10,7 @@ import apikeysRouter from './apikeys'
 import oauthClientsRouter from './oauth-clients'
 import schedulesRouter from './schedules'
 import webhooksRouter from './webhooks'
+import agentsRouter from './agents'
 
 const router = express.Router()
 
@@ -22,5 +23,6 @@ router.use('/apikeys', apikeysRouter)
 router.use('/oauth-clients', oauthClientsRouter)
 router.use('/schedules', schedulesRouter)
 router.use('/webhooks', webhooksRouter)
+router.use('/agents', agentsRouter)
 
 export default router
