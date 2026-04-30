@@ -111,6 +111,7 @@ import { openaiServiceTest } from './services/openai.service.test'
 import { webhooksServiceTest } from './services/webhooks.service.test'
 import { webhookDispatcherServiceTest } from './services/webhook-dispatcher.service.test'
 import { agentflowVersionsServiceTest } from './services/agentflow-versions.service.test'
+import { agentsServiceTest } from './services/agents.service.test'
 import { nodesPoolTest } from './NodesPool.test'
 import { apiKeyTest } from './utils/api-key.util.test'
 import { sanitizeUtilTest } from './utils/sanitize.util.test'
@@ -265,6 +266,7 @@ describe('Services Test', () => {
     webhooksServiceTest()
     webhookDispatcherServiceTest()
     agentflowVersionsServiceTest()
+    agentsServiceTest()
     nodesPoolTest()
 })
 
