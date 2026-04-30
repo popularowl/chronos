@@ -255,6 +255,59 @@ export interface IWebhookDelivery {
     createdDate: Date
 }
 
+export enum AgentRuntimeType {
+    BUILT_IN = 'BUILT_IN',
+    HTTP = 'HTTP'
+}
+
+export enum AgentStatus {
+    HEALTHY = 'HEALTHY',
+    UNHEALTHY = 'UNHEALTHY',
+    UNKNOWN = 'UNKNOWN',
+    DISABLED = 'DISABLED'
+}
+
+/**
+ * Agent registry entry. Shaped as a superset of the A2A Agent Card
+ * (https://a2a-protocol.org/latest/specification/) so a future A2A runtime can
+ * publish `/.well-known/agent.json` from these columns without a schema change.
+ * v1.6.0 implements only the OpenAI-compatible HTTP runtime; A2A-only fields
+ * (`protocolVersion`, `interfaces`, `securitySchemes`, `security`) are stored
+ * but not yet served.
+ */
+export interface IAgent {
+    id: string
+    name: string
+    slug: string
+    description?: string
+    version: string
+    protocolVersion?: string
+    iconUrl?: string
+    provider?: string
+    documentationUrl?: string
+    capabilities?: string
+    skills?: string
+    defaultInputModes?: string
+    defaultOutputModes?: string
+    serviceEndpoint?: string
+    interfaces?: string
+    securitySchemes?: string
+    security?: string
+    runtimeType: AgentRuntimeType
+    status: AgentStatus
+    enabled: boolean
+    runtimeConfig?: string
+    outboundAuth?: string
+    callbackToken?: string
+    allowedTools?: string
+    builtinAgentflowId?: string
+    lastHealthCheckAt?: Date
+    lastHealthError?: string
+    userId?: string
+    createdDate: Date
+    updatedDate: Date
+}
+
 export interface IComponentNodes {
     [key: string]: INode
 }
@@ -431,6 +484,8 @@ export enum AdminScope {
     SCHEDULES_WRITE = 'schedules:write',
     WEBHOOKS_READ = 'webhooks:read',
     WEBHOOKS_WRITE = 'webhooks:write',
+    AGENTS_READ = 'agents:read',
+    AGENTS_WRITE = 'agents:write',
     ADMIN_FULL = 'admin:full'
 }
 
