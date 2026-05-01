@@ -23,6 +23,8 @@ export const WHITELIST_URLS = [
     '/api/v1/text-to-speech/abort',
     // OpenAI-compatible API (uses flow API key validation internally)
     '/api/v1/openai/',
+    // Agent → platform MCP callback surface (uses Agent.callbackToken bearer)
+    '/api/v1/agent-callbacks/',
     // Simple auth endpoints
     '/api/v1/auth/signup',
     '/api/v1/auth/login',

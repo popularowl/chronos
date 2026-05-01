@@ -652,6 +652,9 @@ importers:
       '@keyv/redis':
         specifier: ^4.2.0
         version: 4.6.0(keyv@5.5.5)
+      '@modelcontextprotocol/sdk':
+        specifier: ^1.27.1
+        version: 1.27.1(@cfworker/json-schema@4.1.1)(zod@3.25.1)
       '@opentelemetry/api':
         specifier: 1.9.0
         version: 1.9.0

@@ -42,6 +42,7 @@ import statsRouter from './stats'
 import schedulesRouter from './schedules'
 import webhooksRouter from './webhooks'
 import agentsRouter from './agents'
+import agentCallbacksRouter from './agent-callbacks'
 import mcpServersRouter from './mcp-servers'
 import skillsRouter from './skills'
 import toolsRouter from './tools'
@@ -108,6 +109,7 @@ router.use('/stats', statsRouter)
 router.use('/schedules', schedulesRouter)
 router.use('/webhooks', webhooksRouter)
 router.use('/agents', agentsRouter)
+router.use('/agent-callbacks', agentCallbacksRouter)
 router.use('/mcp-servers', mcpServersRouter)
 router.use('/skills', skillsRouter)
 router.use('/tools', toolsRouter)

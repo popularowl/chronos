@@ -37,6 +37,7 @@ import { Schedule } from './database/entities/Schedule'
 import { SchedulePoller } from './schedulers/SchedulePoller'
 import { AgentHealthPoller } from './schedulers/AgentHealthPoller'
 import { MCPServerHealthPoller } from './schedulers/MCPServerHealthPoller'
+import { MCPGateway } from './services/mcp-gateway'
 import { MetricsAggregator } from './services/metrics-aggregator'
 import 'global-agent/bootstrap'
 import { UsageCacheManager } from './UsageCacheManager'
@@ -86,6 +87,7 @@ export class App {
     schedulePoller: SchedulePoller
     agentHealthPoller?: AgentHealthPoller
     mcpServerHealthPoller?: MCPServerHealthPoller
+    mcpGateway?: MCPGateway
     metricsAggregator: MetricsAggregator
     httpServer: http.Server
     sessionStore: any
@@ -207,6 +209,10 @@ export class App {
             if (process.env.ENABLE_MCP_SERVERS === 'true') {
                 this.mcpServerHealthPoller = new MCPServerHealthPoller({ appDataSource: this.AppDataSource })
                 this.mcpServerHealthPoller.start()
+
+                // MCP gateway — pooled MCP clients for agent → tool callback brokering
+                this.mcpGateway = new MCPGateway({ appDataSource: this.AppDataSource })
+                this.mcpGateway.start()
             }
 
             // Dashboard metrics aggregator — runs daily rollup of execution_metrics into daily_metrics
@@ -385,6 +391,9 @@ export class App {
             }
             if (this.mcpServerHealthPoller) {
                 this.mcpServerHealthPoller.stop()
+            }
+            if (this.mcpGateway) {
+                removePromises.push(this.mcpGateway.stop())
             }
             if (this.metricsAggregator) {
                 this.metricsAggregator.stop()
