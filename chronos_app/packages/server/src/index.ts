@@ -35,6 +35,8 @@ import { ScheduleQueue } from './queue/ScheduleQueue'
 import { RedisEventSubscriber } from './queue/RedisEventSubscriber'
 import { Schedule } from './database/entities/Schedule'
 import { SchedulePoller } from './schedulers/SchedulePoller'
+import { AgentHealthPoller } from './schedulers/AgentHealthPoller'
+import { MCPServerHealthPoller } from './schedulers/MCPServerHealthPoller'
 import { MetricsAggregator } from './services/metrics-aggregator'
 import 'global-agent/bootstrap'
 import { UsageCacheManager } from './UsageCacheManager'
@@ -82,6 +84,8 @@ export class App {
     redisSubscriber: RedisEventSubscriber
     usageCacheManager: UsageCacheManager
     schedulePoller: SchedulePoller
+    agentHealthPoller?: AgentHealthPoller
+    mcpServerHealthPoller?: MCPServerHealthPoller
     metricsAggregator: MetricsAggregator
     httpServer: http.Server
     sessionStore: any
@@ -191,6 +195,18 @@ export class App {
                     usageCacheManager: this.usageCacheManager
                 })
                 this.schedulePoller.start()
+            }
+
+            // HTTP agent health poller — gated on ENABLE_AGENTS=true
+            if (process.env.ENABLE_AGENTS === 'true') {
+                this.agentHealthPoller = new AgentHealthPoller({ appDataSource: this.AppDataSource })
+                this.agentHealthPoller.start()
+            }
+
+            // MCP server health poller — gated independently on ENABLE_MCP_SERVERS=true
+            if (process.env.ENABLE_MCP_SERVERS === 'true') {
+                this.mcpServerHealthPoller = new MCPServerHealthPoller({ appDataSource: this.AppDataSource })
+                this.mcpServerHealthPoller.start()
             }
 
             // Dashboard metrics aggregator — runs daily rollup of execution_metrics into daily_metrics
@@ -363,6 +379,12 @@ export class App {
             }
             if (this.schedulePoller) {
                 this.schedulePoller.stop()
+            }
+            if (this.agentHealthPoller) {
+                this.agentHealthPoller.stop()
+            }
+            if (this.mcpServerHealthPoller) {
+                this.mcpServerHealthPoller.stop()
             }
             if (this.metricsAggregator) {
                 this.metricsAggregator.stop()

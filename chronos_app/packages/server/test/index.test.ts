@@ -149,6 +149,8 @@ import { cachePoolTest } from './CachePool.test'
 import { abortControllerPoolTest } from './AbortControllerPool.test'
 import { simpleIdentityManagerTest } from './SimpleIdentityManager.test'
 import { schedulePollerTest } from './schedulers/schedule-poller.test'
+import { agentHealthPollerTest } from './schedulers/agent-health-poller.test'
+import { mcpServerHealthPollerTest } from './schedulers/mcp-server-health-poller.test'
 
 // extend test timeout to 6 minutes for long setups (increase as tests grow)
 jest.setTimeout(360000)
@@ -325,4 +327,6 @@ describe('Identity Test', () => {
 
 describe('Schedulers Test', () => {
     schedulePollerTest()
+    agentHealthPollerTest()
+    mcpServerHealthPollerTest()
 })
