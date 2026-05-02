@@ -391,6 +391,50 @@ const listMCPServerTools = async (id: string): Promise<any[]> => {
     }
 }
 
+/**
+ * Calls `tools/list` against an unsaved MCP server using the registration
+ * body. Same SSRF + transport-contract validation as `createMCPServer`, then
+ * delegates to the gateway's transient (non-pooled) preview path. Used by
+ * the registration UI's Discover Tools button before commit.
+ */
+const previewMCPServerTools = async (body: any): Promise<any[]> => {
+    try {
+        assertMCPServersEnabled()
+        const appServer = getRunningExpressApp()
+        if (!body || !body.transport) {
+            throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'transport is required')
+        }
+        const transport = body.transport as MCPServerTransport
+        if (!Object.values(MCPServerTransport).includes(transport)) {
+            throw new InternalChronosError(
+                StatusCodes.BAD_REQUEST,
+                `Invalid transport. Allowed: ${Object.values(MCPServerTransport).join(', ')}`
+            )
+        }
+        assertTransportContract(transport, body)
+        if (!appServer.mcpGateway) {
+            throw new InternalChronosError(
+                StatusCodes.SERVICE_UNAVAILABLE,
+                'MCP gateway is not enabled. Set ENABLE_MCP_SERVERS=true to enable it.'
+            )
+        }
+        return await appServer.mcpGateway.previewLiveTools({
+            transport,
+            url: body.url,
+            outboundAuth: body.outboundAuth,
+            requestHeaders: body.requestHeaders,
+            timeoutMs: body.timeoutMs,
+            slug: body.slug
+        })
+    } catch (error) {
+        if (error instanceof InternalChronosError) throw error
+        throw new InternalChronosError(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            `Error: mcpServersService.previewMCPServerTools - ${getErrorMessage(error)}`
+        )
+    }
+}
+
 export default {
     isMCPServersEnabled,
     createMCPServer,
@@ -401,5 +445,6 @@ export default {
     getMCPServerBySlug,
     toggleMCPServer,
     testMCPServerConnection,
-    listMCPServerTools
+    listMCPServerTools,
+    previewMCPServerTools
 }

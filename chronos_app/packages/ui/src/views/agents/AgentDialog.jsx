@@ -378,11 +378,23 @@ const AgentDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                     }
                 })
             )
-            setDiscoveredTools(uniqueStrings(collected))
-            if (collected.length === 0) {
+            const discovered = uniqueStrings(collected)
+            setDiscoveredTools(discovered)
+            if (discovered.length === 0) {
                 showError('No tools discovered (check that MCP gateway is enabled)', false)
             } else {
-                showSuccess(`Discovered ${collected.length} tool${collected.length === 1 ? '' : 's'} across ${eligible.length} server(s)`)
+                // Merge into the active selection so chips render immediately.
+                // Existing manual entries are preserved; operators deselect
+                // with the chip's X.
+                const previous = allowedTools
+                const merged = uniqueStrings([...previous, ...discovered])
+                const added = merged.length - previous.length
+                setAllowedTools(merged)
+                showSuccess(
+                    added > 0
+                        ? `Discovered ${discovered.length} tool${discovered.length === 1 ? '' : 's'} across ${eligible.length} server(s) — added ${added} to Allowed Tools.`
+                        : `Discovered ${discovered.length} tool${discovered.length === 1 ? '' : 's'} (already selected).`
+                )
             }
             if (failures.length > 0) {
                 showError(`Failed to query tools from: ${failures.join(', ')}`, false)

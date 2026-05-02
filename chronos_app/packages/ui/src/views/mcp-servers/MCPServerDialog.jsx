@@ -326,16 +326,40 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     }
 
     const onDiscoverTools = async () => {
-        if (!serverId) return
+        if (!url.trim()) return
         setDiscoverLoading(true)
         try {
-            const res = await mcpServersApi.listMCPServerTools(serverId)
+            let res
+            if (isEdit && serverId) {
+                res = await mcpServersApi.listMCPServerTools(serverId)
+            } else {
+                const requestHeaders = requestHeadersText ? parseJson(requestHeadersText) : undefined
+                res = await mcpServersApi.previewMCPServerTools({
+                    transport,
+                    url,
+                    timeoutMs: Number(timeoutMs) || 30000,
+                    requestHeaders,
+                    outboundAuth: buildOutboundAuth(),
+                    slug: slug || undefined
+                })
+            }
             const tools = (res.data?.tools || []).map((t) => t?.name).filter((n) => typeof n === 'string')
             setDiscoveredTools(tools)
             if (tools.length === 0) {
                 showError('Server returned no tools', false)
             } else {
-                showSuccess(`Discovered ${tools.length} tool${tools.length === 1 ? '' : 's'}`)
+                // Merge into the active selection so chips render immediately.
+                // Operators deselect with the chip's X. Manual entries that
+                // came before Discover are preserved.
+                const previous = allowedTools
+                const merged = mergeUnique(previous, tools)
+                const added = merged.length - previous.length
+                setAllowedTools(merged)
+                showSuccess(
+                    added > 0
+                        ? `Discovered ${tools.length} tool${tools.length === 1 ? '' : 's'} — added ${added} to Allowed Tools.`
+                        : `Discovered ${tools.length} tool${tools.length === 1 ? '' : 's'} (already selected).`
+                )
             }
         } catch (err) {
             showError(err?.response?.data?.message || 'Failed to discover tools', true)
@@ -530,23 +554,29 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                         )}
                     </Box>
                     <Box>
-                        <Stack direction='row' justifyContent='space-between' alignItems='center'>
+                        <Stack direction='row' justifyContent='space-between' alignItems='center' sx={{ mb: 1 }}>
                             <Typography variant='overline'>Allowed Tools</Typography>
-                            {isEdit && (
-                                <Tooltip title='Call tools/list on the live MCP server'>
-                                    <span>
-                                        <StyledButton
-                                            size='small'
-                                            variant='outlined'
-                                            onClick={onDiscoverTools}
-                                            disabled={discoverLoading}
-                                            startIcon={<IconRefresh size={14} />}
-                                        >
-                                            {discoverLoading ? 'Discovering…' : 'Discover Tools'}
-                                        </StyledButton>
-                                    </span>
-                                </Tooltip>
-                            )}
+                            <Tooltip
+                                title={
+                                    !url.trim()
+                                        ? 'Enter a URL first'
+                                        : isEdit
+                                          ? 'Call tools/list on the live MCP server'
+                                          : 'Preview tools/list against the URL above (server is not yet saved)'
+                                }
+                            >
+                                <span>
+                                    <StyledButton
+                                        size='small'
+                                        variant='outlined'
+                                        onClick={onDiscoverTools}
+                                        disabled={discoverLoading || !url.trim()}
+                                        startIcon={<IconRefresh size={14} />}
+                                    >
+                                        {discoverLoading ? 'Discovering…' : 'Discover Tools'}
+                                    </StyledButton>
+                                </span>
+                            </Tooltip>
                         </Stack>
                         <Autocomplete
                             multiple

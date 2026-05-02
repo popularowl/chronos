@@ -39,8 +39,8 @@
 .turbo
 
 ## docker local data
-docker/.chronos
-docker/.postgres_data
+.chronos
+.postgres_data
 
 ## secrets
 **/*.key

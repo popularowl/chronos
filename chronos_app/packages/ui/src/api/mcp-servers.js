@@ -24,6 +24,8 @@ const testMCPServerConnection = (id) => client.post(`/mcp-servers/${id}/test-con
 
 const listMCPServerTools = (id) => client.get(`/mcp-servers/${id}/tools`)
 
+const previewMCPServerTools = (body) => client.post('/mcp-servers/preview-tools', body)
+
 export default {
     getAllMCPServers,
     getMCPServerById,
@@ -32,5 +34,6 @@ export default {
     deleteMCPServer,
     toggleMCPServer,
     testMCPServerConnection,
-    listMCPServerTools
+    listMCPServerTools,
+    previewMCPServerTools
 }

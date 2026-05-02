@@ -119,7 +119,7 @@ export class MCPToolkit extends BaseToolkit {
         const successes = res
             .filter((r: PromiseSettledResult<unknown>) => r.status === 'fulfilled')
             .map((r: PromiseSettledResult<unknown>) => (r as PromiseFulfilledResult<unknown>).value)
-        return successes
+        return successes as Tool[]
     }
 }
 

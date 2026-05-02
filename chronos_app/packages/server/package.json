@@ -1,6 +1,6 @@
 {
     "name": "chronos",
-    "version": "1.5.0",
+    "version": "1.6.0",
     "description": "Chronos Server",
     "scripts": {
         "build": "tsc",
@@ -40,7 +40,7 @@
         "@bull-board/express": "^6.11.0",
         "@google-cloud/logging-winston": "^6.0.0",
         "@keyv/redis": "^4.2.0",
-        "@modelcontextprotocol/sdk": "^1.27.1",
+        "@modelcontextprotocol/sdk": "1.22.0",
         "@opentelemetry/api": "1.9.0",
         "@opentelemetry/api-logs": "^0.213.0",
         "@opentelemetry/auto-instrumentations-node": "^0.71.0",

@@ -1,0 +1,506 @@
+openapi: 3.1.0
+info:
+    title: Chronos Agent Protocol
+    version: 1.6.0
+    summary: Wire-format contract for the Chronos Agent Registry and MCP Gateway.
+    description: |
+        Two-direction protocol between the Chronos control plane and external HTTP
+        agents.
+
+        - **Platform → Agent.** What an external HTTP agent must implement to be
+          invokable via the Chronos Agent Registry. Health probe + an OpenAI-compatible
+          chat completions endpoint with two Chronos extension fields.
+        - **Agent → Platform.** What Chronos exposes for tool brokering. Agents call
+          back into the MCP Gateway to invoke registered MCP tools without holding
+          MCP-server credentials directly.
+
+        See `docs/agent-registry.md` and `docs/mcp-gateway.md` for the operator
+        guides. v1.6 supports the `bearer` and `header` outbound-auth shapes;
+        OAuth2 client-credentials is a follow-up. v1.6 supports `streamable-http`
+        and `sse` MCP transports; `stdio` is reserved for v1.8.
+    license:
+        name: Apache 2.0
+        identifier: Apache-2.0
+        url: https://github.com/popularowl/chronos/blob/main/LICENSE.md
+    contact:
+        name: Chronos
+        email: saul@popularowl.com
+
+servers:
+    - url: http://localhost:8001
+      description: External HTTP agent (illustrative — your service)
+    - url: http://localhost:3000/api/v1
+      description: Chronos control plane (default dev)
+
+tags:
+    - name: agent-runtime
+      description: Endpoints an external HTTP agent must implement (Platform → Agent).
+    - name: agent-callbacks
+      description: MCP gateway endpoints exposed by Chronos (Agent → Platform).
+
+# Default: no protocol-level auth requirement. Agent-runtime endpoints accept
+# whatever auth the operator configured via `Agent.outboundAuth` (Bearer or a
+# named header), surfaced as the `Authorization` (or named) header on every
+# inbound request. Agent-callback endpoints opt in explicitly to `callbackToken`.
+security: []
+
+paths:
+    /health:
+        get:
+            tags:
+                - agent-runtime
+            summary: Liveness probe
+            description: |
+                The Chronos `AgentHealthPoller` GETs this endpoint every
+                `AGENT_HEALTH_POLL_INTERVAL_MS` (default 30s). Any 2xx response
+                marks the agent `HEALTHY`. Non-2xx, network error, or timeout
+                marks it `UNHEALTHY` and stamps `lastHealthError`.
+
+                If `runtimeConfig.healthEndpoint` is set on the registered
+                agent, the poller hits that path instead. Otherwise it hits
+                the agent's `serviceEndpoint` root.
+            operationId: agentHealth
+            responses:
+                '200':
+                    description: Agent is healthy.
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+                                example:
+                                    ok: true
+                '503':
+                    description: Agent is unhealthy. Any non-2xx is treated as unhealthy.
+
+    /v1/chat/completions:
+        post:
+            tags:
+                - agent-runtime
+            summary: OpenAI-compatible chat completions with Chronos extensions
+            description: |
+                The Chronos dispatcher forwards invocations as POSTs to
+                `<serviceEndpoint>/v1/chat/completions`. The body is an
+                OpenAI chat-completions request augmented with two Chronos
+                extension fields; the same values are also sent as headers.
+
+                For tool use, call back into Chronos using
+                `x_chronos_callback_url` (or the `x-chronos-callback-url`
+                header) with `Authorization: Bearer <agent.callbackToken>`.
+                See `/api/v1/agent-callbacks/{agentId}/tools/invoke`.
+
+                If the request body has `stream: true`, return an SSE stream
+                in OpenAI's chunk format; the dispatcher pipes it back to the
+                client chunk-by-chunk. Otherwise return a JSON
+                ChatCompletion object.
+            operationId: agentChatCompletions
+            parameters:
+                - in: header
+                  name: Authorization
+                  required: false
+                  schema:
+                      type: string
+                  description: |
+                      Whatever `outboundAuth` resolved to. For
+                      `{ type: 'bearer', … }` this is `Bearer <token>`. For
+                      `{ type: 'header', name: '<X>', … }` the credential is
+                      injected as that named header instead.
+                - in: header
+                  name: x-chronos-call-id
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+                  description: |
+                      Same value as `x_chronos_call_id` in the body. Echo
+                      back via the callback's `callId` field.
+                - in: header
+                  name: x-chronos-callback-url
+                  required: true
+                  schema:
+                      type: string
+                      format: uri
+                  description: Same value as `x_chronos_callback_url` in the body.
+                - in: header
+                  name: accept
+                  required: false
+                  schema:
+                      type: string
+                  description: |
+                      `text/event-stream` when the request body has
+                      `stream: true`, else `application/json`.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/AgentChatCompletionsRequest'
+            responses:
+                '200':
+                    description: Successful completion (JSON or SSE).
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ChatCompletion'
+                        text/event-stream:
+                            schema:
+                                type: string
+                                description: |
+                                    OpenAI-format SSE stream. Each chunk is a
+                                    `data: { ... }\n\n` line; terminate with
+                                    `data: [DONE]`.
+                '400':
+                    $ref: '#/components/responses/AgentBadRequest'
+                '401':
+                    description: Auth presented to your agent did not pass.
+                '500':
+                    description: Internal agent error. Chronos surfaces this as 502 to its caller.
+
+    /api/v1/agent-callbacks/{agentId}/tools/invoke:
+        post:
+            tags:
+                - agent-callbacks
+            summary: Invoke an MCP tool through the Chronos gateway
+            description: |
+                Called by an external HTTP agent when it wants to use a
+                registered MCP tool. The gateway:
+
+                  1. Authenticates the agent's `callbackToken` (Bearer).
+                  2. Parses the namespaced tool name `<server-slug>.<tool>`.
+                  3. Enforces `Agent.allowedTools ∩ MCPServer.allowedTools`.
+                  4. Opens (or reuses) a pooled MCP client to the resolved
+                     `MCPServer` and calls `tools/call`.
+                  5. Returns the MCP `CallToolResult`.
+
+                The path is whitelisted from the platform's global API-key
+                check — the per-agent callback token IS the auth.
+
+                A persistent audit table is planned for v1.7. v1.6 emits a
+                structured `logger.info({ event: 'mcp.tool.invoke', … })`
+                line per call.
+            operationId: invokeToolCallback
+            security:
+                - callbackToken: []
+            parameters:
+                - in: path
+                  name: agentId
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ToolInvokeRequest'
+            responses:
+                '200':
+                    description: Tool returned a result.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ToolInvokeResponse'
+                '400':
+                    description: |
+                        Malformed body (missing `tool`), unparseable
+                        namespaced name, or the MCP server has no `url`
+                        configured.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '401':
+                    description: Missing / invalid Bearer or unknown agent. (Constant-time compare; existence is not leaked.)
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '403':
+                    description: |
+                        The agent is BUILT_IN or disabled, OR the requested
+                        namespaced tool name is not in
+                        `Agent.allowedTools ∩ MCPServer.allowedTools`.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '404':
+                    description: Unknown MCP server slug.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '409':
+                    description: MCP server is disabled.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '501':
+                    description: MCP server uses `stdio` (reserved until v1.8).
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '502':
+                    description: MCP transport error. The pooled client is evicted; the next call reconnects.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '503':
+                    description: MCP server is unhealthy, OR the gateway itself is not enabled (`ENABLE_MCP_SERVERS=false`).
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+    /api/v1/agent-callbacks/{agentId}/tools:
+        get:
+            tags:
+                - agent-callbacks
+            summary: List the tools this agent is allowed to call
+            description: |
+                Returns the static intersection of `Agent.allowedTools` and
+                each registered MCP server's `allowedTools`. Does NOT call
+                `tools/list` on live MCP servers — for that, see
+                `GET /api/v1/mcp-servers/{id}/tools` (operator surface).
+            operationId: listAgentTools
+            security:
+                - callbackToken: []
+            parameters:
+                - in: path
+                  name: agentId
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+            responses:
+                '200':
+                    description: Intersection of agent and server allowlists.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AllowedToolsResponse'
+                '401':
+                    description: Missing / invalid Bearer or unknown agent.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+                '403':
+                    description: Agent is BUILT_IN or disabled.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Error'
+
+components:
+    securitySchemes:
+        callbackToken:
+            type: http
+            scheme: bearer
+            bearerFormat: hex
+            description: |
+                Per-agent callback token. Stored on the `Agent` row as
+                `callbackToken`. Rotatable from the Agent detail UI; rotation
+                is single-step (no overlap window in v1.6).
+
+    schemas:
+        AgentChatCompletionsRequest:
+            type: object
+            description: |
+                OpenAI chat-completions request body augmented with Chronos
+                extension fields. The standard OpenAI fields (`model`,
+                `messages`, `stream`, `temperature`, etc.) are forwarded
+                unchanged.
+            required:
+                - messages
+                - x_chronos_callback_url
+                - x_chronos_call_id
+            additionalProperties: true
+            properties:
+                model:
+                    type: string
+                    description: Echoed by Chronos; agents may ignore.
+                messages:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChatMessage'
+                stream:
+                    type: boolean
+                    default: false
+                x_chronos_callback_url:
+                    type: string
+                    format: uri
+                    description: |
+                        Absolute URL of the MCP gateway endpoint this agent
+                        should call back into for tool use, e.g.
+                        `https://chronos.example.com/api/v1/agent-callbacks/<agentId>/tools/invoke`.
+                        Same value also sent as the `x-chronos-callback-url`
+                        request header.
+                x_chronos_call_id:
+                    type: string
+                    format: uuid
+                    description: |
+                        Per-invocation correlation ID. Echo back as `callId`
+                        in any tool-callback request so audit lines join up.
+
+        ChatMessage:
+            type: object
+            required:
+                - role
+                - content
+            properties:
+                role:
+                    type: string
+                    enum: [system, user, assistant, tool]
+                content:
+                    type: string
+                tool_call_id:
+                    type: string
+                tool_calls:
+                    type: array
+                    items:
+                        type: object
+                        additionalProperties: true
+
+        ChatCompletion:
+            type: object
+            description: Standard OpenAI ChatCompletion response.
+            additionalProperties: true
+            required:
+                - id
+                - object
+                - created
+                - choices
+            properties:
+                id:
+                    type: string
+                object:
+                    type: string
+                    const: chat.completion
+                created:
+                    type: integer
+                model:
+                    type: string
+                choices:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            index:
+                                type: integer
+                            message:
+                                $ref: '#/components/schemas/ChatMessage'
+                            finish_reason:
+                                type: string
+                                enum: [stop, length, tool_calls, content_filter]
+                usage:
+                    type: object
+                    properties:
+                        prompt_tokens:
+                            type: integer
+                        completion_tokens:
+                            type: integer
+                        total_tokens:
+                            type: integer
+
+        ToolInvokeRequest:
+            type: object
+            required:
+                - tool
+            properties:
+                tool:
+                    type: string
+                    description: |
+                        Namespaced tool name `<server-slug>.<tool-name>`,
+                        e.g. `postgres.query`. Must be present in
+                        `Agent.allowedTools` AND, unless empty,
+                        `MCPServer.allowedTools`.
+                    example: postgres.query
+                params:
+                    type: object
+                    description: Arguments forwarded to the MCP tool as the `arguments` field of `tools/call`.
+                    additionalProperties: true
+                    example:
+                        sql: select 1
+                callId:
+                    type: string
+                    format: uuid
+                    description: |
+                        Optional correlation ID. Pass the
+                        `x_chronos_call_id` from the inbound chat-completions
+                        request so audit lines join up.
+
+        ToolInvokeResponse:
+            type: object
+            required:
+                - success
+                - result
+            properties:
+                success:
+                    type: boolean
+                    const: true
+                result:
+                    type: object
+                    description: |
+                        Verbatim MCP `CallToolResult`. See the MCP
+                        specification for the full shape — typically
+                        `{ content: [{ type: 'text', text: '…' }] }` plus an
+                        optional `isError` flag.
+                    additionalProperties: true
+
+        AllowedToolDescriptor:
+            type: object
+            required:
+                - name
+                - server
+                - tool
+            properties:
+                name:
+                    type: string
+                    description: Namespaced name `<server>.<tool>`.
+                    example: postgres.query
+                server:
+                    type: string
+                    description: MCP server slug.
+                    example: postgres
+                tool:
+                    type: string
+                    description: Bare tool name on that server.
+                    example: query
+
+        AllowedToolsResponse:
+            type: object
+            required:
+                - tools
+            properties:
+                tools:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/AllowedToolDescriptor'
+
+        Error:
+            type: object
+            required:
+                - success
+                - error
+            properties:
+                success:
+                    type: boolean
+                    const: false
+                error:
+                    type: string
+
+    responses:
+        AgentBadRequest:
+            description: Malformed inbound request to the agent.
+            content:
+                application/json:
+                    schema:
+                        type: object
+                        properties:
+                            error:
+                                type: string
