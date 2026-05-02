@@ -307,13 +307,7 @@ export default function FlowListMenu({ agentflow, isAgentCanvas, isAgentflowV2, 
         setAnchorEl(null)
         try {
             localStorage.setItem('duplicatedFlowData', agentflow.flowData)
-            if (isAgentflowV2) {
-                window.open(`${uiBaseURL}/v2/agentcanvas`, '_blank')
-            } else if (isAgentCanvas) {
-                window.open(`${uiBaseURL}/agentcanvas`, '_blank')
-            } else {
-                window.open(`${uiBaseURL}/canvas`, '_blank')
-            }
+            window.open(`${uiBaseURL}/canvas`, '_blank')
         } catch (e) {
             console.error(e)
         }

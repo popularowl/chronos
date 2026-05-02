@@ -746,7 +746,7 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
                                 variant='outlined'
                                 label={localMetadata?.agentflow?.name || localMetadata?.agentflow?.id || 'Go to AgentFlow'}
                                 className={'button'}
-                                onClick={() => window.open(`/v2/agentcanvas/${localMetadata?.agentflow?.id}`, '_blank')}
+                                onClick={() => window.open(`/canvas/${localMetadata?.agentflow?.id}`, '_blank')}
                             />
                         )}
 

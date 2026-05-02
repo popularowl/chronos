@@ -16,7 +16,7 @@ const CanvasRoutes = {
     element: <MinimalLayout />,
     children: [
         {
-            path: '/v2/agentcanvas',
+            path: '/canvas',
             element: (
                 <RequireAuth permission={'agentflows:view'}>
                     <CanvasV2 />
@@ -24,7 +24,7 @@ const CanvasRoutes = {
             )
         },
         {
-            path: '/v2/agentcanvas/:id',
+            path: '/canvas/:id',
             element: (
                 <RequireAuth permission={'agentflows:view'}>
                     <CanvasV2 />

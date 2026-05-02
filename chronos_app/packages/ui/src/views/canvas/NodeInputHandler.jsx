@@ -1053,7 +1053,7 @@ const NodeInputHandler = ({
 
                         {(inputParam.type === 'string' || inputParam.type === 'password' || inputParam.type === 'number') &&
                             (inputParam?.acceptVariable &&
-                            (window.location.href.includes('v2/agentcanvas') || window.location.href.includes('v2/template')) ? (
+                            (window.location.href.includes('/canvas/') || window.location.href.includes('/v2/template/')) ? (
                                 <RichInput
                                     key={data.inputs[inputParam.name]}
                                     placeholder={inputParam.placeholder}
@@ -1362,7 +1362,7 @@ const NodeInputHandler = ({
                 onCancel={() => setPromptGeneratorDialogOpen(false)}
                 onConfirm={(generatedInstruction) => {
                     try {
-                        if (inputParam?.acceptVariable && window.location.href.includes('v2/agentcanvas')) {
+                        if (inputParam?.acceptVariable && window.location.href.includes('/canvas/')) {
                             const htmlContent = markdownConverter.makeHtml(generatedInstruction)
                             data.inputs[inputParam.name] = htmlContent
                         } else {

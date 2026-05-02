@@ -3,6 +3,7 @@ import supertest from 'supertest'
 import { getRunningExpressApp } from '../../src/utils/getRunningExpressApp'
 import { AgentflowErrorMessage, validateAgentflowType } from '../../src/services/agentflows'
 import { EnumAgentflowType } from '../../src/database/entities/AgentFlow'
+import { Agent } from '../../src/database/entities/Agent'
 
 /**
  * Helper function to get auth token
@@ -275,6 +276,74 @@ export function agentflowsServiceTest() {
                     .set('x-request-from', 'internal')
 
                 expect(response.status).toEqual(StatusCodes.INTERNAL_SERVER_ERROR)
+            })
+        })
+
+        describe('Built-in agent registry side-effects', () => {
+            it('creates a linked BUILT_IN agent when an agentflow is saved', async () => {
+                const authToken = await getAuthToken()
+                const agentflowId = await createTestAgentflow(authToken)
+
+                const agentRepo = getRunningExpressApp().AppDataSource.getRepository(Agent)
+                const linked = await agentRepo.findOneBy({ builtinAgentflowId: agentflowId })
+
+                expect(linked).not.toBeNull()
+                expect(linked?.runtimeType).toEqual('BUILT_IN')
+                expect(linked?.status).toEqual('HEALTHY')
+                expect(linked?.enabled).toBe(true)
+                expect(linked?.slug).toBeTruthy()
+
+                // Cleanup
+                await deleteTestAgentflow(authToken, agentflowId)
+            })
+
+            it('cascade-deletes the linked BUILT_IN agent when the agentflow is deleted', async () => {
+                const authToken = await getAuthToken()
+                const agentflowId = await createTestAgentflow(authToken)
+
+                const agentRepo = getRunningExpressApp().AppDataSource.getRepository(Agent)
+                const before = await agentRepo.findOneBy({ builtinAgentflowId: agentflowId })
+                expect(before).not.toBeNull()
+
+                await deleteTestAgentflow(authToken, agentflowId)
+
+                const after = await agentRepo.findOneBy({ builtinAgentflowId: agentflowId })
+                expect(after).toBeNull()
+            })
+
+            it('produces a unique slug when two flows share a name', async () => {
+                const authToken = await getAuthToken()
+                const sharedName = `Shared Name ${Date.now()}`
+                const flowPayload = {
+                    name: sharedName,
+                    type: 'AGENTFLOW',
+                    flowData: JSON.stringify({ nodes: [], edges: [] })
+                }
+
+                const r1 = await supertest(getRunningExpressApp().app)
+                    .post(baseRoute)
+                    .set('Authorization', `Bearer ${authToken}`)
+                    .set('x-request-from', 'internal')
+                    .send(flowPayload)
+                const r2 = await supertest(getRunningExpressApp().app)
+                    .post(baseRoute)
+                    .set('Authorization', `Bearer ${authToken}`)
+                    .set('x-request-from', 'internal')
+                    .send(flowPayload)
+
+                expect(r1.status).toEqual(StatusCodes.OK)
+                expect(r2.status).toEqual(StatusCodes.OK)
+
+                const agentRepo = getRunningExpressApp().AppDataSource.getRepository(Agent)
+                const a1 = await agentRepo.findOneBy({ builtinAgentflowId: r1.body.id })
+                const a2 = await agentRepo.findOneBy({ builtinAgentflowId: r2.body.id })
+                expect(a1?.slug).toBeTruthy()
+                expect(a2?.slug).toBeTruthy()
+                expect(a1?.slug).not.toEqual(a2?.slug)
+
+                // Cleanup
+                await deleteTestAgentflow(authToken, r1.body.id)
+                await deleteTestAgentflow(authToken, r2.body.id)
             })
         })
     })

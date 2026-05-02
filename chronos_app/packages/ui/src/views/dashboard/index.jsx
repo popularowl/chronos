@@ -503,7 +503,7 @@ const CostDashboard = () => {
                                                         color: theme.palette.primary.main,
                                                         '&:hover': { textDecoration: 'underline' }
                                                     }}
-                                                    onClick={() => navigate(`/v2/agentcanvas/${agent.agentflowId}`)}
+                                                    onClick={() => navigate(`/canvas/${agent.agentflowId}`)}
                                                 >
                                                     {agent.agentflowName}
                                                 </Typography>

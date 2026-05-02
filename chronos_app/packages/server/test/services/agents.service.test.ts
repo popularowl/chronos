@@ -170,7 +170,7 @@ export function agentsServiceTest() {
                 ).rejects.toMatchObject({ statusCode: 404 })
             })
 
-            it('does not generate callback token for BUILT_IN agents', async () => {
+            it('does not generate callback token for BUILT_IN agents and defaults status to HEALTHY', async () => {
                 mockRepository.findOneBy.mockImplementation(({ id }: any) => {
                     if (id === 'flow-1') return Promise.resolve({ id: 'flow-1', name: 'flow' })
                     return Promise.resolve(null)
@@ -182,6 +182,7 @@ export function agentsServiceTest() {
                     builtinAgentflowId: 'flow-1'
                 })
                 expect(result.callbackToken).toBeUndefined()
+                expect(result.status).toBe('HEALTHY')
             })
 
             it('serialises capabilities/skills/etc as JSON strings', async () => {
@@ -258,6 +259,71 @@ export function agentsServiceTest() {
                 const result = await agentsService.toggleAgent('a1', true)
                 expect(result.enabled).toBe(true)
                 expect(result.status).toBe('UNKNOWN')
+            })
+        })
+
+        // ─── createBuiltInAgentForAgentflow ────────────────────────────
+
+        describe('createBuiltInAgentForAgentflow', () => {
+            it('creates a BUILT_IN agent linked to the flow with derived slug', async () => {
+                mockRepository.save.mockImplementation((entity: any) => Promise.resolve({ id: 'agent-bi-1', ...entity }))
+
+                const result = await agentsService.createBuiltInAgentForAgentflow({
+                    id: 'flow-1',
+                    name: 'My Flow',
+                    userId: 'user-7'
+                })
+
+                expect(result.id).toBe('agent-bi-1')
+                expect(result.runtimeType).toBe('BUILT_IN')
+                expect(result.status).toBe('HEALTHY')
+                expect(result.enabled).toBe(true)
+                expect(result.builtinAgentflowId).toBe('flow-1')
+                expect(result.userId).toBe('user-7')
+                expect(result.version).toBe('1.0.0')
+                expect(result.slug).toBe('my-flow')
+                expect(result.callbackToken).toBeUndefined()
+                expect(result.serviceEndpoint).toBeUndefined()
+            })
+
+            it('appends -1 suffix on slug collision', async () => {
+                let calls = 0
+                mockRepository.findOneBy.mockImplementation(({ slug }: any) => {
+                    if (!slug) return Promise.resolve(null)
+                    calls++
+                    if (calls === 1) return Promise.resolve({ id: 'taken' })
+                    return Promise.resolve(null)
+                })
+                mockRepository.save.mockImplementation((entity: any) => Promise.resolve({ id: 'agent-bi-2', ...entity }))
+
+                const result = await agentsService.createBuiltInAgentForAgentflow({
+                    id: 'flow-2',
+                    name: 'My Flow'
+                })
+
+                expect(result.slug).toBe('my-flow-1')
+            })
+
+            it('runs even when ENABLE_AGENTS=false (mirrors migration backfill)', async () => {
+                const original = process.env.ENABLE_AGENTS
+                process.env.ENABLE_AGENTS = 'false'
+                jest.resetModules()
+                jest.doMock('../../src/utils/getRunningExpressApp', () => ({
+                    getRunningExpressApp: jest.fn(() => mockAppServer)
+                }))
+                const disabled = require('../../src/services/agents').default
+                mockRepository.save.mockImplementation((entity: any) => Promise.resolve({ id: 'agent-bi-3', ...entity }))
+
+                const result = await disabled.createBuiltInAgentForAgentflow({ id: 'flow-3', name: 'Gated Flow' })
+                expect(result.runtimeType).toBe('BUILT_IN')
+                expect(result.builtinAgentflowId).toBe('flow-3')
+
+                process.env.ENABLE_AGENTS = original
+                jest.resetModules()
+                jest.doMock('../../src/utils/getRunningExpressApp', () => ({
+                    getRunningExpressApp: jest.fn(() => mockAppServer)
+                }))
+                agentsService = require('../../src/services/agents').default
             })
         })
 

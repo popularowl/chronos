@@ -331,17 +331,10 @@ const EvalEvaluationRows = () => {
         if (outdated?.errors?.length > 0 && outdated.errors.find((e) => e.id === id)) {
             return undefined
         }
-        if (additionalConfig.agentflowTypes) {
-            switch (additionalConfig.agentflowTypes[index]) {
-                case 'Agentflow':
-                    return '/canvas/' + evaluation.agentflowId[index]
-                case 'Custom Assistant':
-                    return '/assistants/custom/' + evaluation.agentflowId[index]
-                case 'Agentflow v2':
-                    return '/v2/agentcanvas/' + evaluation.agentflowId[index]
-            }
+        if (additionalConfig.agentflowTypes?.[index] === 'Custom Assistant') {
+            return '/assistants/custom/' + id
         }
-        return '/canvas/' + evaluation.agentflowId[index]
+        return '/canvas/' + id
     }
 
     const openFlow = (index) => {
@@ -484,11 +477,9 @@ const EvalEvaluationRows = () => {
                                                         label={flow.agentflowName}
                                                         onClick={() =>
                                                             window.open(
-                                                                flow.agentflowType === 'Agentflow'
-                                                                    ? '/canvas/' + flow.agentflowId
-                                                                    : flow.agentflowType === 'Custom Assistant'
+                                                                flow.agentflowType === 'Custom Assistant'
                                                                     ? '/assistants/custom/' + flow.agentflowId
-                                                                    : '/v2/agentcanvas/' + flow.agentflowId,
+                                                                    : '/canvas/' + flow.agentflowId,
                                                                 '_blank'
                                                             )
                                                         }

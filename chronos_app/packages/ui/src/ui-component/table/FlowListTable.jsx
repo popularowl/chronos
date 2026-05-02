@@ -85,13 +85,7 @@ export const FlowListTable = ({
         localStorage.setItem(localStorageKeyOrderBy, property)
     }
 
-    const onFlowClick = (row) => {
-        if (!isAgentCanvas) {
-            return `/canvas/${row.id}`
-        } else {
-            return isAgentflowV2 ? `/v2/agentcanvas/${row.id}` : `/agentcanvas/${row.id}`
-        }
-    }
+    const onFlowClick = (row) => `/canvas/${row.id}`
 
     const sortedData = data
         ? [...data].sort((a, b) => {

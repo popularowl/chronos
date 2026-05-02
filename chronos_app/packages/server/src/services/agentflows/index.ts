@@ -4,6 +4,7 @@ import { In } from 'typeorm'
 import { AgentflowType, IReactFlowObject } from '../../Interface'
 import { UserContext } from '../../Interface.Auth'
 import { CHRONOS_COUNTER_STATUS, CHRONOS_METRIC_COUNTERS } from '../../Interface.Metrics'
+import { Agent } from '../../database/entities/Agent'
 import { AgentFlow, EnumAgentflowType } from '../../database/entities/AgentFlow'
 import { AgentflowVersion } from '../../database/entities/AgentflowVersion'
 import { ChatMessage } from '../../database/entities/ChatMessage'
@@ -11,6 +12,7 @@ import { ChatMessageFeedback } from '../../database/entities/ChatMessageFeedback
 import { UpsertHistory } from '../../database/entities/UpsertHistory'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
+import agentsService from '../../services/agents'
 import documentStoreService from '../../services/documentstore'
 import { getAppVersion, getTelemetryFlowObj } from '../../utils'
 import { containsBase64File, updateFlowDataWithFilePaths } from '../../utils/fileRepository'
@@ -95,6 +97,9 @@ const deleteAgentflow = async (agentflowId: string, userContext?: UserContext): 
 
         // Delete all version snapshots
         await appServer.AppDataSource.getRepository(AgentflowVersion).delete({ agentflowId })
+
+        // Cascade-delete the implicit BUILT_IN agent registry row(s).
+        await appServer.AppDataSource.getRepository(Agent).delete({ builtinAgentflowId: agentflowId })
 
         try {
             // Delete all uploads corresponding to this agentflow
@@ -279,6 +284,10 @@ const saveAgentflow = async (newAgentFlow: AgentFlow, userContext?: UserContext)
         const agentflow = appServer.AppDataSource.getRepository(AgentFlow).create(newAgentFlow)
         dbResponse = await appServer.AppDataSource.getRepository(AgentFlow).save(agentflow)
     }
+
+    // Side-effect: register a BUILT_IN agent so the new flow appears in /agents
+    // discovery surface. Mirrors the v1.6.0 migration backfill for new flows.
+    await agentsService.createBuiltInAgentForAgentflow(dbResponse)
 
     await appServer.telemetry.sendTelemetry(
         'agentflow_created',

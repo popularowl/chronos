@@ -544,7 +544,7 @@ const AgentflowCanvas = () => {
             const agentflow = createNewAgentflowApi.data
             dispatch({ type: SET_AGENTFLOW, agentflow })
             saveAgentflowSuccess()
-            window.history.replaceState(state, null, `/v2/agentcanvas/${agentflow.id}`)
+            window.history.replaceState(state, null, `/canvas/${agentflow.id}`)
         } else if (createNewAgentflowApi.error) {
             errorFailed(`Failed to save ${canvasTitle}: ${createNewAgentflowApi.error.response.data.message}`)
         }

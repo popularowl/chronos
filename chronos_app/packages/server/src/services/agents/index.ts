@@ -149,7 +149,9 @@ const createAgent = async (requestBody: any): Promise<Agent> => {
         newAgent.securitySchemes = stringifyJsonField(requestBody.securitySchemes)
         newAgent.security = stringifyJsonField(requestBody.security)
         newAgent.runtimeType = runtimeType
-        newAgent.status = AgentStatus.UNKNOWN
+        // BUILT_IN agents are in-process: alive iff Chronos is alive. Skip
+        // the UNKNOWN-pending-first-probe state since there's nothing to probe.
+        newAgent.status = runtimeType === AgentRuntimeType.BUILT_IN ? AgentStatus.HEALTHY : AgentStatus.UNKNOWN
         newAgent.enabled = requestBody.enabled !== false
         newAgent.runtimeConfig = JSON.stringify(runtimeConfig)
         newAgent.outboundAuth = stringifyJsonField(requestBody.outboundAuth)
@@ -385,9 +387,49 @@ const stringifyJsonField = (value: unknown): string | undefined => {
     return JSON.stringify(value)
 }
 
+/**
+ * Create the implicit BUILT_IN agent that backs an AgentFlow.
+ *
+ * Mirrors the v1.6.0 migration backfill: every AgentFlow gets exactly one
+ * BUILT_IN agent so it shows up in the /agents discovery surface. Bypasses
+ * `assertAgentsEnabled` on purpose — the registry row exists regardless of
+ * `ENABLE_AGENTS`; the flag still gates the public API. If we gated the
+ * insert too, registry contents would depend on the flag's state at flow
+ * creation time, which is confusing.
+ *
+ * Slug is derived from the flow name and made unique against the agent
+ * table.
+ */
+const createBuiltInAgentForAgentflow = async (flow: AgentFlow): Promise<Agent> => {
+    try {
+        const appServer = getRunningExpressApp()
+        const slug = await ensureUniqueSlug(slugifyName(flow.name))
+
+        const newAgent = new Agent()
+        newAgent.name = flow.name
+        newAgent.slug = slug
+        newAgent.version = '1.0.0'
+        newAgent.runtimeType = AgentRuntimeType.BUILT_IN
+        newAgent.status = AgentStatus.HEALTHY
+        newAgent.enabled = true
+        newAgent.builtinAgentflowId = flow.id
+        newAgent.userId = flow.userId || undefined
+
+        const repo = appServer.AppDataSource.getRepository(Agent)
+        return await repo.save(repo.create(newAgent))
+    } catch (error) {
+        if (error instanceof InternalChronosError) throw error
+        throw new InternalChronosError(
+            StatusCodes.INTERNAL_SERVER_ERROR,
+            `Error: agentsService.createBuiltInAgentForAgentflow - ${getErrorMessage(error)}`
+        )
+    }
+}
+
 export default {
     isAgentsEnabled,
     createAgent,
+    createBuiltInAgentForAgentflow,
     updateAgent,
     deleteAgent,
     getAllAgents,

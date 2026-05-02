@@ -12,6 +12,8 @@ services:
         DEBUG: true
         ENABLE_SCHEDULES: true 
         ENABLE_WEBHOOKS: true
+        ENABLE_AGENTS: true
+        ENABLE_MCP_SERVERS: true
         LOG_SANITIZE_HEADER_FIELDS: authorization,x-api-key,x-auth-token,cookie
         LOG_SANITIZE_BODY_FIELDS: password,pwd,pass,secret,token,apikey,api_key,accesstoken,access_token,refreshtoken
       ports:

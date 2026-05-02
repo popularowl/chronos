@@ -61,7 +61,7 @@ const TemplateCanvasV2 = () => {
 
     const onAgentflowCopy = (flowData) => {
         const templateFlowData = JSON.stringify(flowData)
-        navigate('/v2/agentcanvas', { state: { templateFlowData } })
+        navigate('/canvas', { state: { templateFlowData } })
     }
 
     // eslint-disable-next-line

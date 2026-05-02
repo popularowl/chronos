@@ -47,17 +47,11 @@ const EvalsResultDialog = ({ show, dialogProps, onCancel, openDetailsDrawer }) =
         if (index === undefined) {
             return ''
         }
-        if (dialogProps.data?.additionalConfig?.agentflowTypes) {
-            switch (dialogProps.data.additionalConfig.agentflowTypes[index]) {
-                case 'Agentflow':
-                    return '/canvas/' + dialogProps.data.evaluation.agentflowId[index]
-                case 'Custom Assistant':
-                    return '/assistants/custom/' + dialogProps.data.evaluation.agentflowId[index]
-                case 'Agentflow v2':
-                    return '/v2/agentcanvas/' + dialogProps.data.evaluation.agentflowId[index]
-            }
+        const id = dialogProps.data.evaluation.agentflowId[index]
+        if (dialogProps.data?.additionalConfig?.agentflowTypes?.[index] === 'Custom Assistant') {
+            return '/assistants/custom/' + id
         }
-        return '/canvas/' + dialogProps.data.evaluation.agentflowId[index]
+        return '/canvas/' + id
     }
 
     const component = show ? (
