@@ -78,7 +78,7 @@ import useNotifier from '@/utils/useNotifier'
 import { baseURL, CHRONOS_CREDENTIAL_ID } from '@/store/constant'
 import { closeSnackbar as closeSnackbarAction, enqueueSnackbar as enqueueSnackbarAction } from '@/store/actions'
 
-const EDITABLE_OPTIONS = ['selectedTool', 'selectedAssistant']
+const EDITABLE_OPTIONS = ['selectedTool']
 
 const CustomWidthTooltip = styled(({ className, ...props }) => <Tooltip {...props} classes={{ popper: className }} />)({
     [`& .${tooltipClasses.tooltip}`]: {
@@ -488,14 +488,6 @@ const NodeInputHandler = ({
                 confirmButtonName: 'Save',
                 toolId: inputValue
             })
-        } else if (inputParamName === 'selectedAssistant') {
-            setAsyncOptionEditDialogProps({
-                title: 'Edit Assistant',
-                type: 'EDIT',
-                cancelButtonName: 'Cancel',
-                confirmButtonName: 'Save',
-                assistantId: inputValue
-            })
         }
         setAsyncOptionEditDialog(inputParamName)
     }
@@ -504,13 +496,6 @@ const NodeInputHandler = ({
         if (inputParamName === 'selectedTool') {
             setAsyncOptionEditDialogProps({
                 title: 'Add New Tool',
-                type: 'ADD',
-                cancelButtonName: 'Cancel',
-                confirmButtonName: 'Add'
-            })
-        } else if (inputParamName === 'selectedAssistant') {
-            setAsyncOptionEditDialogProps({
-                title: 'Add New Assistant',
                 type: 'ADD',
                 cancelButtonName: 'Cancel',
                 confirmButtonName: 'Add'

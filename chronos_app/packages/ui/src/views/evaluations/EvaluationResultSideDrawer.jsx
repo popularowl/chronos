@@ -14,7 +14,7 @@ import {
     TableRow,
     TableBody
 } from '@mui/material'
-import { IconHierarchy, IconUsersGroup, IconRobot } from '@tabler/icons-react'
+import { IconHierarchy, IconUsersGroup } from '@tabler/icons-react'
 
 import { useSelector } from 'react-redux'
 import { evaluators as evaluatorsOptions, numericOperators } from '../evaluators/evaluatorConstant'
@@ -40,17 +40,10 @@ const EvaluationResultSideDrawer = ({ show, dialogProps, onClickFunction }) => {
         if (index === undefined) {
             return <IconHierarchy size={24} />
         }
-        if (dialogProps.additionalConfig.agentflowTypes) {
-            switch (dialogProps.additionalConfig.agentflowTypes[index]) {
-                case 'Agentflow':
-                    return <IconHierarchy size={20} />
-                case 'Custom Assistant':
-                    return <IconRobot size={20} />
-                case 'Agentflow v2':
-                    return <IconUsersGroup size={20} />
-            }
+        if (dialogProps.additionalConfig.agentflowTypes?.[index] === 'Agentflow v2') {
+            return <IconUsersGroup size={20} />
         }
-        return <IconHierarchy />
+        return <IconHierarchy size={20} />
     }
 
     return (

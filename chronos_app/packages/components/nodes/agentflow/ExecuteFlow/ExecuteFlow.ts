@@ -132,11 +132,10 @@ class ExecuteFlow_Agentflow implements INode {
             const agentflows = await appDataSource.getRepository(databaseEntities['AgentFlow']).findBy(searchOptions)
 
             for (let i = 0; i < agentflows.length; i += 1) {
-                const cfType = agentflows[i].type === 'ASSISTANT' ? 'Assistant' : 'Agentflow'
                 const data = {
                     label: agentflows[i].name,
                     name: agentflows[i].id,
-                    description: cfType
+                    description: 'Agentflow'
                 } as INodeOptionsValue
                 returnData.push(data)
             }

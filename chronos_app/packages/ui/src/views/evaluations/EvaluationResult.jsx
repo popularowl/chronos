@@ -25,7 +25,7 @@ import {
 import { useTheme } from '@mui/material/styles'
 import moment from 'moment'
 import PaidIcon from '@mui/icons-material/Paid'
-import { IconHierarchy, IconUsersGroup, IconRobot } from '@tabler/icons-react'
+import { IconHierarchy, IconUsersGroup } from '@tabler/icons-react'
 import LLMIcon from '@mui/icons-material/ModelTraining'
 import AlarmIcon from '@mui/icons-material/AlarmOn'
 import TokensIcon from '@mui/icons-material/AutoAwesomeMotion'
@@ -331,9 +331,6 @@ const EvalEvaluationRows = () => {
         if (outdated?.errors?.length > 0 && outdated.errors.find((e) => e.id === id)) {
             return undefined
         }
-        if (additionalConfig.agentflowTypes?.[index] === 'Custom Assistant') {
-            return '/assistants/custom/' + id
-        }
         return '/canvas/' + id
     }
 
@@ -348,17 +345,10 @@ const EvalEvaluationRows = () => {
         if (index === undefined) {
             return <IconHierarchy size={17} />
         }
-        if (additionalConfig.agentflowTypes) {
-            switch (additionalConfig.agentflowTypes[index]) {
-                case 'Agentflow':
-                    return <IconHierarchy size={17} />
-                case 'Custom Assistant':
-                    return <IconRobot size={17} />
-                case 'Agentflow v2':
-                    return <IconUsersGroup size={17} />
-            }
+        if (additionalConfig.agentflowTypes?.[index] === 'Agentflow v2') {
+            return <IconUsersGroup size={17} />
         }
-        return <IconHierarchy />
+        return <IconHierarchy size={17} />
     }
     return (
         <>
@@ -475,14 +465,7 @@ const EvalEvaluationRows = () => {
                                                         }}
                                                         variant='outlined'
                                                         label={flow.agentflowName}
-                                                        onClick={() =>
-                                                            window.open(
-                                                                flow.agentflowType === 'Custom Assistant'
-                                                                    ? '/assistants/custom/' + flow.agentflowId
-                                                                    : '/canvas/' + flow.agentflowId,
-                                                                '_blank'
-                                                            )
-                                                        }
+                                                        onClick={() => window.open('/canvas/' + flow.agentflowId, '_blank')}
                                                     ></Chip>
                                                 ))}
                                             </Stack>
