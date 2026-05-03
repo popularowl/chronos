@@ -310,10 +310,7 @@ export class MCPGateway {
                 durationMs: Date.now() - startedAt,
                 error: getErrorMessage(error)
             })
-            throw new InternalChronosError(
-                StatusCodes.BAD_GATEWAY,
-                `Failed to list tools at ${input.url}: ${getErrorMessage(error)}`
-            )
+            throw new InternalChronosError(StatusCodes.BAD_GATEWAY, `Failed to list tools at ${input.url}: ${getErrorMessage(error)}`)
         } finally {
             await client.close().catch(() => {
                 /* noop */

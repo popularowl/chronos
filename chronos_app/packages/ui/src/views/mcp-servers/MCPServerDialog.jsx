@@ -561,8 +561,8 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                     !url.trim()
                                         ? 'Enter a URL first'
                                         : isEdit
-                                          ? 'Call tools/list on the live MCP server'
-                                          : 'Preview tools/list against the URL above (server is not yet saved)'
+                                        ? 'Call tools/list on the live MCP server'
+                                        : 'Preview tools/list against the URL above (server is not yet saved)'
                                 }
                             >
                                 <span>

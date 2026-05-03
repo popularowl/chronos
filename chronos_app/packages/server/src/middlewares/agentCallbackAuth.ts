@@ -59,9 +59,7 @@ export const agentCallbackAuth = async (req: Request, res: Response, next: NextF
         // run the constant-time compare against an empty stored token so
         // timing on this path matches the "valid UUID, agent missing" path.
         const appServer = getRunningExpressApp()
-        const agent = UUID_RE.test(agentId)
-            ? await appServer.AppDataSource.getRepository(Agent).findOneBy({ id: agentId })
-            : null
+        const agent = UUID_RE.test(agentId) ? await appServer.AppDataSource.getRepository(Agent).findOneBy({ id: agentId }) : null
 
         // Constant-time-compare even when the agent does not exist so token
         // verification cost does not leak the existence of an agent ID.

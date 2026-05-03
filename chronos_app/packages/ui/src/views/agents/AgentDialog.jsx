@@ -392,7 +392,9 @@ const AgentDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                 setAllowedTools(merged)
                 showSuccess(
                     added > 0
-                        ? `Discovered ${discovered.length} tool${discovered.length === 1 ? '' : 's'} across ${eligible.length} server(s) — added ${added} to Allowed Tools.`
+                        ? `Discovered ${discovered.length} tool${discovered.length === 1 ? '' : 's'} across ${
+                              eligible.length
+                          } server(s) — added ${added} to Allowed Tools.`
                         : `Discovered ${discovered.length} tool${discovered.length === 1 ? '' : 's'} (already selected).`
                 )
             }

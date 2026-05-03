@@ -67,9 +67,7 @@ interface OpenAIModelObject {
  */
 const resolveAgentflow = async (modelId: string): Promise<AgentFlow> => {
     const appServer = getRunningExpressApp()
-    const agentflow = UUID_RE.test(modelId)
-        ? await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({ id: modelId })
-        : null
+    const agentflow = UUID_RE.test(modelId) ? await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({ id: modelId }) : null
     if (!agentflow) {
         throw new InternalChronosError(StatusCodes.NOT_FOUND, `Model '${modelId}' not found`)
     }
