@@ -1,0 +1,93 @@
+/**
+ * Tiny reference MCP server used by the v1.6 demo. Speaks Streamable HTTP
+ * on /mcp. Exposes two tools — `echo` and `add` — sufficient to exercise
+ * the Chronos MCP gateway end-to-end without depending on third-party
+ * images that may bundle stdio-only entrypoints or fragile demo timers.
+ *
+ * Stateful session pattern (matches what the official mcp/everything image
+ * does in SSE mode and what the MCP SDK's reference example does for
+ * streamable-http): client posts an initialize request, server returns a
+ * session id, subsequent calls reuse the session.
+ */
+import { randomUUID } from 'crypto'
+import express, { Request, Response } from 'express'
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
+import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { z } from 'zod'
+
+const PORT = parseInt(process.env.PORT ?? '7800', 10)
+
+const buildServer = (): McpServer => {
+    const server = new McpServer({ name: 'chronos-reference-mcp', version: '1.6.0' })
+
+    server.tool(
+        'echo',
+        'Echoes the input string back unchanged.',
+        { message: z.string().describe('Message to echo') },
+        async ({ message }) => ({ content: [{ type: 'text', text: message }] })
+    )
+
+    server.tool(
+        'add',
+        'Adds two integers and returns the sum as text.',
+        { a: z.number().describe('First number'), b: z.number().describe('Second number') },
+        async ({ a, b }) => ({ content: [{ type: 'text', text: String(a + b) }] })
+    )
+
+    return server
+}
+
+const app = express()
+app.use(express.json({ limit: '4mb' }))
+
+const transports = new Map<string, StreamableHTTPServerTransport>()
+
+app.post('/mcp', async (req: Request, res: Response) => {
+    const existingId = req.header('mcp-session-id')
+    let transport = existingId ? transports.get(existingId) : undefined
+
+    if (!transport) {
+        const newTransport: StreamableHTTPServerTransport = new StreamableHTTPServerTransport({
+            sessionIdGenerator: () => randomUUID(),
+            onsessioninitialized: (id: string) => {
+                transports.set(id, newTransport)
+            }
+        })
+        newTransport.onclose = () => {
+            if (newTransport.sessionId) transports.delete(newTransport.sessionId)
+        }
+        const server = buildServer()
+        await server.connect(newTransport)
+        transport = newTransport
+    }
+
+    await transport.handleRequest(req, res, req.body)
+})
+
+// GET without a session id is what the MCPServerHealthPoller probes; return
+// 200 so the server flips to HEALTHY on the first probe. With a session id
+// present, this is the SSE listening channel — delegate.
+app.get('/mcp', async (req: Request, res: Response) => {
+    const sid = req.header('mcp-session-id')
+    const transport = sid ? transports.get(sid) : undefined
+    if (!transport) {
+        res.status(200).json({ ok: true })
+        return
+    }
+    await transport.handleRequest(req, res)
+})
+
+app.delete('/mcp', async (req: Request, res: Response) => {
+    const sid = req.header('mcp-session-id')
+    const transport = sid ? transports.get(sid) : undefined
+    if (!transport) {
+        res.status(400).send('No session')
+        return
+    }
+    await transport.handleRequest(req, res)
+})
+
+app.listen(PORT, () => {
+    // eslint-disable-next-line no-console
+    console.log(`[mcp-reference] streamable-http listening on :${PORT}`)
+})

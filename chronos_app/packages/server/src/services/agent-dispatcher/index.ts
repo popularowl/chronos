@@ -9,15 +9,24 @@ import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 import { utilBuildAgentflow } from '../../utils/buildAgentflow'
 import httpAgentRuntime from '../agent-runtime-http'
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 /**
  * Looks up an Agent by id (UUID) or slug. Used by the dispatcher and the
  * `/agents/:id/...` routes — accepting either lets callers address agents by
  * the same identifier they hand to the OpenAI `model` field.
+ *
+ * The UUID regex check is required: Postgres's uuid column type rejects
+ * non-UUID strings at the SQL layer, throwing before TypeORM can return
+ * null. SQLite tolerates the type mismatch and would silently fall through.
+ * Gating on the regex keeps the behaviour identical across both dialects.
  */
 const findAgent = async (idOrSlug: string): Promise<Agent | null> => {
     const repo = getRunningExpressApp().AppDataSource.getRepository(Agent)
-    const byId = await repo.findOneBy({ id: idOrSlug })
-    if (byId) return byId
+    if (UUID_RE.test(idOrSlug)) {
+        const byId = await repo.findOneBy({ id: idOrSlug })
+        if (byId) return byId
+    }
     return await repo.findOneBy({ slug: idOrSlug })
 }
 

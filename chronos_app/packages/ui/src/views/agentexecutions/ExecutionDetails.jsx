@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux'
 
 // MUI
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView'
-import { Typography, Box, Drawer, Chip, Button, Tooltip } from '@mui/material'
+import { Typography, Box, Drawer, Chip, Button, Tooltip, Stack } from '@mui/material'
 import { styled, alpha } from '@mui/material/styles'
 import { useTreeItem2 } from '@mui/x-tree-view/useTreeItem2'
 import {
@@ -662,8 +662,16 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
         })
     }
 
+    // HTTP-agent invocations write a synthetic Execution row whose
+    // `executionData` is an object (`{ response }`, `{ request, callId }`,
+    // `{ error }`, etc.) rather than the agentflow node-tree array the
+    // built-in path produces. Render a flat JSON view for those instead of
+    // routing into buildTreeData (which would throw on `.forEach` of a non-
+    // array and unmount the drawer to a blank page).
+    const isHttpExecution = execution !== null && execution !== undefined && !Array.isArray(execution)
+
     useEffect(() => {
-        if (execution) {
+        if (execution && Array.isArray(execution)) {
             const newTree = buildTreeData(execution)
 
             // Find first stopped item if metadata state is STOPPED
@@ -717,8 +725,78 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
         setSelectedItem(selectedNode)
     }
 
+    // HTTP-agent execution panel — flat JSON view of whatever the runtime
+    // persisted (request body, response body, error). No tree, no node
+    // selection. The full agentflow execution UI doesn't apply here because
+    // an HTTP-agent run is one upstream call, not a graph of nodes.
+    const httpExecutionContent = (
+        <Box sx={{ display: 'flex', height: '100%', flexDirection: 'row' }}>
+            <Box
+                sx={{
+                    flex: '1 1 35%',
+                    padding: 2,
+                    borderRight: 1,
+                    borderColor: 'divider',
+                    overflow: 'auto'
+                }}
+            >
+                <Typography variant='overline' color='text.secondary'>
+                    Execution
+                </Typography>
+                <Stack direction='row' spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
+                    {!isPublic && localMetadata?.id && (
+                        <Tooltip title={`Execution ID: ${localMetadata.id}`} placement='top'>
+                            <Chip
+                                sx={{ pl: 1 }}
+                                icon={<IconCopy size={15} />}
+                                variant='outlined'
+                                label={copied ? 'Copied!' : 'Copy ID'}
+                                className={'button'}
+                                onClick={copyToClipboard}
+                            />
+                        </Tooltip>
+                    )}
+                    {localMetadata?.state && <Chip size='small' label={`State: ${localMetadata.state}`} variant='outlined' />}
+                    {localMetadata?.createdDate && (
+                        <Chip size='small' label={`Created: ${new Date(localMetadata.createdDate).toLocaleString()}`} variant='outlined' />
+                    )}
+                    {localMetadata?.sessionId && <Chip size='small' label={`Session: ${localMetadata.sessionId}`} variant='outlined' />}
+                </Stack>
+                <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mt: 2 }}>
+                    HTTP-agent execution — the agent ran as a single upstream call. No nested node tree to display.
+                </Typography>
+            </Box>
+            <Box sx={{ flex: '1 1 65%', padding: 2, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
+                <Typography variant='overline' color='text.secondary'>
+                    Payload
+                </Typography>
+                <Box
+                    component='pre'
+                    sx={{
+                        backgroundColor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)'),
+                        padding: 2,
+                        borderRadius: 1,
+                        fontSize: '0.85rem',
+                        overflow: 'auto',
+                        margin: 0,
+                        marginTop: 1,
+                        width: '100%',
+                        flex: 1,
+                        boxSizing: 'border-box',
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
+                    }}
+                >
+                    {JSON.stringify(execution, null, 2)}
+                </Box>
+            </Box>
+        </Box>
+    )
+
     // Content to be rendered in both drawer and full page modes
-    const contentComponent = (
+    const contentComponent = isHttpExecution ? (
+        httpExecutionContent
+    ) : (
         <Box sx={{ display: 'flex', height: '100%', flexDirection: 'row' }}>
             <Box
                 sx={{

@@ -3,8 +3,10 @@ import client from './client'
 const getAllAgents = (page, limit, filters = {}) =>
     client.get('/agents', {
         params: {
-            page,
-            limit,
+            // See note in api/mcp-servers.js — server's pagination util
+            // 412s on negative page/limit; absent params = no pagination.
+            ...(typeof page === 'number' && page > 0 ? { page } : {}),
+            ...(typeof limit === 'number' && limit > 0 ? { limit } : {}),
             ...(filters.runtimeType ? { runtimeType: filters.runtimeType } : {}),
             ...(filters.status ? { status: filters.status } : {}),
             ...(filters.agentflowId ? { agentflowId: filters.agentflowId } : {})

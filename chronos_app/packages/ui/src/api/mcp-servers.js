@@ -3,8 +3,12 @@ import client from './client'
 const getAllMCPServers = (page, limit, filters = {}) =>
     client.get('/mcp-servers', {
         params: {
-            page,
-            limit,
+            // Omit page/limit when caller doesn't want pagination. Sending
+            // negative sentinels trips the server's `page cannot be negative`
+            // validator (see packages/server/src/utils/pagination.ts) — the
+            // server defaults to "no pagination" when the params are absent.
+            ...(typeof page === 'number' && page > 0 ? { page } : {}),
+            ...(typeof limit === 'number' && limit > 0 ? { limit } : {}),
             ...(filters.transport ? { transport: filters.transport } : {}),
             ...(filters.status ? { status: filters.status } : {})
         }
@@ -24,6 +28,8 @@ const testMCPServerConnection = (id) => client.post(`/mcp-servers/${id}/test-con
 
 const listMCPServerTools = (id) => client.get(`/mcp-servers/${id}/tools`)
 
+const previewMCPServerTools = (body) => client.post('/mcp-servers/preview-tools', body)
+
 export default {
     getAllMCPServers,
     getMCPServerById,
@@ -32,5 +38,6 @@ export default {
     deleteMCPServer,
     toggleMCPServer,
     testMCPServerConnection,
-    listMCPServerTools
+    listMCPServerTools,
+    previewMCPServerTools
 }

@@ -81,5 +81,6 @@ List of examples:
 
 We provide [professional services](https://intelligex.com/about) to help you deploy, customise, and operate Chronos in your organisation’s environment:
 - Architecture and deployment in your infra (on‑prem or cloud).
-- Custom agent development and integrations.
+- Custom agent development, integrations of existing agents.
+- MCP catalogues, discovery, auditing and security
 - Training and best practices for teams.

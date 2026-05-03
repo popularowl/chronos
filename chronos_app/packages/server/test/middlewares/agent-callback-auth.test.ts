@@ -32,7 +32,12 @@ export function agentCallbackAuthMiddlewareTest() {
 
         const buildReq = (overrides: any = {}) => ({
             headers: {},
-            params: { agentId: 'agent-1' },
+            // The middleware's UUID gate (added v1.6 release-prep) skips the
+            // DB lookup for non-UUID agent IDs, so fixtures must use a
+            // valid-looking UUID even though the mock repo returns whatever
+            // `mockResolvedValue` is set to. Real callers always pass UUIDs
+            // anyway — Express captures `:agentId` from the URL.
+            params: { agentId: '11111111-2222-4333-8444-555555555555' },
             ...overrides
         })
 
@@ -154,6 +159,19 @@ export function agentCallbackAuthMiddlewareTest() {
             const res = buildRes()
             const next = jest.fn()
             await agentCallbackAuth(req, res, next)
+            expect(res.status).toHaveBeenCalledWith(401)
+            expect(next).not.toHaveBeenCalled()
+        })
+
+        it('returns 401 without hitting the DB when agentId is not a UUID (Postgres uuid-column gate)', async () => {
+            const req = buildReq({
+                headers: { authorization: 'Bearer anything' },
+                params: { agentId: 'not-a-uuid' }
+            })
+            const res = buildRes()
+            const next = jest.fn()
+            await agentCallbackAuth(req, res, next)
+            expect(mockAgentRepo.findOneBy).not.toHaveBeenCalled()
             expect(res.status).toHaveBeenCalledWith(401)
             expect(next).not.toHaveBeenCalled()
         })

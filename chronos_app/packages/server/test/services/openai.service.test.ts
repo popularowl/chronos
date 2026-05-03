@@ -222,18 +222,25 @@ export function openaiServiceTest() {
         // -------------------- getModel --------------------
 
         describe('getModel', () => {
+            // The resolver's UUID gate (added v1.6 release-prep — Postgres
+            // uuid columns reject non-UUID strings at the SQL layer) requires
+            // happy-path fixtures to use a real UUID. Sad-path tests (below)
+            // still work with non-UUID input because the gate returns null
+            // → 404, which is what they assert anyway.
+            const VALID_AGENTFLOW_UUID = '11111111-2222-4333-8444-555555555555'
+
             it('should return model object for valid agentflow', async () => {
                 const mockAgentflow = {
-                    id: 'af-1',
+                    id: VALID_AGENTFLOW_UUID,
                     name: 'Test Agent',
                     type: 'AGENTFLOW',
                     createdDate: new Date('2024-01-01')
                 }
                 mockRepository.findOneBy.mockResolvedValue(mockAgentflow)
 
-                const result = await openaiService.getModel('af-1')
+                const result = await openaiService.getModel(VALID_AGENTFLOW_UUID)
 
-                expect(result.id).toBe('af-1')
+                expect(result.id).toBe(VALID_AGENTFLOW_UUID)
                 expect(result.object).toBe('model')
                 expect(result.owned_by).toBe('chronos')
                 expect(result.name).toBe('Test Agent')
@@ -249,13 +256,20 @@ export function openaiServiceTest() {
         // -------------------- resolveAgentflow --------------------
 
         describe('resolveAgentflow', () => {
+            const VALID_AGENTFLOW_UUID = '11111111-2222-4333-8444-555555555555'
+
             it('should return agentflow for valid id', async () => {
-                const mockAgentflow = { id: 'af-1', type: 'AGENTFLOW', name: 'Test' }
+                const mockAgentflow = { id: VALID_AGENTFLOW_UUID, type: 'AGENTFLOW', name: 'Test' }
                 mockRepository.findOneBy.mockResolvedValue(mockAgentflow)
 
-                const result = await openaiService.resolveAgentflow('af-1')
+                const result = await openaiService.resolveAgentflow(VALID_AGENTFLOW_UUID)
 
                 expect(result).toEqual(mockAgentflow)
+            })
+
+            it('returns 404 for non-UUID modelId without hitting the DB (Postgres uuid-column gate)', async () => {
+                await expect(openaiService.resolveAgentflow('not-a-uuid')).rejects.toThrow("Model 'not-a-uuid' not found")
+                expect(mockRepository.findOneBy).not.toHaveBeenCalled()
             })
 
             it('should throw 404 for non-existent id', async () => {

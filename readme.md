@@ -1,51 +1,36 @@
-# Chronos – visual AI agent builder for self‑hosting
+# Chronos – self-hosted control plane for AI agents and MCP tools
 
 ![Build Status](https://github.com/intelligexhq/chronos/actions/workflows/validate.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.md)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D24-brightgreen)](chronos_app/.nvmrc)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
-[![LangChain Core](https://img.shields.io/badge/%40langchain%2Fcore-^1.1.32-blue)](https://www.npmjs.com/package/@langchain/core)
-[![LangGraph](https://img.shields.io/badge/%40langchain%2Flanggraph-^1.2.2-blue)](https://www.npmjs.com/package/@langchain/langgraph)
-[![MCP SDK](https://img.shields.io/badge/%40modelcontextprotocol%2Fsdk-^1.27.1-blue)](https://www.npmjs.com/package/@modelcontextprotocol/sdk)
 
-> Build, run, and debug AI agents on your own infrastructure — with full visibility and control. The self-hosted, production-ready alternative to SaaS AI agent builders
+> Author agents visually on the built-in canvas, or register external agents from any framework — broker every tool through one audited MCP gateway.
 
 <div align="center" style="padding-bottom: 35px;">
   <img src="./resources/chronos_main_page.gif" width="600" />
 </div><div style="page-break-after: always;">&nbsp;</div>
 
-[Chronos](https://intelligex.com/chronos) is a visual AI agent workflow builder designed for teams who own their infrastructure.
-
-- Visual builder for complex agent workflows
-- Fully self-hosted (local, on-prem, private cloud)
-- Deep observability (trace every step of every run)
-
-`TL;DR:` Chronos is like [Flowise](https://github.com/FlowiseAI/Flowise) — but tailored for teams who need self-hosting, observability, and production readiness.
-
 ## Why Chronos?
 
-Most AI agent tools are great for demos — but fall apart in production. Chronos is built and used for real-world applied AI use cases
-
-- *Own your data:* Run everything inside your infrastructure.
-- *Visibility of agents actions:* Inspect prompts, tool calls, responses, errors, and token usage.
-- *Cost & Performance Dashboard:* Track and optimise agent costs and operations.
-- *Scheduled agents:* Maintain schedules for your agents.
-- *Tracing:* Opentelemetry helps traicing failures across the entire workflows.
-- *From prototype to production:* Build agents and integrate to enterprise systems via embeded OpenAI APIs.
-
+  - *[Chronos](https://intelligex.com/chronos) is an agent runtime, not a framework.* Deploy, run and manage: agents built on the Chronos visual canvas or standalone, code-first agents via OpenAI-compatible HTTP
+  spec. All through one uniform invocation surface.
+  - *MCP-first tool layer.* Tools are MCP servers. Agents reach them through a credential-brokered, audited gateway.
+  - *Governance is the wedge.* SSO, RBAC, per-team budgets with stop-switches, audit log, PII redaction. Reporting is enforcement.
+  - *Self-hosted, multiple docker compose examples.* SQLite or Postgres for persistence.
+  - *Observability built in, not bolted on.* OpenTelemetry traces, replayable executions, per-step cost attribution.
 
 ## What can you build?
 
-- Internal copilots over private company data  
-- RAG pipelines with local embeddings and vector stores  
-- Automated reporting and monitoring agents
-- Deep research and analysis workflows
-- Scheduled background agents for ongoing work.
+  - *An internal assistant that queries private databases via MCP, under audit and budget caps*.
+  - *An OpenAI-compatible drop-in* — register any agent, expose it via `/v1/chat/completions`, use the Chronos MCP tool registry.
+  - *Scheduled or event-driven agent jobs* (cron type scheduling, webhooks).
+  - *Cost-tracked multi-team agent fleets with per-team hard limits*.
 
 ## Quick start
 
 Get Chronos running locally in under 5 minutes.
-The fastest way to try it is to build and run `all‑in‑one` Chronos Docker image.
+The fastest way to try it is to build and run the `all‑in‑one` Chronos Docker image.
 
 ```bash
 # clone the repository
@@ -61,21 +46,22 @@ docker run -d --name chronos -p 3001:3000 chronos:local
 # http://localhost:3001
 ```
 
-For more configuration and advanced hosting examples, including localy hosted vectorstores, Ollama, queue modes - see [Docker compose examples](./chronos_app/docker/) section.
+For more configuration and advanced hosting examples, including locally hosted vectorstores, Ollama, queue modes — see [Docker compose examples](./chronos_app/docker/) section.
 
 ## Get involved
 
 - ⭐ Star this repo to support development  
-- Contribute via PRs; sugest issues, features and use cases.  
+- Contribute via PRs; suggest issues, features and use cases.  
 
 ## Backlog
 
-Some of the upcoming capabilities:
+What's coming next, in rough priority order:
 
-- Agents with webhooks for event‑driven workflows.
-- Versioning and publishing for agents.
-- SSO (single sign‑on) for user logins.
-- Additional tutorials on [intelligex.com](https://intelligex.com/) covering skill catalogues, deep agents, and data privacy.
+  - **Enterprise governance** — OIDC SSO (Entra ID, Okta, Auth0, generic OIDC), SCIM provisioning, role-based permissions, a persistent audit log with CSV export,      
+  per-team budgets with hard stop-switches.
+  - **MCP gateway depth** — maintained reference MCP servers (Postgres, GitHub, Slack, Jira, S3), per-server retry / rate-limit / circuit-breaker policies, OAuth2      
+  credential refresh, a browseable tool catalogue.
+  - **Replatforming** — package boundaries that clarify control plane vs. runtime vs. enterprise plug-points. The vision for v2.x of Chronos.
 
 ## Tutorials
 

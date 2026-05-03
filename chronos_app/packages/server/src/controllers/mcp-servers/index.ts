@@ -136,6 +136,15 @@ const listMCPServerTools = async (req: Request, res: Response, next: NextFunctio
     }
 }
 
+const previewMCPServerTools = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        const tools = await mcpServersService.previewMCPServerTools(req.body)
+        return res.json({ tools })
+    } catch (error) {
+        next(error)
+    }
+}
+
 export default {
     createMCPServer,
     updateMCPServer,
@@ -144,5 +153,6 @@ export default {
     getMCPServerById,
     toggleMCPServer,
     testMCPServerConnection,
-    listMCPServerTools
+    listMCPServerTools,
+    previewMCPServerTools
 }

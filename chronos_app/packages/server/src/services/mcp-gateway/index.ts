@@ -235,6 +235,89 @@ export class MCPGateway {
         }
     }
 
+    /**
+     * Calls `tools/list` against an unsaved MCP server using a transient
+     * (non-pooled, immediately closed) client. Used by the registration UI's
+     * Discover Tools button before the operator commits a new server. SSRF
+     * checks happen at the service-layer caller; this method assumes the
+     * URL has already been validated.
+     */
+    public async previewLiveTools(input: {
+        transport: MCPServerTransport
+        url: string
+        outboundAuth?: string | object
+        requestHeaders?: string | object
+        timeoutMs?: number
+        slug?: string
+    }): Promise<LiveToolDescriptor[]> {
+        if (input.transport === MCPServerTransport.STDIO) {
+            throw new InternalChronosError(StatusCodes.NOT_IMPLEMENTED, 'stdio transport is not supported in v1.6')
+        }
+        if (!input.url) {
+            throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'url is required to preview tools')
+        }
+
+        const requestHeaders = parseHeaderMap(stringifyMaybe(input.requestHeaders))
+        const authHeaders = await httpAgentRuntime.resolveOutboundAuth(stringifyMaybe(input.outboundAuth))
+        const headers: Record<string, string> = { ...requestHeaders, ...authHeaders }
+
+        let baseUrl: URL
+        try {
+            baseUrl = new URL(input.url)
+        } catch {
+            throw new InternalChronosError(StatusCodes.BAD_REQUEST, `Invalid url: ${input.url}`)
+        }
+
+        const client = new Client({ name: 'chronos-gateway-preview', version: '1.0.0' }, { capabilities: {} })
+        try {
+            if (input.transport === MCPServerTransport.SSE) {
+                const transport = new SSEClientTransport(baseUrl, {
+                    requestInit: { headers },
+                    eventSourceInit: { fetch: (url: any, init: any) => fetch(url, { ...init, headers }) as any }
+                } as any)
+                await client.connect(transport)
+            } else {
+                const transport = new StreamableHTTPClientTransport(baseUrl, { requestInit: { headers } })
+                await client.connect(transport)
+            }
+        } catch (error) {
+            throw new InternalChronosError(
+                StatusCodes.BAD_GATEWAY,
+                `Failed to connect to MCP server at ${input.url}: ${getErrorMessage(error)}`
+            )
+        }
+
+        const startedAt = Date.now()
+        const timeout = typeof input.timeoutMs === 'number' ? input.timeoutMs : DEFAULT_TOOL_CALL_TIMEOUT_MS
+        try {
+            const result = await client.request({ method: 'tools/list', params: {} }, ListToolsResultSchema, { timeout })
+            const tools = Array.isArray((result as any).tools) ? (result as any).tools : []
+            logger.info({
+                event: 'mcp.tools.list.preview',
+                slug: input.slug ?? '(unsaved)',
+                count: tools.length,
+                durationMs: Date.now() - startedAt
+            })
+            return tools.map((t: any) => ({
+                name: t?.name,
+                description: t?.description,
+                inputSchema: t?.inputSchema
+            }))
+        } catch (error) {
+            logger.warn({
+                event: 'mcp.tools.list.preview.error',
+                slug: input.slug ?? '(unsaved)',
+                durationMs: Date.now() - startedAt,
+                error: getErrorMessage(error)
+            })
+            throw new InternalChronosError(StatusCodes.BAD_GATEWAY, `Failed to list tools at ${input.url}: ${getErrorMessage(error)}`)
+        } finally {
+            await client.close().catch(() => {
+                /* noop */
+            })
+        }
+    }
+
     /** Test seam — number of currently pooled MCP clients. */
     public poolSize(): number {
         return this.pool.size
@@ -318,6 +401,21 @@ const parseAllowedTools = (raw?: string): string[] => {
         return Array.isArray(parsed) ? parsed.filter((s) => typeof s === 'string') : []
     } catch {
         return []
+    }
+}
+
+/**
+ * Normalises a JSON-stringified-or-object value into a JSON string. Lets the
+ * preview path accept the registration body's plain-object shape AND the
+ * persisted entity's stringified shape, both reusing the existing parsers.
+ */
+const stringifyMaybe = (value: string | object | undefined | null): string | undefined => {
+    if (value === null || value === undefined) return undefined
+    if (typeof value === 'string') return value
+    try {
+        return JSON.stringify(value)
+    } catch {
+        return undefined
     }
 }
 

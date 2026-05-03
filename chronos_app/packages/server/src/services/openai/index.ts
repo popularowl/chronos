@@ -7,6 +7,11 @@ import { getErrorMessage } from '../../errors/utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 import { AgentRuntimeType, IMessage } from '../../Interface'
 
+// Postgres's uuid column type rejects non-UUID strings at the SQL layer
+// (TypeORM doesn't catch it first). Gate id-vs-slug lookups on this regex
+// so non-UUID `model` strings never hit the id query.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 // OpenAI-compatible types
 
 interface OpenAIChatMessage {
@@ -62,7 +67,7 @@ interface OpenAIModelObject {
  */
 const resolveAgentflow = async (modelId: string): Promise<AgentFlow> => {
     const appServer = getRunningExpressApp()
-    const agentflow = await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({ id: modelId })
+    const agentflow = UUID_RE.test(modelId) ? await appServer.AppDataSource.getRepository(AgentFlow).findOneBy({ id: modelId }) : null
     if (!agentflow) {
         throw new InternalChronosError(StatusCodes.NOT_FOUND, `Model '${modelId}' not found`)
     }
@@ -89,9 +94,11 @@ export type AgentTarget = { kind: 'agentflow'; agentflow: AgentFlow } | { kind: 
 const resolveAgentTarget = async (modelId: string): Promise<AgentTarget> => {
     const appServer = getRunningExpressApp()
     const agentflowRepo = appServer.AppDataSource.getRepository(AgentFlow)
-    const directAgentflow = await agentflowRepo.findOneBy({ id: modelId })
-    if (directAgentflow) {
-        return { kind: 'agentflow', agentflow: directAgentflow }
+    if (UUID_RE.test(modelId)) {
+        const directAgentflow = await agentflowRepo.findOneBy({ id: modelId })
+        if (directAgentflow) {
+            return { kind: 'agentflow', agentflow: directAgentflow }
+        }
     }
 
     const agent = await appServer.AppDataSource.getRepository(Agent).findOneBy({ slug: modelId })

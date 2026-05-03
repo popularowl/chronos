@@ -1,0 +1,63 @@
+## v1.6 smoke test — boots Chronos + Postgres + a self-contained smoke
+## runner that drives a real callback round-trip end-to-end.
+##
+## The runner contains both a tiny embedded MCP server (Streamable HTTP,
+## exposes a single `add` tool) and a test driver. It logs into Chronos,
+## registers the MCP server and an HTTP agent, then directly invokes
+## `POST /api/v1/agent-callbacks/:agentId/tools/invoke` with the new
+## agent's callback token and asserts the result.
+##
+## Run:
+##
+##     docker build -f ../Dockerfile.local -t chronos:local ../..
+##     docker compose -f docker-compose.smoke.yml up \
+##       --abort-on-container-exit --exit-code-from smoke-runner
+##
+## Exits 0 on success, non-zero on assertion failure.
+##
+services:
+    chronos:
+        image: chronos:local
+        environment:
+            DATABASE_TYPE: postgres
+            DATABASE_HOST: postgres
+            DATABASE_PORT: 5432
+            DATABASE_NAME: chronos
+            DATABASE_USER: chronos
+            DATABASE_PASSWORD: secret
+            CHRONOS_INITIAL_USER: admin@admin.com:test1234:admin
+            DEBUG: true
+            LOG_SANITIZE_HEADER_FIELDS: authorization,x-api-key,x-auth-token,cookie
+            LOG_SANITIZE_BODY_FIELDS: password,pwd,pass,secret,token,apikey,api_key,accesstoken,access_token,refreshtoken
+            ENABLE_AGENTS: "true"
+            ENABLE_MCP_SERVERS: "true"
+            ALLOW_LOOPBACK_AGENTS: "true"
+        ports:
+            - "3001:3000"
+        depends_on:
+            - postgres
+
+    postgres:
+        image: postgres:15
+        environment:
+            POSTGRES_DB: chronos
+            POSTGRES_USER: chronos
+            POSTGRES_PASSWORD: secret
+
+    smoke-runner:
+        build:
+            context: ./smoke
+        environment:
+            CHRONOS_BASE_URL: http://chronos:3000
+            CHRONOS_USER_EMAIL: admin@admin.com
+            CHRONOS_USER_PASSWORD: test1234
+            ## Where the test driver mounts the embedded MCP server. Chronos
+            ## reaches it via the docker network.
+            MCP_BIND_PORT: "7800"
+            MCP_PUBLIC_URL: http://smoke-runner:7800/mcp
+            ## Where the test driver mounts an agent /health stub so the
+            ## agent registration's serviceEndpoint passes URL validation.
+            AGENT_BIND_PORT: "8001"
+            AGENT_PUBLIC_URL: http://smoke-runner:8001
+        depends_on:
+            - chronos
