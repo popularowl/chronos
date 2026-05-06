@@ -21,6 +21,22 @@ chore: commits that represent modifying .gitignore, etc.
 - Node.js ^24
 - pnpm >=10
 
+## Development
+
+Useful commands for development locally. 
+
+```bash
+# nodejs runtime v24. use nvm if necesary
+git clone git@github.com:intelligexhq/chronos.git
+cd chronos/chronos_app
+node -v # v24 runtime needed
+rm -rf ~/.chronos # chronos dev data stores. see https://intelligex.com/chronos/how-chronos-agent-builder-stores-data
+pnpm install # pnpm nuke && pnpm install --frozen-lockfile
+pnpm build # pnpm build --force
+pnpm dev
+# chronos is accessible on localhost:3000
+```
+
 ## Running Tests
 
 All tests must pass before submitting a pull request. This will be checked in PR pipeline. See test examples

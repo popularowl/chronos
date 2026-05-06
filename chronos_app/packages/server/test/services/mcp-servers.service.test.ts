@@ -313,5 +313,89 @@ export function mcpServersServiceTest() {
                 mockAppServer.mcpGateway = undefined
             })
         })
+
+        // ─── testMCPServerConnection ───────────────────────────────────
+
+        describe('testMCPServerConnection', () => {
+            const baseServer = (overrides: any = {}) => ({
+                id: 's-1',
+                slug: 'postgres',
+                transport: 'streamable-http',
+                url: 'https://mcp.example.com',
+                enabled: true,
+                ...overrides
+            })
+
+            afterEach(() => {
+                mockAppServer.mcpGateway = undefined
+            })
+
+            it('returns 404 when server not found', async () => {
+                mockRepository.findOneBy.mockResolvedValue(null)
+                await expect(mcpServersService.testMCPServerConnection('missing')).rejects.toMatchObject({ statusCode: 404 })
+            })
+
+            it('returns 501 for stdio transport', async () => {
+                mockRepository.findOneBy.mockResolvedValue(baseServer({ transport: 'stdio' }))
+                await expect(mcpServersService.testMCPServerConnection('s-1')).rejects.toMatchObject({ statusCode: 501 })
+            })
+
+            it('returns 400 when server has no url', async () => {
+                mockRepository.findOneBy.mockResolvedValue(baseServer({ url: undefined }))
+                await expect(mcpServersService.testMCPServerConnection('s-1')).rejects.toMatchObject({ statusCode: 400 })
+            })
+
+            it('returns 503 when gateway is not configured', async () => {
+                mockRepository.findOneBy.mockResolvedValue(baseServer())
+                mockAppServer.mcpGateway = undefined
+                await expect(mcpServersService.testMCPServerConnection('s-1')).rejects.toMatchObject({ statusCode: 503 })
+            })
+
+            it('returns success with tool count when gateway.listLiveTools resolves', async () => {
+                mockRepository.findOneBy.mockResolvedValue(baseServer())
+                mockAppServer.mcpGateway = {
+                    listLiveTools: jest.fn().mockResolvedValue([{ name: 'query' }, { name: 'list_tables' }])
+                }
+                const result = await mcpServersService.testMCPServerConnection('s-1')
+                expect(result.success).toBe(true)
+                expect(result.statusCode).toBe(200)
+                expect(result.toolCount).toBe(2)
+                expect(result.message).toBe('Connected — 2 tools discovered')
+                expect(typeof result.latencyMs).toBe('number')
+            })
+
+            it('uses singular form when exactly one tool is discovered', async () => {
+                mockRepository.findOneBy.mockResolvedValue(baseServer())
+                mockAppServer.mcpGateway = {
+                    listLiveTools: jest.fn().mockResolvedValue([{ name: 'echo' }])
+                }
+                const result = await mcpServersService.testMCPServerConnection('s-1')
+                expect(result.message).toBe('Connected — 1 tool discovered')
+            })
+
+            it('returns success=false with the gateway error message and 502 statusCode on probe failure', async () => {
+                mockRepository.findOneBy.mockResolvedValue(baseServer())
+                const { InternalChronosError } = require('../../src/errors/internalChronosError')
+                const probeError = new InternalChronosError(502, 'Failed to list tools for MCP server postgres: rpc broken')
+                mockAppServer.mcpGateway = {
+                    listLiveTools: jest.fn().mockRejectedValue(probeError)
+                }
+                const result = await mcpServersService.testMCPServerConnection('s-1')
+                expect(result.success).toBe(false)
+                expect(result.statusCode).toBe(502)
+                expect(result.message).toContain('rpc broken')
+            })
+
+            it('returns statusCode=null when probe error is not an InternalChronosError', async () => {
+                mockRepository.findOneBy.mockResolvedValue(baseServer())
+                mockAppServer.mcpGateway = {
+                    listLiveTools: jest.fn().mockRejectedValue(new Error('socket hang up'))
+                }
+                const result = await mcpServersService.testMCPServerConnection('s-1')
+                expect(result.success).toBe(false)
+                expect(result.statusCode).toBeNull()
+                expect(result.message).toContain('socket hang up')
+            })
+        })
     })
 }

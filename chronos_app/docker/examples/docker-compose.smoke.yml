@@ -32,6 +32,7 @@ services:
             ENABLE_AGENTS: "true"
             ENABLE_MCP_SERVERS: "true"
             ALLOW_LOOPBACK_AGENTS: "true"
+            MCP_SERVER_HEALTH_POLL_INTERVAL_MS: "2000"
         ports:
             - "3001:3000"
         depends_on:

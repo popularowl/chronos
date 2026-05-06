@@ -20,9 +20,11 @@ function mockServer(overrides: Partial<MCPServer> = {}): MCPServer {
 }
 
 /**
- * Test suite for MCPServerHealthPoller (v1.6.0).
+ * Test suite for MCPServerHealthPoller.
  * Verifies the poll cycle, transport filter (stdio excluded), atomic-claim
- * behaviour, state-transition writes, and the no-overlap guard.
+ * behaviour, state-transition writes, and the no-overlap guard. Gateway
+ * health probe is stubbed — see mcp-gateway.service.test for the real
+ * `tools/list` round-trip behaviour.
  */
 export function mcpServerHealthPollerTest() {
     describe('MCPServerHealthPoller', () => {
@@ -30,11 +32,10 @@ export function mcpServerHealthPollerTest() {
         let mockServerRepo: any
         let mockQueryBuilder: any
         let mockUpdateQB: any
-        let originalFetch: any
+        let mockGateway: any
 
         beforeEach(() => {
             jest.clearAllMocks()
-            originalFetch = global.fetch
 
             mockUpdateQB = {
                 update: jest.fn().mockReturnThis(),
@@ -54,13 +55,12 @@ export function mcpServerHealthPollerTest() {
             mockDataSource = {
                 getRepository: jest.fn().mockReturnValue(mockServerRepo)
             }
+            mockGateway = {
+                healthCheck: jest.fn().mockResolvedValue(undefined)
+            }
         })
 
-        afterEach(() => {
-            global.fetch = originalFetch
-        })
-
-        const createPoller = () => new MCPServerHealthPoller({ appDataSource: mockDataSource })
+        const createPoller = () => new MCPServerHealthPoller({ appDataSource: mockDataSource, mcpGateway: mockGateway })
 
         // ─── start/stop ────────────────────────────────────────────────
 
@@ -117,19 +117,19 @@ export function mcpServerHealthPollerTest() {
         // ─── checkServerHealth ─────────────────────────────────────────
 
         describe('checkServerHealth', () => {
-            it('marks HEALTHY when GET returns 2xx and clears lastHealthError', async () => {
-                global.fetch = jest.fn().mockResolvedValue({ ok: true, status: 200 }) as any
+            it('marks HEALTHY when gateway.healthCheck resolves and clears lastHealthError', async () => {
                 mockQueryBuilder.getMany.mockResolvedValue([mockServer()])
                 const poller = createPoller()
                 await (poller as any).poll()
+                expect(mockGateway.healthCheck).toHaveBeenCalledWith(expect.objectContaining({ id: 's1' }))
                 expect(mockServerRepo.update).toHaveBeenCalledWith(
                     's1',
                     expect.objectContaining({ status: 'HEALTHY', lastHealthError: null })
                 )
             })
 
-            it('marks UNHEALTHY with HTTP status message when GET returns non-2xx', async () => {
-                global.fetch = jest.fn().mockResolvedValue({ ok: false, status: 502 }) as any
+            it('marks UNHEALTHY with prefixed message when gateway.healthCheck throws', async () => {
+                mockGateway.healthCheck.mockRejectedValue(new Error('rpc broken'))
                 mockQueryBuilder.getMany.mockResolvedValue([mockServer()])
                 const poller = createPoller()
                 await (poller as any).poll()
@@ -137,14 +137,13 @@ export function mcpServerHealthPollerTest() {
                     's1',
                     expect.objectContaining({
                         status: 'UNHEALTHY',
-                        lastHealthError: expect.stringContaining('HTTP 502')
+                        lastHealthError: expect.stringContaining('Health check failed: rpc broken')
                     })
                 )
             })
 
-            it('marks UNHEALTHY with timeout message on AbortError', async () => {
-                const abort = Object.assign(new Error('abort'), { name: 'AbortError' })
-                global.fetch = jest.fn().mockRejectedValue(abort) as any
+            it('marks UNHEALTHY with the timeout message verbatim (no "Health check failed:" prefix)', async () => {
+                mockGateway.healthCheck.mockRejectedValue(new Error('Health check timed out after 5000ms'))
                 mockQueryBuilder.getMany.mockResolvedValue([mockServer()])
                 const poller = createPoller()
                 await (poller as any).poll()
@@ -152,28 +151,28 @@ export function mcpServerHealthPollerTest() {
                     's1',
                     expect.objectContaining({
                         status: 'UNHEALTHY',
-                        lastHealthError: expect.stringContaining('timed out')
+                        lastHealthError: 'Health check timed out after 5000ms'
                     })
                 )
             })
 
-            it('marks UNHEALTHY when no url is configured', async () => {
+            it('marks UNHEALTHY when no url is configured (without invoking the gateway)', async () => {
                 mockQueryBuilder.getMany.mockResolvedValue([mockServer({ url: undefined })])
                 const poller = createPoller()
                 await (poller as any).poll()
+                expect(mockGateway.healthCheck).not.toHaveBeenCalled()
                 expect(mockServerRepo.update).toHaveBeenCalledWith(
                     's1',
                     expect.objectContaining({ status: 'UNHEALTHY', lastHealthError: 'No url configured' })
                 )
             })
 
-            it('skips fetch and update when atomic claim returns 0 affected', async () => {
+            it('skips gateway call and update when atomic claim returns 0 affected', async () => {
                 mockUpdateQB.execute.mockResolvedValue({ affected: 0 })
-                global.fetch = jest.fn() as any
                 mockQueryBuilder.getMany.mockResolvedValue([mockServer()])
                 const poller = createPoller()
                 await (poller as any).poll()
-                expect(global.fetch).not.toHaveBeenCalled()
+                expect(mockGateway.healthCheck).not.toHaveBeenCalled()
                 expect(mockServerRepo.update).not.toHaveBeenCalled()
             })
         })

@@ -2,34 +2,36 @@ import { DataSource } from 'typeorm'
 import { MCPServer } from '../database/entities/MCPServer'
 import { MCPServerStatus, MCPServerTransport } from '../Interface'
 import { getErrorMessage } from '../errors/utils'
+import { MCPGateway } from '../services/mcp-gateway'
 import logger from '../utils/logger'
 
 const DEFAULT_POLL_INTERVAL_MS = 30000
-const DEFAULT_HEALTH_TIMEOUT_MS = 5000
 const CONCURRENCY_CAP = 10
 
 interface MCPServerHealthPollerOptions {
     appDataSource: DataSource
+    mcpGateway: MCPGateway
 }
 
 /**
  * Polls registered MCP servers and updates `status` / `lastHealthCheckAt` /
  * `lastHealthError`. Same shape and atomic-claim model as AgentHealthPoller.
  *
- * v1.6 note: the probe is a plain HTTP GET against `mcpServer.url` — the
- * full MCP `tools/list` round-trip arrives with the gateway in Group D
- * (it requires the connection-pool model). `stdio` transport is skipped
- * entirely; v1.8 picks it up.
+ * Probe delegates to `MCPGateway.healthCheck()` — a real MCP `tools/list`
+ * round-trip via the pooled client so liveness reflects what callbacks will
+ * see. `stdio` transport is skipped (gateway does not support it yet).
  *
  * Gated externally on `ENABLE_MCP_SERVERS=true`.
  */
 export class MCPServerHealthPoller {
     private appDataSource: DataSource
+    private mcpGateway: MCPGateway
     private intervalId: ReturnType<typeof setInterval> | null = null
     private running = false
 
     constructor(options: MCPServerHealthPollerOptions) {
         this.appDataSource = options.appDataSource
+        this.mcpGateway = options.mcpGateway
     }
 
     public start(): void {
@@ -110,30 +112,15 @@ export class MCPServerHealthPoller {
             return
         }
 
-        // TODO(v1.8): swap to MCP `tools/list` over the connection-pool client
-        // once Group D's gateway lands. Plain HTTP GET reachability is the
-        // best signal we have without spinning up a full MCP client per pass.
-        const timeoutMs =
-            typeof server.timeoutMs === 'number' ? Math.min(server.timeoutMs, DEFAULT_HEALTH_TIMEOUT_MS) : DEFAULT_HEALTH_TIMEOUT_MS
-        const controller = new AbortController()
-        const timer = setTimeout(() => controller.abort(), timeoutMs)
         try {
-            const response = await fetch(server.url, { method: 'GET', signal: controller.signal })
-            clearTimeout(timer)
-            if (response.ok) {
-                await repo.update(server.id, { status: MCPServerStatus.HEALTHY, lastHealthError: null as any })
-            } else {
-                await repo.update(server.id, {
-                    status: MCPServerStatus.UNHEALTHY,
-                    lastHealthError: `MCP server endpoint returned HTTP ${response.status}`
-                })
-            }
+            await this.mcpGateway.healthCheck(server)
+            await repo.update(server.id, { status: MCPServerStatus.HEALTHY, lastHealthError: null as any })
         } catch (error) {
-            clearTimeout(timer)
-            const isAbort = (error as any)?.name === 'AbortError'
+            const message = getErrorMessage(error)
+            const isTimeout = /timed?\s*out/i.test(message)
             await repo.update(server.id, {
                 status: MCPServerStatus.UNHEALTHY,
-                lastHealthError: isAbort ? `Health check timed out after ${timeoutMs}ms` : `Health check failed: ${getErrorMessage(error)}`
+                lastHealthError: isTimeout ? message : `Health check failed: ${message}`
             })
         }
     }

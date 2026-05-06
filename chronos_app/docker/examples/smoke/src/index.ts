@@ -70,14 +70,15 @@ const startMcpServer = (): Promise<void> => {
         await transport.handleRequest(req, res, req.body)
     })
 
-    // GET without a session ID is the path the MCPServerHealthPoller probes.
-    // Return a vanilla 200 so the poller marks the server HEALTHY. With a
-    // session ID present, this is the SSE listening channel — delegate.
+    // GET on /mcp is the SSE listening channel for an established session.
+    // The MCPServerHealthPoller no longer probes via bare GET — it issues a
+    // real `tools/list` over the gateway's pooled client — so a sessionless
+    // GET legitimately has nothing to do here and gets a 405.
     app.get('/mcp', async (req: Request, res: ExpressResponse) => {
         const sid = req.header('mcp-session-id')
         const transport = sid ? transports.get(sid) : undefined
         if (!transport) {
-            res.status(200).json({ ok: true })
+            res.status(405).json({ error: 'GET requires an established mcp-session-id' })
             return
         }
         await transport.handleRequest(req, res)
@@ -188,6 +189,33 @@ const runDriver = async (): Promise<void> => {
     const mcp = (await mcpResp.json()) as { id: string; slug: string }
     // eslint-disable-next-line no-console
     console.log(`[driver] MCP registered id=${mcp.id} slug=${mcp.slug}`)
+
+    // 1a. wait for the health poller (interval=2s in smoke) to stamp HEALTHY.
+    // Proves the `tools/list` probe round-trips end-to-end against a real MCP
+    // server, not just that registration succeeded.
+    // eslint-disable-next-line no-console
+    console.log(`[driver] waiting for MCPServerHealthPoller to mark smoke MCP HEALTHY ...`)
+    const healthDeadline = Date.now() + 30000
+    let observedStatus = 'UNKNOWN'
+    while (Date.now() < healthDeadline) {
+        const statusResp = await authedJson(token, `/api/v1/mcp-servers/${mcp.id}`, { method: 'GET' })
+        if (statusResp.ok) {
+            const body = (await statusResp.json()) as { status?: string; lastHealthError?: string | null }
+            observedStatus = body.status ?? 'UNKNOWN'
+            if (observedStatus === 'HEALTHY') {
+                // eslint-disable-next-line no-console
+                console.log(`[driver] MCP HEALTHY confirmed`)
+                break
+            }
+            if (observedStatus === 'UNHEALTHY') {
+                throw new Error(`MCP marked UNHEALTHY: ${body.lastHealthError ?? '(no error message)'}`)
+            }
+        }
+        await sleep(1000)
+    }
+    if (observedStatus !== 'HEALTHY') {
+        throw new Error(`MCP did not reach HEALTHY within 30s (last status: ${observedStatus})`)
+    }
 
     // 2. register HTTP agent
     // eslint-disable-next-line no-console

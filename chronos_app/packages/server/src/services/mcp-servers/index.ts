@@ -309,9 +309,11 @@ const toggleMCPServer = async (id: string, enabled: boolean): Promise<MCPServer>
 }
 
 /**
- * Lightweight reachability probe. v1.6 issues a plain HTTP GET against the
- * configured URL and reports the HTTP status. The full MCP `tools/list`
- * round-trip lands with the gateway in Group D.
+ * Operator-facing connection test for a registered MCP server. Issues a real
+ * MCP `tools/list` round-trip via the gateway's pooled client — same path the
+ * health poller uses — so a successful test proves what callbacks will
+ * actually see, not just TCP reachability. Returns a UI-shaped result with a
+ * descriptive message that includes the discovered tool count on success.
  */
 const testMCPServerConnection = async (id: string): Promise<any> => {
     try {
@@ -327,22 +329,30 @@ const testMCPServerConnection = async (id: string): Promise<any> => {
         if (!server.url) {
             throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'MCP server has no url configured')
         }
-        const timeoutMs = server.timeoutMs ?? DEFAULT_MCP_TIMEOUT_MS
-        const controller = new AbortController()
-        const timer = setTimeout(() => controller.abort(), timeoutMs)
+        if (!appServer.mcpGateway) {
+            throw new InternalChronosError(
+                StatusCodes.SERVICE_UNAVAILABLE,
+                'MCP gateway is not enabled. Set ENABLE_MCP_SERVERS=true to enable it.'
+            )
+        }
+        const startedAt = Date.now()
         try {
-            const startedAt = Date.now()
-            const response = await fetch(server.url, { method: 'GET', signal: controller.signal })
-            clearTimeout(timer)
+            const tools = await appServer.mcpGateway.listLiveTools(server)
+            const count = Array.isArray(tools) ? tools.length : 0
             return {
-                success: response.ok,
-                statusCode: response.status,
+                success: true,
+                statusCode: 200,
                 latencyMs: Date.now() - startedAt,
-                message: response.ok ? 'MCP server endpoint reachable' : `MCP server endpoint returned HTTP ${response.status}`
+                toolCount: count,
+                message: `Connected — ${count} tool${count === 1 ? '' : 's'} discovered`
             }
-        } catch (fetchError) {
-            clearTimeout(timer)
-            return { success: false, statusCode: null, message: `MCP server unreachable: ${getErrorMessage(fetchError)}` }
+        } catch (probeError) {
+            return {
+                success: false,
+                statusCode: probeError instanceof InternalChronosError ? probeError.statusCode : null,
+                latencyMs: Date.now() - startedAt,
+                message: getErrorMessage(probeError)
+            }
         }
     } catch (error) {
         if (error instanceof InternalChronosError) throw error

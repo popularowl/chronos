@@ -207,12 +207,15 @@ export class App {
 
             // MCP server health poller — gated independently on ENABLE_MCP_SERVERS=true
             if (process.env.ENABLE_MCP_SERVERS === 'true') {
-                this.mcpServerHealthPoller = new MCPServerHealthPoller({ appDataSource: this.AppDataSource })
-                this.mcpServerHealthPoller.start()
-
-                // MCP gateway — pooled MCP clients for agent → tool callback brokering
+                // Gateway constructed first — poller's health probe delegates to it.
                 this.mcpGateway = new MCPGateway({ appDataSource: this.AppDataSource })
                 this.mcpGateway.start()
+
+                this.mcpServerHealthPoller = new MCPServerHealthPoller({
+                    appDataSource: this.AppDataSource,
+                    mcpGateway: this.mcpGateway
+                })
+                this.mcpServerHealthPoller.start()
             }
 
             // Dashboard metrics aggregator — runs daily rollup of execution_metrics into daily_metrics

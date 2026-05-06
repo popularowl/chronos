@@ -296,6 +296,77 @@ export function mcpGatewayServiceTest() {
             })
         })
 
+        // ─── healthCheck ───────────────────────────────────────────────
+
+        describe('healthCheck', () => {
+            const ORIGINAL_ENV = process.env.MCP_SERVER_HEALTH_TIMEOUT_MS
+            afterEach(() => {
+                if (ORIGINAL_ENV === undefined) delete process.env.MCP_SERVER_HEALTH_TIMEOUT_MS
+                else process.env.MCP_SERVER_HEALTH_TIMEOUT_MS = ORIGINAL_ENV
+            })
+
+            it('opens a pooled client, calls tools/list, and resolves on success', async () => {
+                mockClientInstance.request.mockResolvedValueOnce({ tools: [{ name: 'query' }] })
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                await expect(gateway.healthCheck(baseServer())).resolves.toBeUndefined()
+                expect(mockClientInstance.request).toHaveBeenCalledWith(
+                    { method: 'tools/list', params: {} },
+                    { __schema: 'ListToolsResult' },
+                    expect.objectContaining({ timeout: expect.any(Number) })
+                )
+                expect(gateway.poolSize()).toBe(1)
+            })
+
+            it('throws and evicts the pooled client when tools/list fails', async () => {
+                mockClientInstance.request.mockRejectedValueOnce(new Error('rpc broken'))
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                await expect(gateway.healthCheck(baseServer())).rejects.toThrow('rpc broken')
+                expect(gateway.poolSize()).toBe(0)
+                expect(mockClientInstance.close).toHaveBeenCalled()
+            })
+
+            it('reuses the pooled client across healthCheck and invoke', async () => {
+                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer())
+                mockClientInstance.request.mockResolvedValueOnce({ tools: [{ name: 'query' }] })
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                await gateway.healthCheck(baseServer())
+                await gateway.invoke(baseAgent(), 'postgres.query', {})
+                expect(mockClientCtor).toHaveBeenCalledTimes(1)
+                expect(mockClientInstance.connect).toHaveBeenCalledTimes(1)
+            })
+
+            it('clamps timeout to MCP_SERVER_HEALTH_TIMEOUT_MS even when server.timeoutMs is larger', async () => {
+                process.env.MCP_SERVER_HEALTH_TIMEOUT_MS = '2000'
+                mockClientInstance.request.mockResolvedValueOnce({ tools: [] })
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                await gateway.healthCheck(baseServer({ timeoutMs: 30000 }))
+                expect(mockClientInstance.request).toHaveBeenCalledWith(
+                    { method: 'tools/list', params: {} },
+                    { __schema: 'ListToolsResult' },
+                    { timeout: 2000 }
+                )
+            })
+
+            it('uses server.timeoutMs when smaller than the env cap', async () => {
+                process.env.MCP_SERVER_HEALTH_TIMEOUT_MS = '5000'
+                mockClientInstance.request.mockResolvedValueOnce({ tools: [] })
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                await gateway.healthCheck(baseServer({ timeoutMs: 1000 }))
+                expect(mockClientInstance.request).toHaveBeenCalledWith(
+                    { method: 'tools/list', params: {} },
+                    { __schema: 'ListToolsResult' },
+                    { timeout: 1000 }
+                )
+            })
+
+            it('rejects with timeout message when probe exceeds the timeout budget', async () => {
+                process.env.MCP_SERVER_HEALTH_TIMEOUT_MS = '50'
+                mockClientInstance.request.mockImplementation(() => new Promise(() => {}))
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                await expect(gateway.healthCheck(baseServer({ timeoutMs: 30000 }))).rejects.toThrow(/timed out after 50ms/)
+            })
+        })
+
         // ─── listAllowedTools ──────────────────────────────────────────
 
         describe('listAllowedTools', () => {

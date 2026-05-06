@@ -11,11 +11,10 @@
   <img src="./resources/chronos_main_page.gif" width="600" />
 </div><div style="page-break-after: always;">&nbsp;</div>
 
-## Why Chronos?
+## Why use Chronos?
 
-  - *[Chronos](https://intelligex.com/chronos) is an agent runtime, not a framework.* Deploy, run and manage: agents built on the Chronos visual canvas or standalone, code-first agents via OpenAI-compatible HTTP
-  spec. All through one uniform invocation surface.
-  - *MCP-first tool layer.* Tools are MCP servers. Agents reach them through a credential-brokered, audited gateway.
+  - *[Chronos](https://intelligex.com/chronos) is an agent runtime, not a framework.* Deploy, run and manage: agents built on the Chronos visual canvas or standalone, code-first agents via OpenAI API specification. All through one uniform invocation surface.
+  - *MCP-first tool layer.* Tools are MCP servers. Chronos provides MCP registry. Agents reach tools in a credential-brokered, audited way.
   - *Governance is the wedge.* SSO, RBAC, per-team budgets with stop-switches, audit log, PII redaction. Reporting is enforcement.
   - *Self-hosted, multiple docker compose examples.* SQLite or Postgres for persistence.
   - *Observability built in, not bolted on.* OpenTelemetry traces, replayable executions, per-step cost attribution.
@@ -24,7 +23,7 @@
 
   - *An internal assistant that queries private databases via MCP, under audit and budget caps*.
   - *An OpenAI-compatible drop-in* — register any agent, expose it via `/v1/chat/completions`, use the Chronos MCP tool registry.
-  - *Scheduled or event-driven agent jobs* (cron type scheduling, webhooks).
+  - *Scheduled or event-driven agent jobs* - cron type scheduling and webhooks.
   - *Cost-tracked multi-team agent fleets with per-team hard limits*.
 
 ## Quick start

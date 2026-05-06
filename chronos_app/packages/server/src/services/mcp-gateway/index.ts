@@ -15,6 +15,7 @@ import httpAgentRuntime from '../agent-runtime-http'
 const DEFAULT_IDLE_TIMEOUT_MS = 300000
 const REAPER_INTERVAL_MS = 60000
 const DEFAULT_TOOL_CALL_TIMEOUT_MS = 30000
+const DEFAULT_HEALTH_TIMEOUT_MS = 5000
 
 interface PoolEntry {
     client: Client
@@ -232,6 +233,66 @@ export class MCPGateway {
                 StatusCodes.BAD_GATEWAY,
                 `Failed to list tools for MCP server ${server.slug}: ${getErrorMessage(error)}`
             )
+        }
+    }
+
+    /**
+     * Health probe used by `MCPServerHealthPoller`. Calls `tools/list` via the
+     * pooled client so liveness reflects what real callbacks will see; resolves
+     * on success, throws on failure. Connection-pool eviction on error is
+     * inherited (the next probe reconnects fresh).
+     *
+     * Timeout: `Math.min(server.timeoutMs, MCP_SERVER_HEALTH_TIMEOUT_MS)` —
+     * env-driven cap (default 5000ms) keeps health checks bounded even if the
+     * per-server tool-call budget is much larger. Total wall time includes the
+     * MCP handshake on first call (TCP/TLS + `initialize`); the Promise.race
+     * bound covers the entire probe.
+     */
+    public async healthCheck(server: MCPServer): Promise<void> {
+        const startedAt = Date.now()
+        const envTimeoutMs = process.env.MCP_SERVER_HEALTH_TIMEOUT_MS
+            ? parseInt(process.env.MCP_SERVER_HEALTH_TIMEOUT_MS, 10)
+            : DEFAULT_HEALTH_TIMEOUT_MS
+        const timeoutMs = typeof server.timeoutMs === 'number' ? Math.min(server.timeoutMs, envTimeoutMs) : envTimeoutMs
+
+        let timer: ReturnType<typeof setTimeout> | undefined
+        const timeoutPromise = new Promise<never>((_, reject) => {
+            timer = setTimeout(() => reject(new Error(`Health check timed out after ${timeoutMs}ms`)), timeoutMs)
+        })
+        timeoutPromise.catch(() => {
+            /* swallow if probe wins */
+        })
+
+        const probePromise = (async () => {
+            const entry = await this.getOrOpen(server)
+            try {
+                await entry.client.request({ method: 'tools/list', params: {} }, ListToolsResultSchema, { timeout: timeoutMs })
+                entry.lastUsedAt = Date.now()
+            } catch (error) {
+                this.pool.delete(server.id)
+                entry.client.close().catch(() => {
+                    /* noop */
+                })
+                throw error
+            }
+        })()
+        probePromise.catch(() => {
+            /* swallow if timeout wins */
+        })
+
+        try {
+            await Promise.race([probePromise, timeoutPromise])
+            logger.info({ event: 'mcp.health.ok', server: server.slug, durationMs: Date.now() - startedAt })
+        } catch (error) {
+            logger.warn({
+                event: 'mcp.health.error',
+                server: server.slug,
+                durationMs: Date.now() - startedAt,
+                error: getErrorMessage(error)
+            })
+            throw error
+        } finally {
+            if (timer) clearTimeout(timer)
         }
     }
 
