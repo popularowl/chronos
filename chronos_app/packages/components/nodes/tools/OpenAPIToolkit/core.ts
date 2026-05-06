@@ -109,7 +109,7 @@ export interface BaseDynamicToolInput extends ToolParams {
 
 export interface DynamicStructuredToolInput<
     // eslint-disable-next-line
-    T extends z.ZodObject<any, any, any, any> = z.ZodObject<any, any, any, any>
+    T extends z.ZodObject<any> = z.ZodObject<any>
 > extends BaseDynamicToolInput {
     func?: (input: z.infer<T>, runManager?: CallbackManagerForToolRun) => Promise<string>
     schema: T
@@ -123,7 +123,7 @@ export interface DynamicStructuredToolInput<
 
 export class DynamicStructuredTool<
     // eslint-disable-next-line
-    T extends z.ZodObject<any, any, any, any> = z.ZodObject<any, any, any, any>
+    T extends z.ZodObject<any> = z.ZodObject<any>
 > extends StructuredTool {
     name: string
 
@@ -151,7 +151,7 @@ export class DynamicStructuredTool<
         super(fields)
         this.name = fields.name
         this.description = fields.description
-        this.func = fields.func
+        this.func = fields.func as typeof this.func
         this.returnDirect = fields.returnDirect ?? this.returnDirect
         this.schema = fields.schema
         this.baseUrl = fields.baseUrl
@@ -219,7 +219,7 @@ export class DynamicStructuredTool<
         let processedArg = { ...arg }
 
         if (this.removeNulls && typeof processedArg === 'object' && processedArg !== null) {
-            processedArg = removeNulls(processedArg)
+            processedArg = removeNulls(processedArg) as z.output<T>
         }
 
         // Create additional sandbox variables for tool arguments

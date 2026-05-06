@@ -40,7 +40,7 @@ const createRequestsPostSchema = (bodySchema?: string) => {
                 } else if (config.type === 'boolean') {
                     zodType = z.boolean()
                 } else if (config.type === 'object') {
-                    zodType = z.record(z.any())
+                    zodType = z.record(z.string(), z.any())
                 } else if (config.type === 'array') {
                     zodType = z.array(z.any())
                 }
@@ -70,7 +70,7 @@ const createRequestsPostSchema = (bodySchema?: string) => {
 
     // Fallback to generic body
     return z.object({
-        body: z.record(z.any()).optional().describe('Optional body data to include in the request')
+        body: z.record(z.string(), z.any()).optional().describe('Optional body data to include in the request')
     })
 }
 

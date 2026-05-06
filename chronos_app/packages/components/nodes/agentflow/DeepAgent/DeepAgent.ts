@@ -942,7 +942,12 @@ class DeepAgent_Agentflow implements INode {
             let lastModelName: string | undefined
             const tokenBreakdown: ICommonObject[] = []
             let llmCallIndex = 0
-            for (const msg of responseMessages) {
+            for (const rawMsg of responseMessages) {
+                // deepagents picked up tighter `BaseMessage<...>` generics post-upgrade;
+                // at runtime AI messages still carry usage_metadata / tool_calls /
+                // response_metadata, but the static type now hides them. Loosen here
+                // rather than reaching into LangChain's typings.
+                const msg = rawMsg as any
                 const msgType = msg._getType?.() || msg.type || 'unknown'
                 if (msgType === 'ai' && msg.usage_metadata) {
                     llmCallIndex++

@@ -16,15 +16,14 @@ const howToUse = `Add additional filters to vector store. You can also filter wi
 - \`$flow.state\`
 `
 
-type ZodObjectAny = z.ZodObject<any, any, any, any>
+type ZodObjectAny = z.ZodObject<any>
 type IFlowConfig = { sessionId?: string; chatId?: string; input?: string; state?: ICommonObject }
-interface DynamicStructuredToolInput<T extends z.ZodObject<any, any, any, any> = z.ZodObject<any, any, any, any>>
-    extends BaseDynamicToolInput {
+interface DynamicStructuredToolInput<T extends z.ZodObject<any> = z.ZodObject<any>> extends BaseDynamicToolInput {
     func?: (input: z.infer<T>, runManager?: CallbackManagerForToolRun, flowConfig?: IFlowConfig) => Promise<string>
     schema: T
 }
 
-class DynamicStructuredTool<T extends z.ZodObject<any, any, any, any> = z.ZodObject<any, any, any, any>> extends StructuredTool<
+class DynamicStructuredTool<T extends z.ZodObject<any> = z.ZodObject<any>> extends StructuredTool<
     T extends ZodObjectAny ? T : ZodObjectAny
 > {
     static lc_name() {
@@ -46,7 +45,7 @@ class DynamicStructuredTool<T extends z.ZodObject<any, any, any, any> = z.ZodObj
         super(fields)
         this.name = fields.name
         this.description = fields.description
-        this.func = fields.func
+        this.func = fields.func as typeof this.func
         this.returnDirect = fields.returnDirect ?? this.returnDirect
         this.schema = fields.schema
     }

@@ -841,25 +841,25 @@ export const convertSchemaToZod = (schema: string | object): ICommonObject => {
         for (const sch of parsedSchema) {
             if (sch.type === 'string') {
                 if (sch.required) {
-                    zodObj[sch.property] = z.string({ required_error: `${sch.property} required` }).describe(sch.description)
+                    zodObj[sch.property] = z.string({ error: `${sch.property} required` }).describe(sch.description)
                 } else {
                     zodObj[sch.property] = z.string().describe(sch.description).optional()
                 }
             } else if (sch.type === 'number') {
                 if (sch.required) {
-                    zodObj[sch.property] = z.number({ required_error: `${sch.property} required` }).describe(sch.description)
+                    zodObj[sch.property] = z.number({ error: `${sch.property} required` }).describe(sch.description)
                 } else {
                     zodObj[sch.property] = z.number().describe(sch.description).optional()
                 }
             } else if (sch.type === 'boolean') {
                 if (sch.required) {
-                    zodObj[sch.property] = z.boolean({ required_error: `${sch.property} required` }).describe(sch.description)
+                    zodObj[sch.property] = z.boolean({ error: `${sch.property} required` }).describe(sch.description)
                 } else {
                     zodObj[sch.property] = z.boolean().describe(sch.description).optional()
                 }
             } else if (sch.type === 'date') {
                 if (sch.required) {
-                    zodObj[sch.property] = z.date({ required_error: `${sch.property} required` }).describe(sch.description)
+                    zodObj[sch.property] = z.date({ error: `${sch.property} required` }).describe(sch.description)
                 } else {
                     zodObj[sch.property] = z.date().describe(sch.description).optional()
                 }
@@ -2021,11 +2021,20 @@ export async function parseWithTypeConversion<T extends z.ZodTypeAny>(schema: T,
                 // Handle invalid_type errors (type mismatches)
                 if (issue.code === 'invalid_type' && issue.path.length > 0) {
                     try {
-                        const valueAtPath = getValueAtPath(modifiedArg, issue.path)
+                        // Zod 4 widened `issue.path` to PropertyKey[] (allows symbol keys);
+                        // our path helpers are string|number-only, which is fine for the
+                        // schemas we generate here — symbols never appear in JSON-derived paths.
+                        const path = issue.path as (string | number)[]
+                        // Zod 4 dropped the string `issue.received` field; derive it from
+                        // `issue.input` (the actual rejected value) so the downstream
+                        // `convertValue` heuristics keep working.
+                        const inputValue = (issue as { input?: unknown }).input
+                        const receivedType = Array.isArray(inputValue) ? 'array' : inputValue === null ? 'null' : typeof inputValue
+                        const valueAtPath = getValueAtPath(modifiedArg, path)
                         if (valueAtPath !== undefined) {
-                            const convertedValue = convertValue(valueAtPath, issue.expected, issue.received)
+                            const convertedValue = convertValue(valueAtPath, issue.expected, receivedType)
                             if (convertedValue !== undefined) {
-                                setValueAtPath(modifiedArg, issue.path, convertedValue)
+                                setValueAtPath(modifiedArg, path, convertedValue)
                                 hasModification = true
                             }
                         }
@@ -2085,11 +2094,11 @@ export const configureStructuredOutput = (llmNodeInstance: BaseChatModel, struct
                     } catch (err) {
                         logger.error(`Error parsing JSON schema for ${sch.key}: ${err}`)
                         // Fallback to generic array of records
-                        zodObj[sch.key] = z.array(z.record(z.any())).describe(sch.description || '')
+                        zodObj[sch.key] = z.array(z.record(z.string(), z.any())).describe(sch.description || '')
                     }
                 } else {
                     // If no schema provided, use generic array of records
-                    zodObj[sch.key] = z.array(z.record(z.any())).describe(sch.description || '')
+                    zodObj[sch.key] = z.array(z.record(z.string(), z.any())).describe(sch.description || '')
                 }
             }
         }
@@ -2147,7 +2156,7 @@ export const createZodSchemaFromJSON = (jsonSchema: any): z.ZodTypeAny => {
                             schemaObj[key] = nestedSchema.describe(description)
                         } else {
                             // Default to record of any if properties not specified
-                            schemaObj[key] = z.record(z.any()).describe(description)
+                            schemaObj[key] = z.record(z.string(), z.any()).describe(description)
                         }
                     } else {
                         // Default to any for unknown types

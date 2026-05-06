@@ -120,7 +120,7 @@ class CustomTool_Tools implements INode {
             if (customToolName) obj.name = customToolName
             if (customToolDesc) obj.description = customToolDesc
             if (customToolSchema) {
-                obj.schema = SecureZodSchemaParser.parseZodSchema(customToolSchema) as z.ZodObject<ICommonObject, 'strip', z.ZodTypeAny>
+                obj.schema = SecureZodSchemaParser.parseZodSchema(customToolSchema) as z.ZodObject<ICommonObject>
             }
 
             const variables = await getVars(appDataSource, databaseEntities, nodeData, options)

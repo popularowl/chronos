@@ -161,7 +161,10 @@ export async function MCPTool({
 function createSchemaModel(
     inputSchema: {
         type: 'object'
-        properties?: import('zod').objectOutputType<{}, import('zod').ZodTypeAny, 'passthrough'> | undefined
+        // Zod 4 dropped `z.objectOutputType` — the original annotation was a Zod 3
+        // way of saying "an object with arbitrary string keys". Use the runtime
+        // shape we actually iterate (Object.entries) instead.
+        properties?: Record<string, unknown> | undefined
     } & { [k: string]: unknown }
 ): any {
     if (inputSchema.type !== 'object' || !inputSchema.properties) {

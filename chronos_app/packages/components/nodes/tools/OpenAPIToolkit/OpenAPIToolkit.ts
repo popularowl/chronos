@@ -379,7 +379,7 @@ const jsonSchemaToZodSchema = (schema: any, requiredList: string[], keyName: str
                   .optional()
     } else if (schema.type === 'string') {
         return requiredList.includes(keyName)
-            ? z.string({ required_error: `${keyName} required` }).describe(schema?.description ?? keyName)
+            ? z.string({ error: `${keyName} required` }).describe(schema?.description ?? keyName)
             : z
                   .string()
                   .describe(schema?.description ?? keyName)
@@ -388,7 +388,7 @@ const jsonSchemaToZodSchema = (schema: any, requiredList: string[], keyName: str
         return z.array(jsonSchemaToZodSchema(schema.items, requiredList, keyName))
     } else if (schema.type === 'boolean') {
         return requiredList.includes(keyName)
-            ? z.boolean({ required_error: `${keyName} required` }).describe(schema?.description ?? keyName)
+            ? z.boolean({ error: `${keyName} required` }).describe(schema?.description ?? keyName)
             : z
                   .boolean()
                   .describe(schema?.description ?? keyName)
@@ -438,19 +438,19 @@ const extractParameters = (param: ICommonObject, paramZodObj: ICommonObject) => 
         return paramZodObj
     } else if (paramSchema.type === 'string') {
         if (param.required) {
-            paramZodObj[paramName] = z.string({ required_error: `${paramName} required` }).describe(paramDesc)
+            paramZodObj[paramName] = z.string({ error: `${paramName} required` }).describe(paramDesc)
         } else {
             paramZodObj[paramName] = z.string().describe(paramDesc).optional()
         }
     } else if (paramSchema.type === 'number') {
         if (param.required) {
-            paramZodObj[paramName] = z.number({ required_error: `${paramName} required` }).describe(paramDesc)
+            paramZodObj[paramName] = z.number({ error: `${paramName} required` }).describe(paramDesc)
         } else {
             paramZodObj[paramName] = z.number().describe(paramDesc).optional()
         }
     } else if (paramSchema.type === 'boolean') {
         if (param.required) {
-            paramZodObj[paramName] = z.boolean({ required_error: `${paramName} required` }).describe(paramDesc)
+            paramZodObj[paramName] = z.boolean({ error: `${paramName} required` }).describe(paramDesc)
         } else {
             paramZodObj[paramName] = z.boolean().describe(paramDesc).optional()
         }

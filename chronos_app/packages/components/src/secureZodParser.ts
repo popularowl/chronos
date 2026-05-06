@@ -627,28 +627,31 @@ export class SecureZodSchemaParser {
     }
 
     private static applyModifiers(zodType: z.ZodTypeAny, modifiers: any[]): z.ZodTypeAny {
+        // Zod 4 removed the public `_def.typeName` discriminator we used in Zod 3.
+        // Switching to public-API `instanceof` checks: stable across versions and
+        // doesn't reach into `_def` internals.
         for (const modifier of modifiers) {
             switch (modifier.name) {
                 case 'int':
-                    if (zodType._def?.typeName === 'ZodNumber') {
-                        zodType = (zodType as z.ZodNumber).int()
+                    if (zodType instanceof z.ZodNumber) {
+                        zodType = zodType.int()
                     }
                     break
                 case 'max':
                     if (modifier.args[0] !== undefined) {
-                        if (zodType._def?.typeName === 'ZodString') {
-                            zodType = (zodType as z.ZodString).max(modifier.args[0])
-                        } else if (zodType._def?.typeName === 'ZodArray') {
-                            zodType = (zodType as z.ZodArray<any>).max(modifier.args[0])
+                        if (zodType instanceof z.ZodString) {
+                            zodType = zodType.max(modifier.args[0])
+                        } else if (zodType instanceof z.ZodArray) {
+                            zodType = zodType.max(modifier.args[0])
                         }
                     }
                     break
                 case 'min':
                     if (modifier.args[0] !== undefined) {
-                        if (zodType._def?.typeName === 'ZodString') {
-                            zodType = (zodType as z.ZodString).min(modifier.args[0])
-                        } else if (zodType._def?.typeName === 'ZodArray') {
-                            zodType = (zodType as z.ZodArray<any>).min(modifier.args[0])
+                        if (zodType instanceof z.ZodString) {
+                            zodType = zodType.min(modifier.args[0])
+                        } else if (zodType instanceof z.ZodArray) {
+                            zodType = zodType.min(modifier.args[0])
                         }
                     }
                     break

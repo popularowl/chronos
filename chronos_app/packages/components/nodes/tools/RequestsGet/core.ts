@@ -61,7 +61,7 @@ const createRequestsGetSchema = (queryParamsSchema?: string) => {
 
     // Fallback to generic query params
     return z.object({
-        queryParams: z.record(z.string()).optional().describe('Optional query parameters to include in the request')
+        queryParams: z.record(z.string(), z.string()).optional().describe('Optional query parameters to include in the request')
     })
 }
 
