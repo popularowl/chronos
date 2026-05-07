@@ -8,7 +8,9 @@ import { AbortControllerPool } from '../AbortControllerPool'
 import { BaseQueue } from './BaseQueue'
 import { RedisOptions } from 'bullmq'
 import { UsageCacheManager } from '../UsageCacheManager'
-import logger from '../utils/logger'
+import { createModuleLogger } from '../utils/logger'
+
+const logger = createModuleLogger('PredictionQueue')
 import { generateAgentflow as generateAgentflow_json } from 'chronos-components'
 import { databaseEntities } from '../utils'
 import { executeCustomNodeFunction } from '../utils/executeCustomNodeFunction'

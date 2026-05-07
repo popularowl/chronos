@@ -266,6 +266,36 @@ const runDriver = async (): Promise<void> => {
 
     // eslint-disable-next-line no-console
     console.log(`[driver] OK — round-trip verified: 2 + 3 = ${text}`)
+
+    // 4. audit assertion: the gateway invoke above should have written one
+    // ToolInvocationAudit row tagged with our callId. Polls briefly because
+    // the write is fire-and-forget (the audit happens asynchronously after
+    // the invoke response returns).
+    // eslint-disable-next-line no-console
+    console.log(`[driver] asserting audit row for callId=smoke-test-1 ...`)
+    const auditDeadline = Date.now() + 10000
+    let auditRow: { success?: boolean; namespacedTool?: string; userId?: string | null } | undefined
+    while (Date.now() < auditDeadline) {
+        const auditResp = await authedJson(token, `/api/v1/audit/tool-invocations?callId=smoke-test-1`, { method: 'GET' })
+        if (auditResp.ok) {
+            const body = (await auditResp.json()) as { rows?: Array<{ success: boolean; namespacedTool: string; userId: string | null }> }
+            const rows = body.rows ?? []
+            if (rows.length > 0) {
+                auditRow = rows[0]
+                break
+            }
+        }
+        await sleep(500)
+    }
+    if (!auditRow) {
+        throw new Error('audit row not found within 10s — recordToolInvocation may have failed')
+    }
+    if (auditRow.success !== true) throw new Error(`audit row success!=true: ${JSON.stringify(auditRow)}`)
+    if (auditRow.namespacedTool !== 'smoke.add') {
+        throw new Error(`audit row namespacedTool!='smoke.add': ${JSON.stringify(auditRow)}`)
+    }
+    // eslint-disable-next-line no-console
+    console.log(`[driver] audit row confirmed: ${JSON.stringify(auditRow)}`)
 }
 
 // ──────────────────────────── boot ────────────────────────────

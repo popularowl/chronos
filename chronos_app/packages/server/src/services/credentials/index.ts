@@ -112,7 +112,12 @@ const getCredentialById = async (credentialId: string, userContext?: UserContext
         const decryptedCredentialData = await decryptCredentialData(
             credential.encryptedData,
             credential.credentialName,
-            appServer.nodesPool.componentCredentials
+            appServer.nodesPool.componentCredentials,
+            {
+                credentialId,
+                userId: userContext?.userId ?? null,
+                source: 'credentials.read'
+            }
         )
         const returnCredential: ICredentialReturnResponse = {
             ...credential,
@@ -140,7 +145,11 @@ const updateCredential = async (credentialId: string, requestBody: any, userCont
         if (userContext && userContext.role !== 'admin' && credential.userId !== userContext.userId) {
             throw new InternalChronosError(StatusCodes.FORBIDDEN, 'You do not have permission to update this credential')
         }
-        const decryptedCredentialData = await decryptCredentialData(credential.encryptedData)
+        const decryptedCredentialData = await decryptCredentialData(credential.encryptedData, undefined, undefined, {
+            credentialId,
+            userId: userContext?.userId ?? null,
+            source: 'credentials.read-decrypted'
+        })
         requestBody.plainDataObj = { ...decryptedCredentialData, ...requestBody.plainDataObj }
         const updateCredential = await transformToCredentialEntity(requestBody)
         await appServer.AppDataSource.getRepository(Credential).merge(credential, updateCredential)

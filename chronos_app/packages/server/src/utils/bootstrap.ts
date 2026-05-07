@@ -1,4 +1,6 @@
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('bootstrap')
 import dotenv from 'dotenv'
 import path from 'path'
 

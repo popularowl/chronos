@@ -1,7 +1,9 @@
 import { Request, Response, NextFunction } from 'express'
 import sanitizeHtml from 'sanitize-html'
 import { isPredictionRequest, extractAgentflowId, validateAgentflowDomain } from './domainValidation'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('XSS')
 
 export function sanitizeMiddleware(req: Request, res: Response, next: NextFunction): void {
     // decoding is necessary as the url is encoded by the browser

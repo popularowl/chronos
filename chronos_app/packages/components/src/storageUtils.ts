@@ -14,7 +14,9 @@ import path from 'path'
 import sanitize from 'sanitize-filename'
 import { getUserHome } from './utils'
 import { isPathTraversal, isValidUUID } from './validator'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('storageUtils')
 
 const dirSize = async (directoryPath: string) => {
     let totalSize = 0

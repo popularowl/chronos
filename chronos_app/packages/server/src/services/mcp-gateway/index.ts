@@ -9,7 +9,10 @@ import { MCPServer } from '../../database/entities/MCPServer'
 import { MCPServerStatus, MCPServerTransport } from '../../Interface'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
-import logger from '../../utils/logger'
+import { createModuleLogger } from '../../utils/logger'
+
+const logger = createModuleLogger('MCPGateway')
+import auditService from '../audit'
 import httpAgentRuntime from '../agent-runtime-http'
 
 const DEFAULT_IDLE_TIMEOUT_MS = 300000
@@ -64,7 +67,7 @@ export class MCPGateway {
 
     public start(): void {
         if (this.reaperId) return
-        logger.info(`🛰️ [MCPGateway] Starting (idleTimeoutMs=${this.idleTimeoutMs}, reaperIntervalMs=${REAPER_INTERVAL_MS})`)
+        logger.info(`🛰️ Starting (idleTimeoutMs=${this.idleTimeoutMs}, reaperIntervalMs=${REAPER_INTERVAL_MS})`)
         this.reaperId = setInterval(() => this.reapIdle(), REAPER_INTERVAL_MS)
     }
 
@@ -79,10 +82,10 @@ export class MCPGateway {
             try {
                 await entry.client.close()
             } catch (error) {
-                logger.warn(`[MCPGateway] Failed to close client for server ${id}: ${getErrorMessage(error)}`)
+                logger.warn(`Failed to close client for server ${id}: ${getErrorMessage(error)}`)
             }
         }
-        logger.info('🛰️ [MCPGateway] Stopped')
+        logger.info('🛰️ Stopped')
     }
 
     /**
@@ -132,14 +135,31 @@ export class MCPGateway {
                 { timeout }
             )
             entry.lastUsedAt = Date.now()
+            const durationMs = Date.now() - startedAt
             logger.info({
                 event: 'mcp.tool.invoke',
                 agentId: agent.id,
                 agentSlug: agent.slug,
                 server: serverSlug,
                 tool: toolName,
-                durationMs: Date.now() - startedAt,
+                durationMs,
                 callId: callContext.callId
+            })
+            // Persist the audit row best-effort. Fire-and-forget — the gateway
+            // hot path must not block on the DB write, and the auditService
+            // catches its own errors so this can never throw.
+            void auditService.recordToolInvocation({
+                agentId: agent.id,
+                agentSlug: agent.slug,
+                mcpServerId: server.id,
+                mcpServerSlug: serverSlug,
+                toolName,
+                namespacedTool: namespacedToolName,
+                success: true,
+                durationMs,
+                errorMessage: null,
+                callId: callContext.callId ?? null,
+                userId: agent.userId ?? null
             })
             return result
         } catch (error) {
@@ -148,17 +168,32 @@ export class MCPGateway {
             entry.client.close().catch(() => {
                 /* noop */
             })
+            const durationMs = Date.now() - startedAt
+            const errorMessage = getErrorMessage(error)
             logger.warn({
                 event: 'mcp.tool.invoke.error',
                 agentId: agent.id,
                 agentSlug: agent.slug,
                 server: serverSlug,
                 tool: toolName,
-                durationMs: Date.now() - startedAt,
+                durationMs,
                 callId: callContext.callId,
-                error: getErrorMessage(error)
+                error: errorMessage
             })
-            throw new InternalChronosError(StatusCodes.BAD_GATEWAY, `MCP tool ${namespacedToolName} failed: ${getErrorMessage(error)}`)
+            void auditService.recordToolInvocation({
+                agentId: agent.id,
+                agentSlug: agent.slug,
+                mcpServerId: server.id,
+                mcpServerSlug: serverSlug,
+                toolName,
+                namespacedTool: namespacedToolName,
+                success: false,
+                durationMs,
+                errorMessage,
+                callId: callContext.callId ?? null,
+                userId: agent.userId ?? null
+            })
+            throw new InternalChronosError(StatusCodes.BAD_GATEWAY, `MCP tool ${namespacedToolName} failed: ${errorMessage}`)
         }
     }
 
@@ -390,7 +425,7 @@ export class MCPGateway {
             if (entry.lastUsedAt < cutoff) {
                 this.pool.delete(id)
                 entry.client.close().catch((error) => {
-                    logger.warn(`[MCPGateway] Failed to close idle client for server ${id}: ${getErrorMessage(error)}`)
+                    logger.warn(`Failed to close idle client for server ${id}: ${getErrorMessage(error)}`)
                 })
             }
         }

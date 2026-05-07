@@ -1,5 +1,7 @@
 import { Request, Response, NextFunction } from 'express'
-import logger from '../../utils/logger'
+import { createModuleLogger } from '../../utils/logger'
+
+const logger = createModuleLogger('chat-messages')
 import { ChatMessageRatingType, ChatType, IReactFlowObject } from '../../Interface'
 import agentflowsService from '../../services/agentflows'
 import chatMessagesService from '../../services/chat-messages'

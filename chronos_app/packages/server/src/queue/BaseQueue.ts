@@ -1,6 +1,8 @@
 import { Queue, Worker, Job, QueueEvents, RedisOptions, KeepJobs } from 'bullmq'
 import { v4 as uuidv4 } from 'uuid'
-import logger from '../utils/logger'
+import { createModuleLogger } from '../utils/logger'
+
+const logger = createModuleLogger('BaseQueue')
 import { isTracingEnabled } from '../tracing'
 
 const QUEUE_REDIS_EVENT_STREAM_MAX_LEN = process.env.QUEUE_REDIS_EVENT_STREAM_MAX_LEN

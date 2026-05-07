@@ -2,7 +2,9 @@ import { webCrawl, xmlScrape, checkDenyList } from 'chronos-components'
 import { StatusCodes } from 'http-status-codes'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
-import logger from '../../utils/logger'
+import { createModuleLogger } from '../../utils/logger'
+
+const logger = createModuleLogger('fetch-links')
 
 const getAllLinks = async (requestUrl: string, relativeLinksMethod: string, queryLimit: string): Promise<any> => {
     try {

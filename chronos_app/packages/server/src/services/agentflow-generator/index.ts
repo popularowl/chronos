@@ -8,7 +8,9 @@ import { generateAgentflow as generateAgentflow_json } from 'chronos-components'
 import { z } from 'zod'
 import { sysPrompt } from './prompt'
 import { databaseEntities } from '../../utils'
-import logger from '../../utils/logger'
+import { createModuleLogger } from '../../utils/logger'
+
+const logger = createModuleLogger('agentflow-generator')
 import { MODE } from '../../Interface'
 
 // Define the Zod schema for Agentflow data structure

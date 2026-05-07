@@ -6,7 +6,7 @@
         "build": "tsc",
         "start": "node --no-deprecation dist/index-server.js",
         "clean": "rimraf dist",
-        "nuke": "rimraf dist node_modules .turbo",
+        "nuke": "rm -rf dist node_modules .turbo",
         "start-worker": "node --no-deprecation dist/index-worker.js",
         "user": "node --no-deprecation dist/index-user.js",
         "dev": "nodemon",

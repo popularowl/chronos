@@ -1,6 +1,8 @@
 import { IServerSideEventStreamer } from 'chronos-components'
 import { createClient } from 'redis'
-import logger from '../utils/logger'
+import { createModuleLogger } from '../utils/logger'
+
+const logger = createModuleLogger('RedisEventPublisher')
 
 export class RedisEventPublisher implements IServerSideEventStreamer {
     private redisPublisher: ReturnType<typeof createClient>
@@ -48,15 +50,15 @@ export class RedisEventPublisher implements IServerSideEventStreamer {
 
     private setupEventListeners() {
         this.redisPublisher.on('connect', () => {
-            logger.info(`[RedisEventPublisher] Redis client connecting...`)
+            logger.info(`Redis client connecting...`)
         })
 
         this.redisPublisher.on('ready', () => {
-            logger.info(`[RedisEventPublisher] Redis client ready and connected`)
+            logger.info(`Redis client ready and connected`)
         })
 
         this.redisPublisher.on('error', (err) => {
-            logger.error(`[RedisEventPublisher] Redis client error:`, {
+            logger.error(`Redis client error:`, {
                 error: err,
                 isReady: this.redisPublisher.isReady,
                 isOpen: this.redisPublisher.isOpen
@@ -64,11 +66,11 @@ export class RedisEventPublisher implements IServerSideEventStreamer {
         })
 
         this.redisPublisher.on('end', () => {
-            logger.warn(`[RedisEventPublisher] Redis client connection ended`)
+            logger.warn(`Redis client connection ended`)
         })
 
         this.redisPublisher.on('reconnecting', () => {
-            logger.info(`[RedisEventPublisher] Redis client reconnecting...`)
+            logger.info(`Redis client reconnecting...`)
         })
     }
 

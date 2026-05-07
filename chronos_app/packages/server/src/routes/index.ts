@@ -44,6 +44,7 @@ import webhooksRouter from './webhooks'
 import agentsRouter from './agents'
 import agentCallbacksRouter from './agent-callbacks'
 import mcpServersRouter from './mcp-servers'
+import auditRouter from './audit'
 import skillsRouter from './skills'
 import toolsRouter from './tools'
 import upsertHistoryRouter from './upsert-history'
@@ -111,6 +112,7 @@ router.use('/webhooks', webhooksRouter)
 router.use('/agents', agentsRouter)
 router.use('/agent-callbacks', agentCallbacksRouter)
 router.use('/mcp-servers', mcpServersRouter)
+router.use('/audit', auditRouter)
 router.use('/skills', skillsRouter)
 router.use('/tools', toolsRouter)
 router.use('/variables', variablesRouter)

@@ -2,7 +2,9 @@ import { QueryRunner } from 'typeorm'
 import bcrypt from 'bcryptjs'
 import * as DataSource from './DataSource'
 import { User } from './database/entities/User'
-import logger from './utils/logger'
+import { createModuleLogger } from './utils/logger'
+
+const logger = createModuleLogger('server')
 import { bootstrap } from './utils/bootstrap'
 import yargs from 'yargs'
 import { hideBin } from 'yargs/helpers'

@@ -5,7 +5,9 @@ import { MeterProvider, PeriodicExportingMetricReader, Histogram } from '@opente
 import { diag, DiagLogLevel, DiagConsoleLogger, Attributes, Counter } from '@opentelemetry/api'
 import { getVersion } from 'chronos-components'
 import express from 'express'
-import logger from '../utils/logger'
+import { createModuleLogger } from '../utils/logger'
+
+const logger = createModuleLogger('OpenTelemetry')
 
 /**
  * Normalizes a URL path by replacing UUIDs and numeric IDs with :id

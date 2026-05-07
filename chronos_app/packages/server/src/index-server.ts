@@ -1,6 +1,8 @@
 import * as Server from './index'
 import * as DataSource from './DataSource'
-import logger from './utils/logger'
+import { createModuleLogger } from './utils/logger'
+
+const logger = createModuleLogger('server')
 import { bootstrap } from './utils/bootstrap'
 
 async function run() {

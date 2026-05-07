@@ -6,7 +6,9 @@ import { getUserHome } from './utils'
 import { entities } from './database/entities'
 import { sqliteMigrations } from './database/migrations/sqlite'
 import { postgresMigrations } from './database/migrations/postgres'
-import logger from './utils/logger'
+import { createModuleLogger } from './utils/logger'
+
+const logger = createModuleLogger('DataSource')
 import { createAzurePasswordCallback } from './utils/azureAuth'
 
 let appDataSource: DataSource

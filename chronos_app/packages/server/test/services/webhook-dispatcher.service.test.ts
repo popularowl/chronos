@@ -20,7 +20,14 @@ export function webhookDispatcherServiceTest() {
                     warn: jest.fn(),
                     error: jest.fn(),
                     debug: jest.fn()
-                }
+                },
+                createModuleLogger: jest.fn(() => ({
+                    info: jest.fn(),
+                    warn: jest.fn(),
+                    error: jest.fn(),
+                    debug: jest.fn(),
+                    verbose: jest.fn()
+                }))
             }))
         }
 

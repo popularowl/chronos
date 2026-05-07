@@ -1,6 +1,8 @@
 import { isValidUUID } from 'chronos-components'
 import agentflowsService from '../services/agentflows'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('domainValidation')
 
 /**
  * Validates if the origin is allowed for a specific agentflow

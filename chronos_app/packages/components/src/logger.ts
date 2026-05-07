@@ -12,4 +12,8 @@ const logger = createLogger({
     transports: [new transports.Console({ format: consoleFormat })]
 })
 
+export function createModuleLogger(source: string) {
+    return logger.child({ source })
+}
+
 export default logger

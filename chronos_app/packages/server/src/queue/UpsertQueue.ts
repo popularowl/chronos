@@ -13,7 +13,9 @@ import { BaseQueue } from './BaseQueue'
 import { executeUpsert } from '../utils/upsertVector'
 import { executeDocStoreUpsert, insertIntoVectorStore, previewChunks, processLoader } from '../services/documentstore'
 import { RedisOptions } from 'bullmq'
-import logger from '../utils/logger'
+import { createModuleLogger } from '../utils/logger'
+
+const logger = createModuleLogger('UpsertQueue')
 import { UsageCacheManager } from '../UsageCacheManager'
 
 interface UpsertQueueOptions {

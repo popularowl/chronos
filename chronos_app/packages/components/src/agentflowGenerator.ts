@@ -3,7 +3,9 @@ import { z } from 'zod'
 import { StructuredOutputParser } from '@langchain/core/output_parsers'
 import { isEqual, get, cloneDeep } from 'lodash'
 import { BaseChatModel } from '@langchain/core/language_models/chat_models'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('agentflowGenerator')
 
 const ToolType = z.array(z.string()).describe('List of tools')
 

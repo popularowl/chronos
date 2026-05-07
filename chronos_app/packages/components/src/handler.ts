@@ -26,7 +26,9 @@ import { AgentAction } from '@langchain/core/agents'
 import { LunaryHandler } from '@langchain/community/callbacks/handlers/lunary'
 
 import { getCredentialData, getCredentialParam, getEnvironmentVariable } from './utils'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('handler')
 import { EvaluationRunTracer } from '../evaluation/EvaluationRunTracer'
 import { ICommonObject, IDatabaseEntity, INodeData, IServerSideEventStreamer } from './Interface'
 import { LangWatch, LangWatchSpan, LangWatchTrace, autoconvertTypedValues } from 'langwatch'

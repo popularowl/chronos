@@ -75,7 +75,14 @@ export function documentstoreServiceTest() {
             }))
 
             jest.doMock('../../src/utils/logger', () => ({
-                default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() }
+                default: { info: jest.fn(), error: jest.fn(), warn: jest.fn(), debug: jest.fn() },
+                createModuleLogger: jest.fn(() => ({
+                    info: jest.fn(),
+                    error: jest.fn(),
+                    warn: jest.fn(),
+                    debug: jest.fn(),
+                    verbose: jest.fn()
+                }))
             }))
 
             // Mock the dynamic imports for component nodes

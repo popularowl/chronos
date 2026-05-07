@@ -10,7 +10,9 @@ import { CachePool } from './CachePool'
 import { QueueEvents, QueueEventsListener } from 'bullmq'
 import { AbortControllerPool } from './AbortControllerPool'
 import { UsageCacheManager } from './UsageCacheManager'
-import logger from './utils/logger'
+import { createModuleLogger } from './utils/logger'
+
+const logger = createModuleLogger('worker')
 import { bootstrap } from './utils/bootstrap'
 
 interface CustomListener extends QueueEventsListener {

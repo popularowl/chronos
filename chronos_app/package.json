@@ -19,7 +19,7 @@
         "test:components": "turbo run test --filter=chronos-components",
         "test:server": "turbo run test --filter=chronos",
         "clean": "pnpm --filter \"./packages/**\" clean",
-        "nuke": "pnpm --filter \"./packages/**\" nuke && rimraf node_modules .turbo",
+        "nuke": "pnpm --filter \"./packages/**\" nuke && rm -rf node_modules .turbo",
         "format": "prettier --write \"**/*.{ts,tsx,md}\"",
         "lint": "eslint packages --ext .js,.jsx,.ts,.tsx,.json,.md",
         "lint-fix": "pnpm lint --fix",

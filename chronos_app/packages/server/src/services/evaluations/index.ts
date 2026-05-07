@@ -1,6 +1,8 @@
 import { StatusCodes } from 'http-status-codes'
 import { EvaluationRunner, ICommonObject } from 'chronos-components'
-import logger from '../../utils/logger'
+import { createModuleLogger } from '../../utils/logger'
+
+const logger = createModuleLogger('evaluations')
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'

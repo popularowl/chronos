@@ -1,5 +1,7 @@
 import { ICommonObject, convertTextToSpeechStream, IServerSideEventStreamer } from 'chronos-components'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('ttsUtils')
 import { getErrorMessage } from '../errors/utils'
 
 export const shouldAutoPlayTTS = (textToSpeechConfig: string | undefined | null): boolean => {

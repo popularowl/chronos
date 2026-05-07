@@ -38,7 +38,13 @@ const resolveOutboundAuth = async (outboundAuth?: string): Promise<Record<string
         const appServer = getRunningExpressApp()
         const credential = await appServer.AppDataSource.getRepository(Credential).findOneBy({ id: credentialId })
         if (!credential) return undefined
-        const decrypted = await decryptCredentialData(credential.encryptedData)
+        // v1.7 § 3d: emit a credential-access audit row tagged with the runtime
+        // path. agentId / userId aren't on the resolveOutboundAuth signature
+        // today; threading them through is a follow-up under § 4 carve-outs.
+        const decrypted = await decryptCredentialData(credential.encryptedData, undefined, undefined, {
+            credentialId,
+            source: 'agent-runtime-http.outbound-auth'
+        })
         const key = field ?? Object.keys(decrypted)[0]
         const value = key ? decrypted[key] : undefined
         return typeof value === 'string' ? value : undefined

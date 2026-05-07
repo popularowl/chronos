@@ -28,7 +28,8 @@ import {
     IconSparkles,
     IconCalendarTime,
     IconWebhook,
-    IconPlug
+    IconPlug,
+    IconHistory
 } from '@tabler/icons-react'
 
 // constant
@@ -61,7 +62,8 @@ const icons = {
     IconSparkles,
     IconCalendarTime,
     IconWebhook,
-    IconPlug
+    IconPlug,
+    IconHistory
 }
 
 // ==============================|| DASHBOARD MENU ITEMS ||============================== //
@@ -91,6 +93,15 @@ const dashboard = {
                     type: 'item',
                     url: '/mcp-servers',
                     icon: icons.IconPlug,
+                    breadcrumbs: true,
+                    permission: 'mcp-servers:view'
+                },
+                {
+                    id: 'audit-log',
+                    title: 'Audit Log',
+                    type: 'item',
+                    url: '/audit-log',
+                    icon: icons.IconHistory,
                     breadcrumbs: true,
                     permission: 'mcp-servers:view'
                 },

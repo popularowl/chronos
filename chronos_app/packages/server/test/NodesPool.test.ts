@@ -25,7 +25,8 @@ export function nodesPoolTest() {
             jest.doMock('../src/utils/logger', () => ({
                 __esModule: true,
                 default: mockLogger,
-                expressRequestLogger: jest.fn((req: any, res: any, next: any) => next())
+                expressRequestLogger: jest.fn((req: any, res: any, next: any) => next()),
+                createModuleLogger: jest.fn(() => mockLogger)
             }))
 
             jest.doMock('../src/utils', () => ({

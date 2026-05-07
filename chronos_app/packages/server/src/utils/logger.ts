@@ -81,7 +81,7 @@ if (process.env.STORAGE_TYPE === 'gcs') {
         keyFilename: process.env.GOOGLE_CLOUD_STORAGE_CREDENTIAL,
         defaultCallback: (err: any) => {
             if (err) {
-                logger.error('Error logging to GCS: ' + err)
+                logger.error('[GCS]: Error logging to GCS: ' + err)
             }
         }
     }
@@ -281,7 +281,7 @@ export function expressRequestLogger(req: Request, res: Response, next: NextFunc
             const requetsEmojis: Record<string, string> = {
                 GET: '⬇️',
                 POST: '⬆️',
-                PUT: '🖊',
+                PUT: '🖊️',
                 DELETE: '❌',
                 OPTION: '🔗'
             }
@@ -290,10 +290,10 @@ export function expressRequestLogger(req: Request, res: Response, next: NextFunc
         }
 
         if (req.method !== 'GET') {
-            requestLogger.info(`${getRequestEmoji(req.method)} ${req.method} ${req.url}`, requestMetadata)
-            logger.info(`${getRequestEmoji(req.method)} ${req.method} ${req.url}`)
+            requestLogger.info(`${getRequestEmoji(req.method)} [server]: ${req.method} ${req.url}`, requestMetadata)
+            logger.info(`${getRequestEmoji(req.method)} [server]: ${req.method} ${req.url}`)
         } else {
-            requestLogger.http(`${getRequestEmoji(req.method)} ${req.method} ${req.url}`, requestMetadata)
+            requestLogger.http(`${getRequestEmoji(req.method)} [server]: ${req.method} ${req.url}`, requestMetadata)
         }
     }
 
@@ -302,6 +302,10 @@ export function expressRequestLogger(req: Request, res: Response, next: NextFunc
 
 export function createNodeLogger(nodeName: string) {
     return logger.child({ nodeName })
+}
+
+export function createModuleLogger(source: string) {
+    return logger.child({ source })
 }
 
 export default logger

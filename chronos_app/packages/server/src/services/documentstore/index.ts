@@ -51,7 +51,9 @@ import { validateFileMimeTypeAndExtensionMatch } from '../../utils/fileValidatio
 import { databaseEntities, getAppVersion, saveUpsertFlowData } from '../../utils'
 import { DOCUMENT_STORE_BASE_FOLDER, INPUT_PARAMS_TYPE, OMIT_QUEUE_JOB_DATA } from '../../utils/constants'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
-import logger from '../../utils/logger'
+import { createModuleLogger } from '../../utils/logger'
+
+const logger = createModuleLogger('documentstore')
 import { DOCUMENTSTORE_TOOL_DESCRIPTION_PROMPT_GENERATOR } from '../../utils/prompt'
 import { checkStorage, updateStorageUsage } from '../../utils/quotaUsage'
 import { Telemetry } from '../../utils/telemetry'

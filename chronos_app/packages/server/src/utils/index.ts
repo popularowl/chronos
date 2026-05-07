@@ -4,7 +4,9 @@
 
 import path from 'path'
 import fs from 'fs'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('utils')
 import { v4 as uuidv4 } from 'uuid'
 import {
     IAgentFlow,
@@ -48,6 +50,7 @@ import MulterGoogleCloudStorage from 'multer-cloud-storage'
 import { AgentFlow } from '../database/entities/AgentFlow'
 import { ChatMessage } from '../database/entities/ChatMessage'
 import { Credential } from '../database/entities/Credential'
+import auditService from '../services/audit'
 import { Tool } from '../database/entities/Tool'
 import { Lead } from '../database/entities/Lead'
 import { DataSource } from 'typeorm'
@@ -1498,22 +1501,63 @@ export const encryptCredentialData = async (plainDataObj: ICredentialDataDecrypt
 }
 
 /**
+ * Optional caller context for credential-access audit (v1.7 § 3d). Callers
+ * with request / agent context populate these fields; callers that don't
+ * pass nothing and the audit row is sparse with `source: 'unknown'`.
+ *
+ * Coverage gap: components-side `getCredentialData` does not currently pass
+ * context — tracked under v1.7 § 4 carve-outs.
+ */
+export interface DecryptAuditContext {
+    credentialId?: string
+    userId?: string | null
+    agentId?: string | null
+    source?: string
+    requestPath?: string | null
+}
+
+/**
  * Decrypt credential data
  * @param {string} encryptedData
  * @param {string} componentCredentialName
  * @param {IComponentCredentials} componentCredentials
+ * @param {DecryptAuditContext} auditContext - optional caller context for credential-access audit (v1.7 § 3d)
  * @returns {Promise<ICredentialDataDecrypted>}
  */
 export const decryptCredentialData = async (
     encryptedData: string,
     componentCredentialName?: string,
-    componentCredentials?: IComponentCredentials
+    componentCredentials?: IComponentCredentials,
+    auditContext?: DecryptAuditContext
 ): Promise<ICredentialDataDecrypted> => {
     let decryptedDataStr: string
 
     const encryptionMismatchError = new Error(
         'Encryption mismatch. Check the encryption keys are configured correctly. Node itself is healthy.'
     )
+
+    // Best-effort credential-access audit (v1.7 § 3d). Always fires on both
+    // success and failure of the decrypt below — caller passes credentialId;
+    // if absent, we skip the audit (sparse-context callers like
+    // components-side `getCredentialData` are tracked under § 4 carve-outs).
+    // The audit service catches its own errors; the outer try/catch is
+    // belt-and-suspenders against any import-time / contract regression.
+    const emitAudit = (success: boolean, errorMessage: string | null): void => {
+        if (!auditContext?.credentialId) return
+        try {
+            void auditService.recordCredentialAccess({
+                credentialId: auditContext.credentialId,
+                userId: auditContext.userId ?? null,
+                agentId: auditContext.agentId ?? null,
+                source: auditContext.source ?? 'unknown',
+                requestPath: auditContext.requestPath ?? null,
+                success,
+                errorMessage
+            })
+        } catch (auditError) {
+            logger.warn(`[decryptCredentialData] audit emit failed: ${auditError instanceof Error ? auditError.message : auditError}`)
+        }
+    }
 
     if (USE_AWS_SECRETS_MANAGER && secretsManagerClient) {
         try {
@@ -1535,6 +1579,7 @@ export const decryptCredentialData = async (
         } catch (error) {
             logger.error(error)
             const errorMessage = error instanceof Error ? error.message : String(error)
+            emitAudit(false, errorMessage)
             if (errorMessage.includes('Malformed UTF-8 data')) {
                 throw encryptionMismatchError
             }
@@ -1549,12 +1594,15 @@ export const decryptCredentialData = async (
         } catch (error) {
             logger.error(error)
             const errorMessage = error instanceof Error ? error.message : String(error)
+            emitAudit(false, errorMessage)
             if (errorMessage.includes('Malformed UTF-8 data')) {
                 throw encryptionMismatchError
             }
             throw new Error('Failed to decrypt credential data.')
         }
     }
+
+    emitAudit(true, null)
 
     if (!decryptedDataStr) return {}
     try {

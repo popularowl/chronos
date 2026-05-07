@@ -89,7 +89,12 @@ router.post('/authorize/:credentialId', async (req: Request, res: Response, next
         }
 
         // Decrypt the credential data to get OAuth configuration
-        const decryptedData = await decryptCredentialData(credential.encryptedData)
+        const decryptedData = await decryptCredentialData(credential.encryptedData, undefined, undefined, {
+            credentialId,
+            userId: (req as any).userId ?? null,
+            source: 'oauth2.authorize',
+            requestPath: req.path
+        })
 
         const {
             clientId,
@@ -195,7 +200,12 @@ router.get('/callback', async (req: Request, res: Response) => {
             return res.status(404).send(errorHtml)
         }
 
-        const decryptedData = await decryptCredentialData(credential.encryptedData)
+        const decryptedData = await decryptCredentialData(credential.encryptedData, undefined, undefined, {
+            credentialId: state as string,
+            userId: null,
+            source: 'oauth2.callback',
+            requestPath: req.path
+        })
 
         const { clientId, clientSecret, accessTokenUrl, redirect_uri, scope } = decryptedData
 
@@ -322,7 +332,12 @@ router.post('/refresh/:credentialId', async (req: Request, res: Response, next: 
             })
         }
 
-        const decryptedData = await decryptCredentialData(credential.encryptedData)
+        const decryptedData = await decryptCredentialData(credential.encryptedData, undefined, undefined, {
+            credentialId,
+            userId: (req as any).userId ?? null,
+            source: 'oauth2.refresh',
+            requestPath: req.path
+        })
 
         const { clientId, clientSecret, refresh_token, accessTokenUrl, scope } = decryptedData
 

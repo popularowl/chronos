@@ -4,7 +4,9 @@ import * as fs from 'fs'
 import * as path from 'path'
 import { ExecutionMetrics } from '../../database/entities/ExecutionMetrics'
 import { IAgentflowExecutedData } from '../../Interface'
-import logger from '../../utils/logger'
+import { createModuleLogger } from '../../utils/logger'
+
+const logger = createModuleLogger('metrics-collector')
 
 /**
  * Price index entry for a single model.

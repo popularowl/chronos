@@ -20,7 +20,9 @@ import { NodeVM } from '@flowiseai/nodevm'
 import { Sandbox } from '@e2b/code-interpreter'
 import { secureFetch, checkDenyList, secureAxiosRequest } from './httpSecurity'
 import JSON5 from 'json5'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('Crawler')
 
 export const numberOrExpressionRegex = '^(\\d+\\.?\\d*|{{.*}})$' //return true if string consists only numbers OR expression {{}}
 export const notEmptyRegex = '(.|\\s)*\\S(.|\\s)*' //return true if string is not empty or blank

@@ -79,7 +79,7 @@
         "start": "vite",
         "build": "vite build",
         "clean": "rimraf build",
-        "nuke": "rimraf build node_modules .turbo"
+        "nuke": "rm -rf build node_modules .turbo"
     },
     "babel": {
         "presets": [

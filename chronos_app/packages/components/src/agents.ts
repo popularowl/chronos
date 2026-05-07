@@ -24,7 +24,9 @@ import {
 } from './compat/agents'
 import { IUsedTool } from './Interface'
 import { getErrorMessage } from './error'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('agents')
 
 export const SOURCE_DOCUMENTS_PREFIX = '\n\n----CHRONOS_SOURCE_DOCUMENTS----\n\n'
 export const ARTIFACTS_PREFIX = '\n\n----CHRONOS_ARTIFACTS----\n\n'

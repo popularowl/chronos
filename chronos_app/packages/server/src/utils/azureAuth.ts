@@ -1,5 +1,7 @@
 import { DefaultAzureCredential, ManagedIdentityCredential } from '@azure/identity'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('azureAuth')
 
 /**
  * Azure PostgreSQL resource scope for token acquisition.

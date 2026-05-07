@@ -13,7 +13,9 @@ import {
 } from 'chronos-components'
 import { getRunningExpressApp } from './getRunningExpressApp'
 import { validateFileMimeTypeAndExtensionMatch } from './fileValidation'
-import logger from './logger'
+import { createModuleLogger } from './logger'
+
+const logger = createModuleLogger('createAttachment')
 import { getErrorMessage } from '../errors/utils'
 import { checkStorage, updateStorageUsage } from './quotaUsage'
 import { AgentFlow } from '../database/entities/AgentFlow'

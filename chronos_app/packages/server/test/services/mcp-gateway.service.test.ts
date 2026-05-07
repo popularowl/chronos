@@ -16,6 +16,7 @@ export function mcpGatewayServiceTest() {
         let mockStreamableTransportCtor: jest.Mock
         let mockSSETransportCtor: jest.Mock
         let mockAppDataSource: any
+        let mockAuditService: { recordToolInvocation: jest.Mock; listByCallId: jest.Mock }
 
         const baseAgent = (overrides: any = {}) => ({
             id: 'agent-1',
@@ -58,6 +59,10 @@ export function mcpGatewayServiceTest() {
                     resolveOutboundAuth: jest.fn().mockResolvedValue({})
                 }
             }))
+            jest.doMock('../../src/services/audit', () => ({
+                __esModule: true,
+                default: mockAuditService
+            }))
         }
 
         beforeEach(() => {
@@ -78,6 +83,10 @@ export function mcpGatewayServiceTest() {
             }
             mockAppDataSource = {
                 getRepository: jest.fn(() => mockMCPServerRepo)
+            }
+            mockAuditService = {
+                recordToolInvocation: jest.fn().mockResolvedValue(undefined),
+                listByCallId: jest.fn().mockResolvedValue([])
             }
 
             setupMocks()
@@ -244,6 +253,76 @@ export function mcpGatewayServiceTest() {
                 await gateway.stop()
                 expect(gateway.poolSize()).toBe(0)
                 expect(mockClientInstance.close).toHaveBeenCalled()
+            })
+        })
+
+        // ─── audit persistence (v1.7 § 3a) ─────────────────────────────
+
+        describe('audit persistence', () => {
+            it('records a successful invocation with success=true and the resolved server fields', async () => {
+                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer())
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                const agent = baseAgent({ id: 'agent-7', userId: 'user-7' })
+                await gateway.invoke(agent, 'postgres.query', { x: 1 }, { callId: 'call-abc' })
+                expect(mockAuditService.recordToolInvocation).toHaveBeenCalledTimes(1)
+                expect(mockAuditService.recordToolInvocation).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        agentId: 'agent-7',
+                        agentSlug: 'my-agent',
+                        mcpServerId: 'srv-1',
+                        mcpServerSlug: 'postgres',
+                        toolName: 'query',
+                        namespacedTool: 'postgres.query',
+                        success: true,
+                        errorMessage: null,
+                        callId: 'call-abc',
+                        userId: 'user-7'
+                    })
+                )
+            })
+
+            it('records a failed invocation with success=false and the operator-friendly errorMessage', async () => {
+                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer())
+                mockClientInstance.request.mockRejectedValueOnce(new Error('upstream broke'))
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                await expect(gateway.invoke(baseAgent(), 'postgres.query', {}, { callId: 'call-fail' })).rejects.toMatchObject({
+                    statusCode: 502
+                })
+                expect(mockAuditService.recordToolInvocation).toHaveBeenCalledTimes(1)
+                expect(mockAuditService.recordToolInvocation).toHaveBeenCalledWith(
+                    expect.objectContaining({
+                        success: false,
+                        errorMessage: 'upstream broke',
+                        callId: 'call-fail'
+                    })
+                )
+            })
+
+            it('uses fire-and-forget so a slow audit write cannot block invoke completion', async () => {
+                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer())
+                // Hold the audit promise pending until after invoke resolves — proves the
+                // gateway is NOT awaiting it. The audit service's own contract (verified in
+                // its unit tests) guarantees no-throw on real DB errors; here we only need
+                // to prove the hot path doesn't await.
+                let releaseAudit: () => void = () => {}
+                mockAuditService.recordToolInvocation.mockImplementation(
+                    () =>
+                        new Promise<void>((resolve) => {
+                            releaseAudit = resolve
+                        })
+                )
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                const invokePromise = gateway.invoke(baseAgent(), 'postgres.query', {}, { callId: 'call-async' })
+                await expect(invokePromise).resolves.toBeDefined()
+                expect(mockAuditService.recordToolInvocation).toHaveBeenCalled()
+                releaseAudit() // tidy
+            })
+
+            it('passes null callId through when the caller does not provide one', async () => {
+                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer())
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                await gateway.invoke(baseAgent(), 'postgres.query', {})
+                expect(mockAuditService.recordToolInvocation).toHaveBeenCalledWith(expect.objectContaining({ callId: null }))
             })
         })
 

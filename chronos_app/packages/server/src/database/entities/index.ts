@@ -27,6 +27,8 @@ import { WebhookDelivery } from './WebhookDelivery'
 import { AgentflowVersion } from './AgentflowVersion'
 import { Agent } from './Agent'
 import { MCPServer } from './MCPServer'
+import { ToolInvocationAudit } from './ToolInvocationAudit'
+import { CredentialAccessAudit } from './CredentialAccessAudit'
 
 export const entities = {
     AgentFlow,
@@ -57,5 +59,7 @@ export const entities = {
     WebhookDelivery,
     AgentflowVersion,
     Agent,
-    MCPServer
+    MCPServer,
+    ToolInvocationAudit,
+    CredentialAccessAudit
 }
