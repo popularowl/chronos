@@ -10,11 +10,15 @@ export const baseFormat: Logform.Format = combine(timestamp({ format: 'YYYY-MM-D
 /**
  * Human-readable console format: "2026-02-22 14:45:44 [INFO]: message"
  * Includes [Source] tag when `source` (or legacy `nodeName`) is present in metadata.
+ * Stringifies object messages so that structured callers like
+ * `logger.info({ event: 'mcp.tool.invoke', … })` render as readable JSON
+ * instead of `[object Object]`.
  */
 export const consoleFormat: Logform.Format = printf(({ level, message, timestamp, stack, nodeName, source }) => {
     const tag = source ?? nodeName
     const sourceTag = tag ? ` [${tag}]` : ''
-    const text = `${timestamp} [${level.toUpperCase()}]${sourceTag}: ${message}`
+    const body = typeof message === 'string' ? message : JSON.stringify(message)
+    const text = `${timestamp} [${level.toUpperCase()}]${sourceTag}: ${body}`
     return stack ? text + '\n' + stack : text
 })
 

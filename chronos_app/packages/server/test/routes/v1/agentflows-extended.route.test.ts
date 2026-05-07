@@ -54,9 +54,18 @@ export function agentflowsExtendedRouteTest() {
                 expect(response.status).toBe(200)
             })
 
-            it('should reject negative page', async () => {
+            it('should accept page=-1 as the no-pagination sentinel', async () => {
                 const response = await supertest(getRunningExpressApp().app)
                     .get('/api/v1/agentflows?page=-1')
+                    .set('Authorization', `Bearer ${authToken}`)
+                    .set('x-request-from', 'internal')
+
+                expect(response.status).toBe(200)
+            })
+
+            it('should reject page below -1', async () => {
+                const response = await supertest(getRunningExpressApp().app)
+                    .get('/api/v1/agentflows?page=-2')
                     .set('Authorization', `Bearer ${authToken}`)
                     .set('x-request-from', 'internal')
 

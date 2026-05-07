@@ -60,13 +60,29 @@ export function paginationUtilTest() {
                 expect(result.limit).toBe(0)
             })
 
-            it('should throw error for negative page', () => {
+            it('should accept page=-1 as the no-pagination sentinel', () => {
                 const mockReq = { query: { page: '-1' } } as unknown as Request
+
+                const result = getPageAndLimitParams(mockReq)
+
+                expect(result.page).toBe(-1)
+            })
+
+            it('should accept limit=-1 as the no-pagination sentinel', () => {
+                const mockReq = { query: { limit: '-1' } } as unknown as Request
+
+                const result = getPageAndLimitParams(mockReq)
+
+                expect(result.limit).toBe(-1)
+            })
+
+            it('should throw error for page below -1', () => {
+                const mockReq = { query: { page: '-2' } } as unknown as Request
 
                 expect(() => getPageAndLimitParams(mockReq)).toThrow('page cannot be negative')
             })
 
-            it('should throw error for negative limit', () => {
+            it('should throw error for limit below -1', () => {
                 const mockReq = { query: { limit: '-5' } } as unknown as Request
 
                 expect(() => getPageAndLimitParams(mockReq)).toThrow('limit cannot be negative')
