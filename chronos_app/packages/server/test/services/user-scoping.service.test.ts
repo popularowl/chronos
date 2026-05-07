@@ -160,7 +160,13 @@ export function userScopingServiceTest() {
 
             jest.doMock('../../src/utils/logger', () => ({
                 default: { error: jest.fn(), info: jest.fn(), warn: jest.fn() },
-                createModuleLogger: jest.fn(() => ({ error: jest.fn(), info: jest.fn(), warn: jest.fn(), debug: jest.fn(), verbose: jest.fn() }))
+                createModuleLogger: jest.fn(() => ({
+                    error: jest.fn(),
+                    info: jest.fn(),
+                    warn: jest.fn(),
+                    debug: jest.fn(),
+                    verbose: jest.fn()
+                }))
             }))
 
             agentflowsService = require('../../src/services/agentflows').default
