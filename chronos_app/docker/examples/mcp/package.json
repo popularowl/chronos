@@ -1,6 +1,6 @@
 {
     "name": "chronos-example-mcp-reference",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "private": true,
     "type": "module",
     "description": "Tiny streamable-http MCP server used by the v1.6 demo. Exposes echo and add tools.",

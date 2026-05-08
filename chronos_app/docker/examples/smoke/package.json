@@ -1,6 +1,6 @@
 {
-    "name": "chronos-v1.6-smoke",
-    "version": "1.6.0",
+    "name": "chronos-v1.7-smoke",
+    "version": "1.7.0",
     "private": true,
     "type": "module",
     "description": "v1.6 Agent Registry + MCP Gateway smoke test. Boots an embedded MCP server, registers it with Chronos alongside an HTTP agent, and asserts a real tool callback round-trip.",

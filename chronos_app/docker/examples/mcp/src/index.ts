@@ -17,8 +17,12 @@ import { z } from 'zod'
 
 const PORT = parseInt(process.env.PORT ?? '7800', 10)
 
+const stamp = () => new Date().toISOString()
+// eslint-disable-next-line no-console
+const log = (...args: unknown[]) => console.log(`[mcp-reference ${stamp()}]`, ...args)
+
 const buildServer = (): McpServer => {
-    const server = new McpServer({ name: 'chronos-reference-mcp', version: '1.6.0' })
+    const server = new McpServer({ name: 'chronos-reference-mcp', version: '1.7.0' })
 
     server.tool(
         'echo',
@@ -39,6 +43,24 @@ const buildServer = (): McpServer => {
 
 const app = express()
 app.use(express.json({ limit: '4mb' }))
+
+// One-line request log per inbound call so operators watching
+// `docker compose logs mcp-reference` can see traffic arriving during demos.
+// On POST we sniff the JSON-RPC envelope and surface the `method` (e.g.
+// `initialize`, `tools/list`, `tools/call`) plus the tool name when present
+// so the typical demo flow reads as a tight, narrated sequence in the logs.
+app.use((req, _res, next) => {
+    if (req.method === 'POST' && req.path === '/mcp' && req.body && typeof req.body === 'object') {
+        const body = req.body as { method?: string; params?: { name?: string } }
+        const method = typeof body.method === 'string' ? body.method : '(no method)'
+        const toolName = method === 'tools/call' && typeof body.params?.name === 'string' ? ` tool=${body.params.name}` : ''
+        const sid = req.header('mcp-session-id') ?? '(new)'
+        log(`POST /mcp ${method}${toolName} session=${sid}`)
+    } else {
+        log(`${req.method} ${req.originalUrl}`)
+    }
+    next()
+})
 
 const transports = new Map<string, StreamableHTTPServerTransport>()
 
@@ -88,6 +110,5 @@ app.delete('/mcp', async (req: Request, res: Response) => {
 })
 
 app.listen(PORT, () => {
-    // eslint-disable-next-line no-console
-    console.log(`[mcp-reference] streamable-http listening on :${PORT}`)
+    log(`streamable-http listening on :${PORT}`)
 })

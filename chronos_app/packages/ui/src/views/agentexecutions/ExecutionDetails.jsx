@@ -725,7 +725,7 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
         if (request) {
             children.push({
                 id: 'http-request',
-                label: `Request to ${agentSlug}`,
+                label: 'Request',
                 name: 'agentAgentflow',
                 status: 'FINISHED',
                 data: {
@@ -765,7 +765,7 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
             : response ?? payload
         children.push({
             id: 'http-response',
-            label: `Response from ${agentSlug}`,
+            label: 'Response',
             name: 'agentAgentflow',
             status: responseStatus,
             data: {
@@ -786,7 +786,7 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
         return [
             {
                 id: 'http-root',
-                label: `Incoming request → ${agentSlug}`,
+                label: `External agent: ${agentSlug}`,
                 name: 'agentAgentflow',
                 status,
                 data: parentData,

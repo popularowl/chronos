@@ -123,6 +123,13 @@ const getAllExecutions = async (
         const queryBuilder = appServer.AppDataSource.getRepository(Execution)
             .createQueryBuilder('execution')
             .leftJoinAndSelect('execution.agentflow', 'agentflow')
+            // v1.7 — additionally LEFT JOIN the Agent registry on either ID
+            // convention (HTTP rows write `agentflowId = Agent.id`; BUILT_IN
+            // rows write `agentflowId = AgentFlow.id` and the linked Agent
+            // carries `builtinAgentflowId`). Lets the agentflowName filter
+            // also match HTTP-agent name / slug — without this join, typing
+            // an HTTP-agent name into the filter returns zero rows.
+            .leftJoin(Agent, 'agent', 'agent.id = execution.agentflowId OR agent.builtinAgentflowId = execution.agentflowId')
             .orderBy('execution.updatedDate', 'DESC')
             .skip((page - 1) * limit)
             .take(limit)
@@ -130,7 +137,13 @@ const getAllExecutions = async (
         if (id) queryBuilder.andWhere('execution.id = :id', { id })
         if (agentflowId) queryBuilder.andWhere('execution.agentflowId = :agentflowId', { agentflowId })
         if (agentflowName)
-            queryBuilder.andWhere('LOWER(agentflow.name) LIKE LOWER(:agentflowName)', { agentflowName: `%${agentflowName}%` })
+            // OR across all three name/slug surfaces so the filter is
+            // uniform: AgentFlow.name (built-in), Agent.name (HTTP), and
+            // Agent.slug (HTTP — common case since slugs are namespace-y).
+            queryBuilder.andWhere(
+                '(LOWER(agentflow.name) LIKE LOWER(:agentflowName) OR LOWER(agent.name) LIKE LOWER(:agentflowName) OR LOWER(agent.slug) LIKE LOWER(:agentflowName))',
+                { agentflowName: `%${agentflowName}%` }
+            )
         if (sessionId) queryBuilder.andWhere('execution.sessionId = :sessionId', { sessionId })
         if (state) queryBuilder.andWhere('execution.state = :state', { state })
 

@@ -410,20 +410,13 @@ const Agents = () => {
                                                                         onClick={() => goToDetail(agent)}
                                                                     >
                                                                         {preview.map((t) => (
-                                                                            <Chip
-                                                                                key={t}
-                                                                                size='small'
-                                                                                variant='outlined'
-                                                                                label={t}
-                                                                                sx={{ fontFamily: 'monospace', fontSize: '0.75em' }}
-                                                                            />
+                                                                            <Chip key={t} size='small' variant='outlined' label={t} />
                                                                         ))}
                                                                         {overflow > 0 && (
                                                                             <Chip
                                                                                 size='small'
                                                                                 variant='outlined'
                                                                                 label={`+${overflow} more`}
-                                                                                sx={{ fontSize: '0.75em' }}
                                                                             />
                                                                         )}
                                                                     </Stack>

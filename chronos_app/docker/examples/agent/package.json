@@ -1,6 +1,6 @@
 {
     "name": "chronos-example-http-agent",
-    "version": "1.6.0",
+    "version": "1.7.0",
     "private": true,
     "type": "module",
     "description": "Minimal HTTP agent that demonstrates the Chronos v1.6 Agent Registry + MCP Gateway callback contract.",

@@ -86,15 +86,15 @@ The example agent reads its callback token from the `CALLBACK_TOKEN` env var. Af
 1. Click into the new agent → Overview tab → reveal the **Callback Token** → copy.
 2. Set it on the host and restart only the agent service:
 
-   ```bash
-   EXAMPLE_AGENT_CALLBACK_TOKEN=<paste-hex-here> docker compose up -d --no-deps example-agent
-   ```
+```bash
+   CALLBACK_TOKEN=<paste-hex-here> docker compose up -d --no-deps example-agent
+```
 
 3. Confirm the agent log says `callback configured`:
 
-   ```bash
-   docker compose logs --tail 5 example-agent
-   ```
+```bash
+docker compose logs --tail 5 example-agent
+```
 
 ### 4. Invoke the agent and exercise the round-trip
 

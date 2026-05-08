@@ -293,7 +293,7 @@ export const ExecutionsListTable = ({ data, isLoading, onExecutionRowClick, onSe
                                                         return `canvas agent: ${row.agentflow?.name || row.agent?.name || '—'}`
                                                     }
                                                     if (runtime === 'HTTP') {
-                                                        return `external agent : ${row.agent?.slug || row.agent?.name || '—'}`
+                                                        return `external agent: ${row.agent?.slug || row.agent?.name || '—'}`
                                                     }
                                                     // Legacy / no Agent registry row — fall back to the agentflow name.
                                                     return row.agentflow?.name || '—'
