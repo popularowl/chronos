@@ -59,6 +59,8 @@ import { Variable } from '../database/entities/Variable'
 import { DocumentStore } from '../database/entities/DocumentStore'
 import { DocumentStoreFileChunk } from '../database/entities/DocumentStoreFileChunk'
 import { Skill } from '../database/entities/Skill'
+import { MCPServer } from '../database/entities/MCPServer'
+import { Agent } from '../database/entities/Agent'
 import { InternalChronosError } from '../errors/internalChronosError'
 import { StatusCodes } from 'http-status-codes'
 import {
@@ -105,7 +107,12 @@ export const databaseEntities: IDatabaseEntity = {
     Variable: Variable,
     DocumentStore: DocumentStore,
     DocumentStoreFileChunk: DocumentStoreFileChunk,
-    Skill: Skill
+    Skill: Skill,
+    // v1.7 — exposed so canvas tool nodes can reach the MCP Registry through
+    // `options.databaseEntities['MCPServer']` and look up the BUILT_IN agent
+    // backing the current canvas via `databaseEntities['Agent']`.
+    MCPServer: MCPServer,
+    Agent: Agent
 }
 
 /**

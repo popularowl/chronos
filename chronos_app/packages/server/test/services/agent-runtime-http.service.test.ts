@@ -175,6 +175,39 @@ export function agentRuntimeHttpServiceTest() {
                 expect(metrics.totalTokens).toBe(19)
             })
 
+            it('preserves the start-phase request alongside the finish-phase response on the persisted executionData', async () => {
+                // v1.7 regression — writeFinishExecution used to clobber
+                // executionData with just the response, dropping the
+                // start-phase `request`. The UI's HTTP execution viewer
+                // reads `payload.request` to render the "Request to {agent}"
+                // tree child; this test locks the merge in place.
+                const upstreamPayload = {
+                    id: 'cmpl-x',
+                    choices: [{ message: { content: 'merged' } }],
+                    usage: { prompt_tokens: 1, completion_tokens: 1, total_tokens: 2 }
+                }
+                global.fetch = jest.fn().mockResolvedValue({
+                    ok: true,
+                    status: 200,
+                    headers: new Map([['content-type', 'application/json']]),
+                    json: async () => upstreamPayload
+                }) as any
+
+                const { req, res } = buildReqRes()
+                await runtime.invoke(baseAgent(), { messages: [{ role: 'user', content: 'hi' }], model: 'test-model' }, req, res)
+
+                // The runtime saves twice: once at start (with request), once at finish (with merge).
+                // The final save is the one that matters — must carry both keys.
+                const lastSave = mockExecutionRepo.save.mock.calls[mockExecutionRepo.save.mock.calls.length - 1][0]
+                const persisted = JSON.parse(lastSave.executionData)
+                expect(persisted.request).toBeDefined()
+                expect(persisted.request.messages?.[0]?.content).toBe('hi')
+                expect(persisted.request.model).toBe('test-model')
+                expect(persisted.response).toBeDefined()
+                expect(persisted.response.choices?.[0]?.message?.content).toBe('merged')
+                expect(persisted.callId).toBeDefined()
+            })
+
             it('parses Responses API token usage shape (input_tokens / output_tokens)', async () => {
                 global.fetch = jest.fn().mockResolvedValue({
                     ok: true,

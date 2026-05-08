@@ -156,14 +156,35 @@ export function executionsServiceTest() {
                 })
             })
 
-            it('should filter by agentflowName with case-insensitive match', async () => {
+            it('should filter by agentflowName with case-insensitive match across AgentFlow.name + Agent.name + Agent.slug', async () => {
+                // v1.7 G4 — the filter now ORs across all three name/slug
+                // surfaces so HTTP-agent rows (which have no joined AgentFlow)
+                // are matched by Agent.name or Agent.slug. Without the OR
+                // they used to silently drop from results when the operator
+                // typed an HTTP-agent name.
                 mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
 
                 await executionsService.getAllExecutions({ agentflowName: 'Test Flow' })
 
-                expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('LOWER(agentflow.name) LIKE LOWER(:agentflowName)', {
-                    agentflowName: '%Test Flow%'
-                })
+                expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith(
+                    '(LOWER(agentflow.name) LIKE LOWER(:agentflowName) OR LOWER(agent.name) LIKE LOWER(:agentflowName) OR LOWER(agent.slug) LIKE LOWER(:agentflowName))',
+                    { agentflowName: '%Test Flow%' }
+                )
+            })
+
+            it('should leftJoin the Agent registry on either ID convention so HTTP-agent rows are included', async () => {
+                // v1.7 G4 — Agent leftJoin matches `agent.id = execution.agentflowId`
+                // (HTTP rows) OR `agent.builtinAgentflowId = execution.agentflowId`
+                // (BUILT_IN rows). Single join covers both.
+                mockQueryBuilder.getManyAndCount.mockResolvedValue([[], 0])
+
+                await executionsService.getAllExecutions({ agentflowName: 'anything' })
+
+                expect(mockQueryBuilder.leftJoin).toHaveBeenCalledWith(
+                    expect.anything(),
+                    'agent',
+                    'agent.id = execution.agentflowId OR agent.builtinAgentflowId = execution.agentflowId'
+                )
             })
 
             it('should filter by sessionId', async () => {

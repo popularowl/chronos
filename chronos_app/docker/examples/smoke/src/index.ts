@@ -32,7 +32,7 @@ const AGENT_PUBLIC_URL = process.env.AGENT_PUBLIC_URL ?? `http://smoke-runner:${
 // ─────────────────────── embedded MCP server ───────────────────────
 
 const buildMcpServer = (): McpServer => {
-    const server = new McpServer({ name: 'smoke-mcp', version: '1.6.0' })
+    const server = new McpServer({ name: 'smoke-mcp', version: '1.7.0' })
     server.tool(
         'add',
         'Adds two integers and returns the sum as text.',
@@ -296,6 +296,113 @@ const runDriver = async (): Promise<void> => {
     }
     // eslint-disable-next-line no-console
     console.log(`[driver] audit row confirmed: ${JSON.stringify(auditRow)}`)
+
+    // ──────────────────────────────────────────────────────────────────
+    // 5. v1.7 C4 — canvas BUILT_IN agent → MCP Registry aggregation
+    //
+    // What's covered here: the C3 server-side aggregator that walks a
+    // canvas's agentAgentflow nodes for embedded mcpRegistryServer
+    // selections and writes the union into the BUILT_IN Agent's
+    // `allowedTools`. We POST an agentflow whose flowData carries an
+    // Agent primitive with one MCP Registry Server tool selecting the
+    // smoke MCP's `add` action, then assert the linked BUILT_IN agent's
+    // allowedTools contains `smoke.add`.
+    //
+    // What's NOT covered: the actual canvas runtime invocation through
+    // an LLM. That requires booting a deterministic OpenAI-compatible
+    // mock and a complete agentflow with Start/LLM/Agent nodes — out of
+    // scope for a CI smoke. The runtime path itself (MCPGateway.invoke
+    // delegation) is the same code as the HTTP-agent path verified by
+    // step 3/4 above, so this aggregation check is the meaningful gap
+    // the existing smoke didn't cover.
+    // ──────────────────────────────────────────────────────────────────
+    // eslint-disable-next-line no-console
+    console.log(`[driver] creating agentflow with embedded MCP Registry Server selection ...`)
+    const flowData = {
+        nodes: [
+            {
+                id: 'agentAgentflow_0',
+                data: {
+                    name: 'agentAgentflow',
+                    inputs: {
+                        agentTools: [
+                            {
+                                agentSelectedTool: 'mcpRegistryServer',
+                                agentSelectedToolConfig: {
+                                    mcpServerId: mcp.id,
+                                    mcpActions: ['add']
+                                },
+                                agentSelectedToolRequiresHumanInput: false
+                            }
+                        ]
+                    }
+                }
+            }
+        ],
+        edges: []
+    }
+    const flowResp = await authedJson(token, '/api/v1/agentflows', {
+        method: 'POST',
+        body: JSON.stringify({
+            name: `Smoke Canvas ${Date.now()}`,
+            type: 'AGENTFLOW',
+            flowData: JSON.stringify(flowData)
+        })
+    })
+    if (!flowResp.ok) {
+        throw new Error(`agentflow create failed: ${flowResp.status} ${await flowResp.text()}`)
+    }
+    const flow = (await flowResp.json()) as { id: string; name: string }
+    // eslint-disable-next-line no-console
+    console.log(`[driver] agentflow created id=${flow.id}`)
+
+    try {
+        // Locate the BUILT_IN agent that the agentflowsService side-effect
+        // auto-created for this flow. createBuiltInAgentForAgentflow runs
+        // synchronously inside saveAgentflow, but we still poll briefly
+        // because the aggregator that populates allowedTools is the next
+        // statement after — give it a moment in case the order ever shifts.
+        // eslint-disable-next-line no-console
+        console.log(`[driver] locating BUILT_IN agent for agentflow ${flow.id} ...`)
+        const aggregateDeadline = Date.now() + 10000
+        let canvasAgent: { id: string; allowedTools?: string | null } | undefined
+        while (Date.now() < aggregateDeadline) {
+            const agentsListResp = await authedJson(token, '/api/v1/agents', { method: 'GET' })
+            if (agentsListResp.ok) {
+                const agentsBody = (await agentsListResp.json()) as
+                    | Array<{ id: string; builtinAgentflowId?: string; allowedTools?: string | null }>
+                    | { data?: Array<{ id: string; builtinAgentflowId?: string; allowedTools?: string | null }> }
+                const list = Array.isArray(agentsBody) ? agentsBody : agentsBody.data ?? []
+                const found = list.find((a) => a.builtinAgentflowId === flow.id)
+                if (found && found.allowedTools) {
+                    canvasAgent = found
+                    break
+                }
+            }
+            await sleep(500)
+        }
+        if (!canvasAgent) {
+            throw new Error(
+                `BUILT_IN agent for agentflow ${flow.id} did not have allowedTools populated within 10s — C3 aggregator regression?`
+            )
+        }
+        const allowedFromCanvas = JSON.parse(canvasAgent.allowedTools ?? '[]') as string[]
+        if (!Array.isArray(allowedFromCanvas) || !allowedFromCanvas.includes('smoke.add')) {
+            throw new Error(
+                `BUILT_IN agent allowedTools did not include 'smoke.add' (got ${JSON.stringify(allowedFromCanvas)}) — C3 aggregator regression?`
+            )
+        }
+        // eslint-disable-next-line no-console
+        console.log(`[driver] canvas allowedTools aggregator confirmed: ${JSON.stringify(allowedFromCanvas)}`)
+    } finally {
+        // Always clean up the test agentflow even on assertion failure so
+        // re-runs of the smoke don't leave stale rows around.
+        const deleteResp = await authedJson(token, `/api/v1/agentflows/${flow.id}`, { method: 'DELETE' })
+        if (!deleteResp.ok) {
+            // eslint-disable-next-line no-console
+            console.warn(`[driver] cleanup: failed to delete agentflow ${flow.id} (status ${deleteResp.status})`)
+        }
+    }
 }
 
 // ──────────────────────────── boot ────────────────────────────

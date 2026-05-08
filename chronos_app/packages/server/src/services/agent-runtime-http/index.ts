@@ -107,7 +107,22 @@ const writeFinishExecution = async (
         const appServer = getRunningExpressApp()
         const repo = appServer.AppDataSource.getRepository(Execution)
         execution.state = state
-        execution.executionData = JSON.stringify(finalPayload)
+        // Merge start-phase fields (callId, request) with the finish payload.
+        // Without the merge, executionData = JSON.stringify(finalPayload) would
+        // clobber `request` (persisted by writeStartExecution) on every finish,
+        // breaking the UI's "Request to {agent}" tree child which reads
+        // `payload.request` to render the OpenAI ChatCompletion body Chronos
+        // POSTed. Finish-phase keys (response / error / statusCode / streamed
+        // / aborted / body) don't collide with start-phase keys, so order
+        // doesn't matter — but we put finalPayload last for explicitness.
+        let startData: Record<string, unknown> = {}
+        try {
+            const parsed = execution.executionData ? JSON.parse(execution.executionData) : {}
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) startData = parsed as Record<string, unknown>
+        } catch {
+            startData = {}
+        }
+        execution.executionData = JSON.stringify({ ...startData, ...(finalPayload as Record<string, unknown>) })
         await repo.save(execution)
 
         const usage = (finalPayload as any)?.response?.usage ?? {}

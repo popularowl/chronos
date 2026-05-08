@@ -5,7 +5,7 @@ import { useSelector, useDispatch } from 'react-redux'
 
 // MUI
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView'
-import { Typography, Box, Drawer, Chip, Button, Tooltip, Stack, ToggleButton, ToggleButtonGroup, Alert, AlertTitle } from '@mui/material'
+import { Typography, Box, Drawer, Chip, Button, Tooltip } from '@mui/material'
 import { styled, alpha } from '@mui/material/styles'
 import { useTreeItem2 } from '@mui/x-tree-view/useTreeItem2'
 import {
@@ -40,7 +40,6 @@ import {
 import { useTheme } from '@mui/material/styles'
 import { CHRONOS_CREDENTIAL_ID, AGENTFLOW_ICONS } from '@/store/constant'
 import { NodeExecutionDetails } from '@/views/agentexecutions/NodeExecutionDetails'
-import { JSONViewer } from '@/ui-component/json/JsonViewer'
 import ShareExecutionDialog from './ShareExecutionDialog'
 import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction } from '@/store/actions'
 
@@ -299,7 +298,6 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
     const [showShareDialog, setShowShareDialog] = useState(false)
     const [copied, setCopied] = useState(false)
     const [localMetadata, setLocalMetadata] = useState({})
-    const [httpViewMode, setHttpViewMode] = useState('rendered')
     const theme = useTheme()
     const customization = useSelector((state) => state.customization)
     const updateExecutionApi = useApi(executionsApi.updateExecution)
@@ -667,10 +665,135 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
     // HTTP-agent invocations write a synthetic Execution row whose
     // `executionData` is an object (`{ response }`, `{ request, callId }`,
     // `{ error }`, etc.) rather than the agentflow node-tree array the
-    // built-in path produces. Render a flat JSON view for those instead of
-    // routing into buildTreeData (which would throw on `.forEach` of a non-
-    // array and unmount the drawer to a blank page).
+    // built-in path produces. To get visual + interaction parity with the
+    // built-in viewer, we synthesise a single-node tree shaped exactly like
+    // `buildTreeData` produces — the same `RichTreeView` + `NodeExecutionDetails`
+    // (rendered/raw + ReactJson) pipeline then renders both kinds of run.
     const isHttpExecution = execution !== null && execution !== undefined && !Array.isArray(execution)
+
+    // Build a synthetic tree for an HTTP-agent execution. Root step
+    // "Incoming request → {agent slug}" expands into two children — the
+    // request Chronos POSTed to the agent's `/v1/chat/completions` and the
+    // response (or error) it received back. Each child is an
+    // `agentAgentflow`-shaped data blob so `NodeExecutionDetails`' Rendered
+    // tab finds `data.input.messages`, `data.output.usageMetadata`, etc.
+    // and lights up the same UI as built-in agent steps. Raw tab gets the
+    // persisted payload slice so the ground truth is always visible.
+    const buildHttpTreeData = (payload, meta) => {
+        if (!payload || typeof payload !== 'object') return []
+        const agentSlug = meta?.agent?.slug || meta?.agentflow?.name || 'agent'
+        const state = meta?.state
+        const status = state === 'FINISHED' ? 'FINISHED' : state === 'INPROGRESS' ? 'INPROGRESS' : state === 'STOPPED' ? 'STOPPED' : 'ERROR'
+
+        const request = payload.request
+        const response = payload.response
+        const assistantMessage = response?.choices?.[0]?.message
+        const usage = response?.usage
+        const usageMetadata = usage
+            ? {
+                  total_tokens: usage.total_tokens,
+                  input_tokens: usage.prompt_tokens ?? usage.input_tokens,
+                  output_tokens: usage.completion_tokens ?? usage.output_tokens
+              }
+            : undefined
+
+        const hasError = payload.error !== undefined || payload.statusCode !== undefined
+        const isStreamed = payload.streamed === true
+
+        // Parent — overview, identical data shape to v1.7's single-node
+        // version so users who don't expand still see the full summary.
+        const parentData = {
+            id: 'http-root',
+            name: 'agentAgentflow',
+            input: {
+                messages: Array.isArray(request?.messages) ? request.messages : []
+            },
+            output: {
+                ...(assistantMessage?.content ? { content: assistantMessage.content } : {}),
+                ...(Array.isArray(assistantMessage?.tool_calls) ? { tool_calls: assistantMessage.tool_calls } : {}),
+                ...(response?.choices?.[0]?.finish_reason ? { finish_reason: response.choices[0].finish_reason } : {}),
+                ...(usageMetadata ? { usageMetadata } : {})
+            },
+            payload
+        }
+
+        const children = []
+
+        // Request child — the ChatCompletion body Chronos POSTed to the
+        // external agent. The dispatch itself always succeeded (we wouldn't
+        // have a persisted execution row otherwise), so status=FINISHED.
+        if (request) {
+            children.push({
+                id: 'http-request',
+                label: 'Request',
+                name: 'agentAgentflow',
+                status: 'FINISHED',
+                data: {
+                    id: 'http-request',
+                    name: 'agentAgentflow',
+                    input: {
+                        messages: Array.isArray(request.messages) ? request.messages : []
+                    },
+                    output: {},
+                    payload: request
+                },
+                children: []
+            })
+        }
+
+        // Response child — what the agent returned, or the error / streamed
+        // marker. Status mirrors success/error of the upstream call;
+        // INPROGRESS while we're still streaming.
+        const responseStatus = hasError
+            ? 'ERROR'
+            : isStreamed
+            ? state === 'INPROGRESS'
+                ? 'INPROGRESS'
+                : status
+            : response
+            ? 'FINISHED'
+            : status
+        const responsePayload = hasError
+            ? {
+                  error: payload.error,
+                  aborted: payload.aborted,
+                  statusCode: payload.statusCode,
+                  body: payload.body
+              }
+            : isStreamed
+            ? { streamed: true, callId: payload.callId, ...(response ? { response } : {}) }
+            : response ?? payload
+        children.push({
+            id: 'http-response',
+            label: 'Response',
+            name: 'agentAgentflow',
+            status: responseStatus,
+            data: {
+                id: 'http-response',
+                name: 'agentAgentflow',
+                input: {},
+                output: {
+                    ...(assistantMessage?.content ? { content: assistantMessage.content } : {}),
+                    ...(Array.isArray(assistantMessage?.tool_calls) ? { tool_calls: assistantMessage.tool_calls } : {}),
+                    ...(response?.choices?.[0]?.finish_reason ? { finish_reason: response.choices[0].finish_reason } : {}),
+                    ...(usageMetadata ? { usageMetadata } : {})
+                },
+                payload: responsePayload
+            },
+            children: []
+        })
+
+        return [
+            {
+                id: 'http-root',
+                label: `External agent: ${agentSlug}`,
+                name: 'agentAgentflow',
+                status,
+                data: parentData,
+                children
+            }
+        ]
+    }
 
     useEffect(() => {
         if (execution && Array.isArray(execution)) {
@@ -708,9 +831,14 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
                 }
             }
             setExecution(newTree)
+        } else if (isHttpExecution) {
+            const httpTree = buildHttpTreeData(execution, localMetadata)
+            setExecution(httpTree)
+            setExpandedItems(getAllNodeIds(httpTree))
+            if (httpTree.length > 0) setSelectedItem(httpTree[0])
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [execution, metadata])
+    }, [execution, metadata, localMetadata])
 
     const handleNodeSelect = (event, itemId) => {
         const findNode = (nodes, id) => {
@@ -727,200 +855,12 @@ export const ExecutionDetails = ({ open, isPublic, execution, metadata, onClose,
         setSelectedItem(selectedNode)
     }
 
-    // HTTP-agent execution panel — flat view of whatever the runtime
-    // persisted (request body, response body, error). No tree, no node
-    // selection. The full agentflow execution UI doesn't apply here because
-    // an HTTP-agent run is one upstream call, not a graph of nodes.
-    const httpPayload = isHttpExecution ? execution : null
-    const httpResponse = httpPayload?.response
-    const httpRequest = httpPayload?.request
-    const httpError = httpPayload?.error
-    const httpAborted = httpPayload?.aborted
-    const httpStatusCode = httpPayload?.statusCode
-    const httpStatusBody = httpPayload?.body
-    const httpStreamed = httpPayload?.streamed === true
-    const httpHasError = httpError !== undefined || httpStatusCode !== undefined
-    const httpAssistantMessage = httpResponse?.choices?.[0]?.message
-    const httpFinishReason = httpResponse?.choices?.[0]?.finish_reason
-    const httpUsage = httpResponse?.usage
-    const httpAgentId = localMetadata?.agentflow?.id ?? localMetadata?.agentflowId
-    const httpAgentName = localMetadata?.agentflow?.name
-
-    const httpExecutionContent = (
-        <Box sx={{ display: 'flex', height: '100%', flexDirection: 'row' }}>
-            <Box
-                sx={{
-                    flex: '1 1 35%',
-                    padding: 2,
-                    borderRight: 1,
-                    borderColor: 'divider',
-                    overflow: 'auto'
-                }}
-            >
-                <Typography variant='overline' color='text.secondary'>
-                    Execution
-                </Typography>
-                <Stack direction='row' spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
-                    {!isPublic && httpAgentId && (
-                        <Chip
-                            sx={{ pl: 1 }}
-                            icon={<IconExternalLink size={15} />}
-                            variant='outlined'
-                            label={httpAgentName || httpAgentId || 'Go to Agent'}
-                            className={'button'}
-                            onClick={() => window.open(`/agents/${httpAgentId}`, '_blank')}
-                        />
-                    )}
-                    {!isPublic && localMetadata?.id && (
-                        <Tooltip title={`Execution ID: ${localMetadata.id}`} placement='top'>
-                            <Chip
-                                sx={{ pl: 1 }}
-                                icon={<IconCopy size={15} />}
-                                variant='outlined'
-                                label={copied ? 'Copied!' : 'Copy ID'}
-                                className={'button'}
-                                onClick={copyToClipboard}
-                            />
-                        </Tooltip>
-                    )}
-                    {localMetadata?.state && <Chip variant='outlined' label={`State: ${localMetadata.state}`} />}
-                    {localMetadata?.createdDate && (
-                        <Chip variant='outlined' label={`Created: ${new Date(localMetadata.createdDate).toLocaleString()}`} />
-                    )}
-                    {localMetadata?.sessionId && <Chip variant='outlined' label={`Session: ${localMetadata.sessionId}`} />}
-                </Stack>
-                <Typography variant='caption' color='text.secondary' sx={{ display: 'block', mt: 2 }}>
-                    HTTP-agent execution — the agent ran as a single upstream call. No nested node tree to display.
-                </Typography>
-            </Box>
-            <Box sx={{ flex: '1 1 65%', padding: 2, overflow: 'auto', display: 'flex', flexDirection: 'column' }}>
-                <Stack direction='row' alignItems='center' justifyContent='space-between' sx={{ mb: 1 }}>
-                    <Typography variant='overline' color='text.secondary'>
-                        Payload
-                    </Typography>
-                    <ToggleButtonGroup
-                        size='small'
-                        exclusive
-                        value={httpViewMode}
-                        onChange={(_, next) => {
-                            if (next) setHttpViewMode(next)
-                        }}
-                    >
-                        <ToggleButton value='rendered'>Rendered</ToggleButton>
-                        <ToggleButton value='raw'>Raw</ToggleButton>
-                    </ToggleButtonGroup>
-                </Stack>
-
-                {httpHasError && (
-                    <Alert severity='error' variant='outlined' sx={{ mb: 2 }}>
-                        <AlertTitle>
-                            {httpAborted
-                                ? 'Upstream timeout / aborted'
-                                : httpStatusCode !== undefined
-                                ? `Upstream returned HTTP ${httpStatusCode}`
-                                : 'Upstream error'}
-                        </AlertTitle>
-                        {httpError && (
-                            <Typography variant='body2' sx={{ wordBreak: 'break-word' }}>
-                                {httpError}
-                            </Typography>
-                        )}
-                        {httpStatusBody && (
-                            <Box component='pre' sx={{ mt: 1, mb: 0, fontSize: '0.8rem', whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}>
-                                {typeof httpStatusBody === 'string' ? httpStatusBody : JSON.stringify(httpStatusBody, null, 2)}
-                            </Box>
-                        )}
-                    </Alert>
-                )}
-
-                {httpViewMode === 'rendered' ? (
-                    <Box sx={{ flex: 1, minHeight: 0, overflow: 'auto' }}>
-                        {httpStreamed && (
-                            <Alert severity='info' variant='outlined' sx={{ mb: 2 }}>
-                                Streamed response — the body was piped through to the caller and is not retained for replay.
-                            </Alert>
-                        )}
-                        {httpAssistantMessage?.content && (
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant='caption' color='text.secondary'>
-                                    Assistant
-                                </Typography>
-                                <Box
-                                    sx={{
-                                        mt: 0.5,
-                                        p: 2,
-                                        borderRadius: 1,
-                                        backgroundColor: (theme) =>
-                                            theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.04)',
-                                        whiteSpace: 'pre-wrap',
-                                        wordBreak: 'break-word'
-                                    }}
-                                >
-                                    {httpAssistantMessage.content}
-                                </Box>
-                            </Box>
-                        )}
-                        {Array.isArray(httpAssistantMessage?.tool_calls) && httpAssistantMessage.tool_calls.length > 0 && (
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant='caption' color='text.secondary'>
-                                    Tool calls
-                                </Typography>
-                                <Box sx={{ mt: 0.5 }}>
-                                    <JSONViewer data={httpAssistantMessage.tool_calls} maxHeight='240px' />
-                                </Box>
-                            </Box>
-                        )}
-                        {(httpFinishReason || httpUsage) && (
-                            <Stack direction='row' spacing={1} sx={{ mb: 2, flexWrap: 'wrap', gap: 1 }}>
-                                {httpFinishReason && <Chip size='small' variant='outlined' label={`finish: ${httpFinishReason}`} />}
-                                {httpUsage?.total_tokens !== undefined && (
-                                    <Chip size='small' variant='outlined' label={`tokens: ${httpUsage.total_tokens}`} />
-                                )}
-                                {(httpUsage?.prompt_tokens ?? httpUsage?.input_tokens) !== undefined && (
-                                    <Chip
-                                        size='small'
-                                        variant='outlined'
-                                        label={`in: ${httpUsage?.prompt_tokens ?? httpUsage?.input_tokens}`}
-                                    />
-                                )}
-                                {(httpUsage?.completion_tokens ?? httpUsage?.output_tokens) !== undefined && (
-                                    <Chip
-                                        size='small'
-                                        variant='outlined'
-                                        label={`out: ${httpUsage?.completion_tokens ?? httpUsage?.output_tokens}`}
-                                    />
-                                )}
-                            </Stack>
-                        )}
-                        {httpRequest && (
-                            <Box sx={{ mb: 2 }}>
-                                <Typography variant='caption' color='text.secondary'>
-                                    Request
-                                </Typography>
-                                <Box sx={{ mt: 0.5 }}>
-                                    <JSONViewer data={httpRequest} maxHeight='240px' />
-                                </Box>
-                            </Box>
-                        )}
-                        {!httpHasError && !httpStreamed && !httpResponse && !httpRequest && (
-                            <Typography variant='caption' color='text.secondary'>
-                                No structured payload to render — switch to Raw to see the persisted shape.
-                            </Typography>
-                        )}
-                    </Box>
-                ) : (
-                    <Box sx={{ flex: 1, minHeight: 0, mt: 1 }}>
-                        <JSONViewer data={execution} maxHeight='100%' />
-                    </Box>
-                )}
-            </Box>
-        </Box>
-    )
-
-    // Content to be rendered in both drawer and full page modes
-    const contentComponent = isHttpExecution ? (
-        httpExecutionContent
-    ) : (
+    // Content to be rendered in both drawer and full page modes — single
+    // unified pipeline for built-in and HTTP. HTTP executions get a
+    // synthetic single-node tree (see `buildHttpTreeData` + the useEffect
+    // above), so the same RichTreeView + NodeExecutionDetails (chips,
+    // refresh, rendered/raw + ReactJson) handles both shapes.
+    const contentComponent = (
         <Box sx={{ display: 'flex', height: '100%', flexDirection: 'row' }}>
             <Box
                 sx={{

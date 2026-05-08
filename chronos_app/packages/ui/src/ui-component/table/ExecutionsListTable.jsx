@@ -195,7 +195,7 @@ export const ExecutionsListTable = ({ data, isLoading, onExecutionRowClick, onSe
                                     direction={order}
                                     onClick={() => handleRequestSort('agentflowName')}
                                 >
-                                    Agentflow
+                                    Agent
                                 </TableSortLabel>
                             </StyledTableCell>
                             <StyledTableCell>Session</StyledTableCell>
@@ -287,7 +287,17 @@ export const ExecutionsListTable = ({ data, isLoading, onExecutionRowClick, onSe
                                                 {moment(row.updatedDate).format('MMM D, YYYY h:mm A')}
                                             </StyledTableCell>
                                             <StyledTableCell onClick={() => onExecutionRowClick(row)}>
-                                                {row.agentflow?.name}
+                                                {(() => {
+                                                    const runtime = row.agent?.runtimeType
+                                                    if (runtime === 'BUILT_IN') {
+                                                        return `canvas agent: ${row.agentflow?.name || row.agent?.name || '—'}`
+                                                    }
+                                                    if (runtime === 'HTTP') {
+                                                        return `external agent: ${row.agent?.slug || row.agent?.name || '—'}`
+                                                    }
+                                                    // Legacy / no Agent registry row — fall back to the agentflow name.
+                                                    return row.agentflow?.name || '—'
+                                                })()}
                                             </StyledTableCell>
                                             <StyledTableCell onClick={() => onExecutionRowClick(row)}>{row.sessionId}</StyledTableCell>
                                             <StyledTableCell onClick={() => onExecutionRowClick(row)}>

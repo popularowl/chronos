@@ -297,7 +297,7 @@ const AgentDetail = () => {
                                 <Divider />
 
                                 <Box>
-                                    <Typography variant='overline'>Allowed Tools</Typography>
+                                    <Typography variant='overline'>Allowed MCP Tools</Typography>
                                     {allowedTools.length === 0 ? (
                                         <Typography variant='body2' sx={{ mt: 0.5, color: 'text.secondary' }}>
                                             No tools configured. The agent will receive 403 from the gateway on any tool call.

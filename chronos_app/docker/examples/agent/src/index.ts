@@ -3,8 +3,19 @@ import express from 'express'
 const PORT = parseInt(process.env.PORT ?? '8001', 10)
 const CALLBACK_TOKEN = process.env.CALLBACK_TOKEN ?? ''
 
+const stamp = () => new Date().toISOString()
+// eslint-disable-next-line no-console
+const log = (...args: unknown[]) => console.log(`[example-agent ${stamp()}]`, ...args)
+
 const app = express()
 app.use(express.json({ limit: '10mb' }))
+
+// One-line request log per inbound call so operators watching `docker compose
+// logs example-agent` can see traffic arriving during demos.
+app.use((req, _res, next) => {
+    log(`${req.method} ${req.originalUrl}`)
+    next()
+})
 
 app.get('/health', (_req, res) => {
     res.json({ ok: true })
@@ -18,6 +29,7 @@ app.post('/v1/chat/completions', async (req, res) => {
 
     const lastUser = [...messages].reverse().find((m) => m?.role === 'user')
     const userText = String(lastUser?.content ?? '')
+    log(`chat/completions: callId=${callId ?? '(none)'} user=${JSON.stringify(userText)}`)
     const match = userText.match(/(\d+)\s*\+\s*(\d+)/)
 
     let assistantText: string
@@ -54,6 +66,8 @@ app.post('/v1/chat/completions', async (req, res) => {
         assistantText = `Echo: ${userText}`
     }
 
+    log(`chat/completions: replying assistant=${JSON.stringify(assistantText)}`)
+
     res.json({
         id: `chatcmpl-${callId ?? Math.random().toString(36).slice(2)}`,
         object: 'chat.completion',
@@ -71,6 +85,5 @@ app.post('/v1/chat/completions', async (req, res) => {
 })
 
 app.listen(PORT, () => {
-    // eslint-disable-next-line no-console
-    console.log(`[example-agent] listening on :${PORT} (callback ${CALLBACK_TOKEN ? 'configured' : 'NOT configured'})`)
+    log(`listening on :${PORT} (callback ${CALLBACK_TOKEN ? 'configured' : 'NOT configured'})`)
 })

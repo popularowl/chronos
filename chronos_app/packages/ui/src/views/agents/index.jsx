@@ -20,6 +20,7 @@ import {
     TableRow,
     TableSortLabel,
     Tooltip,
+    Typography,
     useTheme
 } from '@mui/material'
 import { IconEdit, IconExternalLink, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
@@ -52,6 +53,27 @@ const STATUS_CHIP_COLOR = {
 const RUNTIME_LABEL = {
     HTTP: 'HTTP',
     BUILT_IN: 'Built-in'
+}
+
+const ALLOWED_TOOLS_PREVIEW_CAP = 3
+
+/**
+ * Parses the JSON-stringified `allowedTools` column into a string[] of
+ * `<slug>.<tool>` namespaced names. Tolerates legacy non-JSON values (just
+ * shows them as a single chip) and bad shapes (returns []).
+ */
+const parseAllowedTools = (raw) => {
+    if (!raw) return []
+    if (Array.isArray(raw)) return raw.filter((t) => typeof t === 'string' && t.length > 0)
+    if (typeof raw !== 'string') return []
+    try {
+        const parsed = JSON.parse(raw)
+        if (Array.isArray(parsed)) return parsed.filter((t) => typeof t === 'string' && t.length > 0)
+    } catch {
+        // legacy non-JSON value — render as a single chip rather than swallowing
+        return [raw]
+    }
+    return []
 }
 
 /**
@@ -296,6 +318,7 @@ const Agents = () => {
                                                 <TableCell>Runtime</TableCell>
                                                 <TableCell>Status</TableCell>
                                                 <TableCell>Endpoint / Flow</TableCell>
+                                                <TableCell sx={{ minWidth: 220 }}>Allowed MCP Tools</TableCell>
                                                 <TableCell>Enabled</TableCell>
                                                 <TableCell align='right'>Actions</TableCell>
                                             </TableRow>
@@ -352,6 +375,54 @@ const Agents = () => {
                                                                     : '—'}
                                                             </Box>
                                                         </Tooltip>
+                                                    </TableCell>
+                                                    <TableCell sx={{ maxWidth: 320 }}>
+                                                        {(() => {
+                                                            const tools = parseAllowedTools(agent.allowedTools)
+                                                            if (tools.length === 0) {
+                                                                return (
+                                                                    <Typography variant='caption' color='text.secondary'>
+                                                                        —
+                                                                    </Typography>
+                                                                )
+                                                            }
+                                                            const preview = tools.slice(0, ALLOWED_TOOLS_PREVIEW_CAP)
+                                                            const overflow = tools.length - preview.length
+                                                            return (
+                                                                <Tooltip
+                                                                    title={
+                                                                        overflow > 0 ? (
+                                                                            <Box component='span' sx={{ whiteSpace: 'pre-line' }}>
+                                                                                {tools.join('\n')}
+                                                                            </Box>
+                                                                        ) : (
+                                                                            ''
+                                                                        )
+                                                                    }
+                                                                    placement='top'
+                                                                >
+                                                                    <Stack
+                                                                        direction='row'
+                                                                        spacing={0.5}
+                                                                        useFlexGap
+                                                                        flexWrap='wrap'
+                                                                        sx={{ cursor: 'pointer' }}
+                                                                        onClick={() => goToDetail(agent)}
+                                                                    >
+                                                                        {preview.map((t) => (
+                                                                            <Chip key={t} size='small' variant='outlined' label={t} />
+                                                                        ))}
+                                                                        {overflow > 0 && (
+                                                                            <Chip
+                                                                                size='small'
+                                                                                variant='outlined'
+                                                                                label={`+${overflow} more`}
+                                                                            />
+                                                                        )}
+                                                                    </Stack>
+                                                                </Tooltip>
+                                                            )
+                                                        })()}
                                                     </TableCell>
                                                     <TableCell>
                                                         <Switch checked={agent.enabled} onChange={() => handleToggle(agent)} size='small' />

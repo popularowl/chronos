@@ -1,11 +1,12 @@
 import { ICommonObject, removeFolderFromStorage } from 'chronos-components'
 import { StatusCodes } from 'http-status-codes'
 import { In } from 'typeorm'
-import { AgentflowType, IReactFlowObject } from '../../Interface'
+import { AgentflowType, IReactFlowNode, IReactFlowObject } from '../../Interface'
 import { UserContext } from '../../Interface.Auth'
 import { CHRONOS_COUNTER_STATUS, CHRONOS_METRIC_COUNTERS } from '../../Interface.Metrics'
 import { Agent } from '../../database/entities/Agent'
 import { AgentFlow, EnumAgentflowType } from '../../database/entities/AgentFlow'
+import { MCPServer } from '../../database/entities/MCPServer'
 import { AgentflowVersion } from '../../database/entities/AgentflowVersion'
 import { ChatMessage } from '../../database/entities/ChatMessage'
 import { ChatMessageFeedback } from '../../database/entities/ChatMessageFeedback'
@@ -289,6 +290,10 @@ const saveAgentflow = async (newAgentFlow: AgentFlow, userContext?: UserContext)
     // discovery surface. Mirrors the v1.6.0 migration backfill for new flows.
     await agentsService.createBuiltInAgentForAgentflow(dbResponse)
 
+    // v1.7 — aggregate MCP Registry Server node selections into Agent.allowedTools
+    // so the gateway intersection check passes when the canvas runs tools.
+    await _aggregateAllowedToolsFromCanvas(dbResponse)
+
     await appServer.telemetry.sendTelemetry(
         'agentflow_created',
         {
@@ -321,7 +326,149 @@ const updateAgentflow = async (agentflow: AgentFlow, updateAgentFlow: AgentFlow,
     await _checkAndUpdateDocumentStoreUsage(newDbAgentflow)
     const dbResponse = await appServer.AppDataSource.getRepository(AgentFlow).save(newDbAgentflow)
 
+    // v1.7 — re-aggregate Agent.allowedTools whenever the canvas changes.
+    await _aggregateAllowedToolsFromCanvas(dbResponse)
+
     return dbResponse
+}
+
+/**
+ * Parses a node-config field that holds a list of bare MCP tool names. The
+ * canvas writes this back as either a JSON-stringified array or a real
+ * array depending on which form the editor used; both shapes survive a
+ * round-trip through the agentflow save path.
+ */
+const _parseMCPActions = (raw: unknown): string[] => {
+    if (Array.isArray(raw)) return raw.filter((a) => typeof a === 'string' && a.length > 0)
+    if (typeof raw === 'string' && raw.length > 0) {
+        try {
+            const parsed = JSON.parse(raw)
+            if (Array.isArray(parsed)) return parsed.filter((a: unknown) => typeof a === 'string' && a.length > 0) as string[]
+        } catch {
+            // ignore — node config may be mid-edit; skip rather than fail the save
+        }
+    }
+    return []
+}
+
+/**
+ * Pulls every `(mcpServerId, mcpActions[])` pair out of a canvas. Three
+ * places the canvas can stash an MCP Registry Server selection:
+ *
+ *   1. Standalone `mcpRegistryServer` node (legacy chatflow shape — the
+ *      tool dropped directly onto the canvas without an Agent/Tool wrapper).
+ *   2. Inside a `toolAgentflow` node (the modern Agentflow `Tool`
+ *      primitive), as `inputs.toolAgentflowSelectedTool === 'mcpRegistryServer'`
+ *      with config under `inputs.toolAgentflowSelectedToolConfig`.
+ *   3. Inside an `agentAgentflow` node (the modern Agentflow `Agent`
+ *      primitive), as one or more entries in `inputs.agentTools[]` with
+ *      `agentSelectedTool === 'mcpRegistryServer'` and config under
+ *      `agentSelectedToolConfig`.
+ *
+ * The Agent primitive is the path users hit first; the Tool primitive is
+ * common for "agent calls one tool" flows; the standalone node is rare in
+ * the modern canvas but kept for completeness.
+ */
+const _extractRegistrySelections = (nodes: IReactFlowNode[]): { mcpServerId: string; actions: string[] }[] => {
+    const results: { mcpServerId: string; actions: string[] }[] = []
+    for (const node of nodes) {
+        const data = node?.data
+        if (!data) continue
+        const name = data.name
+        const inputs = (data.inputs as ICommonObject | undefined) ?? {}
+
+        // (1) Standalone MCP Registry Server node.
+        if (name === 'mcpRegistryServer') {
+            const mcpServerId = (inputs.mcpServerId as string | undefined) ?? ''
+            const actions = _parseMCPActions(inputs.mcpActions)
+            if (mcpServerId && actions.length > 0) results.push({ mcpServerId, actions })
+            continue
+        }
+
+        // (2) Inside a Tool agentflow primitive.
+        if (name === 'toolAgentflow' && inputs.toolAgentflowSelectedTool === 'mcpRegistryServer') {
+            const config = (inputs.toolAgentflowSelectedToolConfig as ICommonObject | undefined) ?? {}
+            const mcpServerId = (config.mcpServerId as string | undefined) ?? ''
+            const actions = _parseMCPActions(config.mcpActions)
+            if (mcpServerId && actions.length > 0) results.push({ mcpServerId, actions })
+            continue
+        }
+
+        // (3) Inside an Agent agentflow primitive.
+        if (name === 'agentAgentflow') {
+            const agentTools = inputs.agentTools
+            if (!Array.isArray(agentTools)) continue
+            for (const entry of agentTools) {
+                const e = entry as ICommonObject | undefined
+                if (!e || e.agentSelectedTool !== 'mcpRegistryServer') continue
+                const config = (e.agentSelectedToolConfig as ICommonObject | undefined) ?? {}
+                const mcpServerId = (config.mcpServerId as string | undefined) ?? ''
+                const actions = _parseMCPActions(config.mcpActions)
+                if (mcpServerId && actions.length > 0) results.push({ mcpServerId, actions })
+            }
+        }
+    }
+    return results
+}
+
+/**
+ * Walks the canvas for `MCP Registry Server` selections (standalone or
+ * embedded inside Tool / Agent agentflow primitives), aggregates their
+ * `<slug>.<tool>` entries, and writes the deduplicated set to the
+ * BUILT_IN agent's `allowedTools` so the gateway's intersection check
+ * (`Agent.allowedTools ∩ MCPServer.allowedTools`) lets the call through
+ * at runtime.
+ *
+ * Clobbers any prior value — the canvas is the source of truth for
+ * BUILT_IN agents in v1.7. Manual overrides on the AgentDetail page
+ * persist between saves with no canvas selections, but a save with
+ * conflicting canvas content wins and a `logger.info` line records the
+ * change so operator-edited cases stay traceable.
+ */
+const _aggregateAllowedToolsFromCanvas = async (agentflow: AgentFlow): Promise<void> => {
+    if (!agentflow.flowData) return
+    let parsedFlowData: IReactFlowObject
+    try {
+        parsedFlowData = JSON.parse(agentflow.flowData)
+    } catch {
+        return
+    }
+    const nodes = parsedFlowData?.nodes
+    if (!Array.isArray(nodes) || nodes.length === 0) return
+
+    const selections = _extractRegistrySelections(nodes)
+    const appServer = getRunningExpressApp()
+    const agentRepo = appServer.AppDataSource.getRepository(Agent)
+    const builtInAgent = await agentRepo.findOneBy({ builtinAgentflowId: agentflow.id })
+    if (!builtInAgent) return // No BUILT_IN agent yet (e.g. backfill skipped); nothing to write.
+
+    if (selections.length === 0) {
+        // No MCP Registry Server selections on the canvas — leave allowedTools
+        // alone. Manual entries (set on AgentDetail) survive saves that
+        // don't touch MCP Registry wiring.
+        return
+    }
+
+    const mcpServerRepo = appServer.AppDataSource.getRepository(MCPServer)
+    const aggregated = new Set<string>()
+    for (const sel of selections) {
+        const server = await mcpServerRepo.findOneBy({ id: sel.mcpServerId })
+        if (!server) continue
+        for (const action of sel.actions) {
+            aggregated.add(`${server.slug}.${action}`)
+        }
+    }
+
+    const newList = JSON.stringify(Array.from(aggregated).sort())
+    if (builtInAgent.allowedTools === newList) return // No-op, avoid spurious updates.
+
+    if (builtInAgent.allowedTools && builtInAgent.allowedTools !== newList) {
+        logger.info(
+            `[agentflowsService] Clobbering Agent.allowedTools for BUILT_IN agent ${builtInAgent.slug} (agentflow ${agentflow.id}): ${builtInAgent.allowedTools} → ${newList}`
+        )
+    }
+
+    await agentRepo.update(builtInAgent.id, { allowedTools: newList })
 }
 
 const _checkAndUpdateDocumentStoreUsage = async (agentflow: AgentFlow) => {

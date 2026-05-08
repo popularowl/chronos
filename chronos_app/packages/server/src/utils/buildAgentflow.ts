@@ -1228,7 +1228,12 @@ const executeNode = async ({
             parentTraceIds,
             humanInputAction,
             iterationContext,
-            evaluationRunId
+            evaluationRunId,
+            // v1.7 — surface the MCP gateway so canvas tool nodes (MCP
+            // Registry Server) can delegate `tools/call` through the pooled
+            // client + audit + intersection check rather than open private
+            // MCP clients per node.
+            mcpGateway: getRunningExpressApp().mcpGateway
         }
 
         // Execute node

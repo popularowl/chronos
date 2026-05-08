@@ -394,7 +394,7 @@ const AgentDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                     added > 0
                         ? `Discovered ${discovered.length} tool${discovered.length === 1 ? '' : 's'} across ${
                               eligible.length
-                          } server(s) — added ${added} to Allowed Tools.`
+                          } server(s) — added ${added} to Allowed MCP Tools.`
                         : `Discovered ${discovered.length} tool${discovered.length === 1 ? '' : 's'} (already selected).`
                 )
             }
@@ -639,7 +639,7 @@ const AgentDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                             </Box>
                             <Box>
                                 <Stack direction='row' justifyContent='space-between' alignItems='center' sx={{ mb: 1 }}>
-                                    <Typography variant='overline'>Allowed Tools</Typography>
+                                    <Typography variant='overline'>Allowed MCP Tools</Typography>
                                     <Tooltip title='Aggregate tools/list across all enabled MCP servers'>
                                         <span>
                                             <StyledButton

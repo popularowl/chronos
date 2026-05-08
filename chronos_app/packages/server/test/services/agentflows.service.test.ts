@@ -4,6 +4,8 @@ import { getRunningExpressApp } from '../../src/utils/getRunningExpressApp'
 import { AgentflowErrorMessage, validateAgentflowType } from '../../src/services/agentflows'
 import { EnumAgentflowType } from '../../src/database/entities/AgentFlow'
 import { Agent } from '../../src/database/entities/Agent'
+import { MCPServer } from '../../src/database/entities/MCPServer'
+import { MCPServerStatus, MCPServerTransport } from '../../src/Interface'
 
 /**
  * Helper function to get auth token
@@ -340,6 +342,236 @@ export function agentflowsServiceTest() {
                 // Cleanup
                 await deleteTestAgentflow(authToken, r1.body.id)
                 await deleteTestAgentflow(authToken, r2.body.id)
+            })
+        })
+
+        describe('MCP Registry Server allowedTools aggregation (v1.7)', () => {
+            const insertMCPServer = async (slug: string, name: string): Promise<MCPServer> => {
+                const repo = getRunningExpressApp().AppDataSource.getRepository(MCPServer)
+                const server = repo.create({
+                    name,
+                    slug,
+                    transport: MCPServerTransport.STREAMABLE_HTTP,
+                    url: 'https://example.invalid/mcp',
+                    status: MCPServerStatus.UNKNOWN,
+                    enabled: true
+                })
+                return await repo.save(server)
+            }
+
+            const flowDataWithRegistryNodes = (nodes: { mcpServerId: string; mcpActions: string[] }[]): string =>
+                JSON.stringify({
+                    nodes: nodes.map((n, idx) => ({
+                        id: `mcpRegistryServer_${idx}`,
+                        data: {
+                            name: 'mcpRegistryServer',
+                            inputs: { mcpServerId: n.mcpServerId, mcpActions: n.mcpActions }
+                        }
+                    })),
+                    edges: []
+                })
+
+            const flowDataWithAgentPrimitive = (entries: { mcpServerId: string; mcpActions: string[] }[]): string =>
+                JSON.stringify({
+                    nodes: [
+                        {
+                            id: 'agentAgentflow_0',
+                            data: {
+                                name: 'agentAgentflow',
+                                inputs: {
+                                    agentTools: entries.map((e) => ({
+                                        agentSelectedTool: 'mcpRegistryServer',
+                                        agentSelectedToolConfig: { mcpServerId: e.mcpServerId, mcpActions: e.mcpActions },
+                                        agentSelectedToolRequiresHumanInput: false
+                                    }))
+                                }
+                            }
+                        }
+                    ],
+                    edges: []
+                })
+
+            const flowDataWithToolPrimitive = (mcpServerId: string, mcpActions: string[]): string =>
+                JSON.stringify({
+                    nodes: [
+                        {
+                            id: 'toolAgentflow_0',
+                            data: {
+                                name: 'toolAgentflow',
+                                inputs: {
+                                    toolAgentflowSelectedTool: 'mcpRegistryServer',
+                                    toolAgentflowSelectedToolConfig: { mcpServerId, mcpActions }
+                                }
+                            }
+                        }
+                    ],
+                    edges: []
+                })
+
+            it('leaves Agent.allowedTools null when the canvas has no MCP Registry Server nodes', async () => {
+                const authToken = await getAuthToken()
+                const agentflowId = await createTestAgentflow(authToken)
+
+                const agentRepo = getRunningExpressApp().AppDataSource.getRepository(Agent)
+                const linked = await agentRepo.findOneBy({ builtinAgentflowId: agentflowId })
+                expect(linked).not.toBeNull()
+                expect(linked?.allowedTools ?? null).toBeNull()
+
+                await deleteTestAgentflow(authToken, agentflowId)
+            })
+
+            it('aggregates one MCP Registry Server node + 2 actions into <slug>.<tool> entries', async () => {
+                const authToken = await getAuthToken()
+                const server = await insertMCPServer(`agg-test-${Date.now()}`, 'Agg Test 1')
+
+                const newAgentflow = {
+                    name: `Agentflow Agg ${Date.now()}`,
+                    type: 'AGENTFLOW',
+                    flowData: flowDataWithRegistryNodes([{ mcpServerId: server.id, mcpActions: ['create_issue', 'search'] }])
+                }
+                const response = await supertest(getRunningExpressApp().app)
+                    .post('/api/v1/agentflows')
+                    .set('Authorization', `Bearer ${authToken}`)
+                    .set('x-request-from', 'internal')
+                    .send(newAgentflow)
+                expect(response.status).toEqual(StatusCodes.OK)
+                const agentflowId = response.body.id
+
+                const agentRepo = getRunningExpressApp().AppDataSource.getRepository(Agent)
+                const linked = await agentRepo.findOneBy({ builtinAgentflowId: agentflowId })
+                const allowed = JSON.parse(linked?.allowedTools ?? '[]') as string[]
+                expect(allowed.sort()).toEqual([`${server.slug}.create_issue`, `${server.slug}.search`].sort())
+
+                await deleteTestAgentflow(authToken, agentflowId)
+                await getRunningExpressApp().AppDataSource.getRepository(MCPServer).delete({ id: server.id })
+            })
+
+            it('aggregates and deduplicates entries across two MCP Registry Server nodes pointing at different servers', async () => {
+                const authToken = await getAuthToken()
+                const ts = Date.now()
+                const serverA = await insertMCPServer(`dedup-a-${ts}`, 'Dedup A')
+                const serverB = await insertMCPServer(`dedup-b-${ts}`, 'Dedup B')
+
+                const newAgentflow = {
+                    name: `Agentflow Dedup ${ts}`,
+                    type: 'AGENTFLOW',
+                    flowData: flowDataWithRegistryNodes([
+                        { mcpServerId: serverA.id, mcpActions: ['t1', 't2'] },
+                        { mcpServerId: serverB.id, mcpActions: ['t1'] },
+                        // duplicate of the first node — same server, overlapping tools, plus one new
+                        { mcpServerId: serverA.id, mcpActions: ['t1', 't3'] }
+                    ])
+                }
+                const response = await supertest(getRunningExpressApp().app)
+                    .post('/api/v1/agentflows')
+                    .set('Authorization', `Bearer ${authToken}`)
+                    .set('x-request-from', 'internal')
+                    .send(newAgentflow)
+                expect(response.status).toEqual(StatusCodes.OK)
+                const agentflowId = response.body.id
+
+                const agentRepo = getRunningExpressApp().AppDataSource.getRepository(Agent)
+                const linked = await agentRepo.findOneBy({ builtinAgentflowId: agentflowId })
+                const allowed = JSON.parse(linked?.allowedTools ?? '[]') as string[]
+                expect(allowed.sort()).toEqual(
+                    [`${serverA.slug}.t1`, `${serverA.slug}.t2`, `${serverA.slug}.t3`, `${serverB.slug}.t1`].sort()
+                )
+
+                await deleteTestAgentflow(authToken, agentflowId)
+                await getRunningExpressApp().AppDataSource.getRepository(MCPServer).delete({ id: serverA.id })
+                await getRunningExpressApp().AppDataSource.getRepository(MCPServer).delete({ id: serverB.id })
+            })
+
+            it('aggregates an MCP Registry Server selection embedded inside an Agent agentflow primitive', async () => {
+                const authToken = await getAuthToken()
+                const ts = Date.now()
+                const serverA = await insertMCPServer(`agent-prim-a-${ts}`, 'Agent Prim A')
+                const serverB = await insertMCPServer(`agent-prim-b-${ts}`, 'Agent Prim B')
+
+                const newAgentflow = {
+                    name: `Agent Primitive ${ts}`,
+                    type: 'AGENTFLOW',
+                    flowData: flowDataWithAgentPrimitive([
+                        { mcpServerId: serverA.id, mcpActions: ['read_wiki_contents', 'search'] },
+                        { mcpServerId: serverB.id, mcpActions: ['post_message'] }
+                    ])
+                }
+                const response = await supertest(getRunningExpressApp().app)
+                    .post('/api/v1/agentflows')
+                    .set('Authorization', `Bearer ${authToken}`)
+                    .set('x-request-from', 'internal')
+                    .send(newAgentflow)
+                expect(response.status).toEqual(StatusCodes.OK)
+                const agentflowId = response.body.id
+
+                const agentRepo = getRunningExpressApp().AppDataSource.getRepository(Agent)
+                const linked = await agentRepo.findOneBy({ builtinAgentflowId: agentflowId })
+                const allowed = JSON.parse(linked?.allowedTools ?? '[]') as string[]
+                expect(allowed.sort()).toEqual(
+                    [`${serverA.slug}.read_wiki_contents`, `${serverA.slug}.search`, `${serverB.slug}.post_message`].sort()
+                )
+
+                await deleteTestAgentflow(authToken, agentflowId)
+                await getRunningExpressApp().AppDataSource.getRepository(MCPServer).delete({ id: serverA.id })
+                await getRunningExpressApp().AppDataSource.getRepository(MCPServer).delete({ id: serverB.id })
+            })
+
+            it('aggregates an MCP Registry Server selection embedded inside a Tool agentflow primitive', async () => {
+                const authToken = await getAuthToken()
+                const ts = Date.now()
+                const server = await insertMCPServer(`tool-prim-${ts}`, 'Tool Prim')
+
+                const newAgentflow = {
+                    name: `Tool Primitive ${ts}`,
+                    type: 'AGENTFLOW',
+                    flowData: flowDataWithToolPrimitive(server.id, ['fetch_url', 'render_pdf'])
+                }
+                const response = await supertest(getRunningExpressApp().app)
+                    .post('/api/v1/agentflows')
+                    .set('Authorization', `Bearer ${authToken}`)
+                    .set('x-request-from', 'internal')
+                    .send(newAgentflow)
+                expect(response.status).toEqual(StatusCodes.OK)
+                const agentflowId = response.body.id
+
+                const agentRepo = getRunningExpressApp().AppDataSource.getRepository(Agent)
+                const linked = await agentRepo.findOneBy({ builtinAgentflowId: agentflowId })
+                const allowed = JSON.parse(linked?.allowedTools ?? '[]') as string[]
+                expect(allowed.sort()).toEqual([`${server.slug}.fetch_url`, `${server.slug}.render_pdf`].sort())
+
+                await deleteTestAgentflow(authToken, agentflowId)
+                await getRunningExpressApp().AppDataSource.getRepository(MCPServer).delete({ id: server.id })
+            })
+
+            it('clobbers manual Agent.allowedTools entries when the canvas is updated', async () => {
+                const authToken = await getAuthToken()
+                const ts = Date.now()
+                const server = await insertMCPServer(`clobber-${ts}`, 'Clobber')
+
+                // Start with an empty agentflow, then manually set allowedTools on the BUILT_IN agent.
+                const agentflowId = await createTestAgentflow(authToken)
+                const agentRepo = getRunningExpressApp().AppDataSource.getRepository(Agent)
+                const before = await agentRepo.findOneBy({ builtinAgentflowId: agentflowId })
+                await agentRepo.update(before!.id, { allowedTools: JSON.stringify(['manual.entry']) })
+
+                // Update the agentflow with a Registry node — should clobber the manual entry.
+                const updateBody = {
+                    flowData: flowDataWithRegistryNodes([{ mcpServerId: server.id, mcpActions: ['create_issue'] }])
+                }
+                const updateRes = await supertest(getRunningExpressApp().app)
+                    .put(`/api/v1/agentflows/${agentflowId}`)
+                    .set('Authorization', `Bearer ${authToken}`)
+                    .set('x-request-from', 'internal')
+                    .send(updateBody)
+                expect(updateRes.status).toEqual(StatusCodes.OK)
+
+                const after = await agentRepo.findOneBy({ builtinAgentflowId: agentflowId })
+                const allowed = JSON.parse(after?.allowedTools ?? '[]') as string[]
+                expect(allowed).toEqual([`${server.slug}.create_issue`])
+                expect(allowed).not.toContain('manual.entry')
+
+                await deleteTestAgentflow(authToken, agentflowId)
+                await getRunningExpressApp().AppDataSource.getRepository(MCPServer).delete({ id: server.id })
             })
         })
     })
