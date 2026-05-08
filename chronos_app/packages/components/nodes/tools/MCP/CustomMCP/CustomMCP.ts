@@ -60,7 +60,8 @@ class Custom_MCP implements INode {
         this.type = 'Custom MCP Tool'
         this.icon = 'customMCP.png'
         this.category = 'Tools (MCP)'
-        this.description = 'Custom MCP Config'
+        this.description =
+            'Custom MCP Config. For platform-managed MCP servers — pooled clients, audited calls, central credentials — use MCP Registry Server instead.'
         this.documentation = 'https://github.com/modelcontextprotocol/servers/tree/main/src/brave-search'
         this.inputs = [
             {

@@ -105,7 +105,11 @@ const getSingleNodeAsyncOptions = async (nodeName: string, requestBody: any): Pr
                     previousNodes: requestBody.previousNodes,
                     currentNode: requestBody.currentNode,
                     searchOptions: requestBody.searchOptions,
-                    cachePool: appServer.cachePool
+                    cachePool: appServer.cachePool,
+                    // v1.7 — surface the MCP gateway to nodes so MCP Registry
+                    // Server can call `listLiveTools` against a registered
+                    // server when populating its action dropdown.
+                    mcpGateway: appServer.mcpGateway
                 })
 
                 return dbResponse

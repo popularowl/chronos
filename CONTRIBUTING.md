@@ -30,9 +30,9 @@ Useful commands for development locally.
 git clone git@github.com:intelligexhq/chronos.git
 cd chronos/chronos_app
 node -v # v24 runtime needed
-rm -rf ~/.chronos # chronos dev data stores. see https://intelligex.com/chronos/how-chronos-agent-builder-stores-data
 pnpm install # pnpm nuke && pnpm install --frozen-lockfile
 pnpm build # pnpm build --force
+rm -rf ~/.chronos # chronos dev data stores. see https://intelligex.com/chronos/how-chronos-agent-builder-stores-data
 pnpm dev
 # chronos is accessible on localhost:3000
 ```

@@ -28,6 +28,8 @@ docker build -f Dockerfile.local -t chronos:local ..
 
 ```bash
 cd chronos_app/docker/examples
+## if you want to start fresh
+# rm -rf .chronos && rm -rf .postgres_data 
 docker compose -f docker-compose.yml up
 # docker compose up --build
 # docker compose up -d --no-deps chronos
