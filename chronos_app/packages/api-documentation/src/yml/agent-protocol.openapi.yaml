@@ -1,7 +1,7 @@
 openapi: 3.1.0
 info:
     title: Chronos Agent Protocol
-    version: 1.6.0
+    version: 1.8.0
     summary: Wire-format contract for the Chronos Agent Registry and MCP Gateway.
     description: |
         Two-direction protocol between the Chronos control plane and external HTTP
@@ -9,15 +9,21 @@ info:
 
         - **Platform → Agent.** What an external HTTP agent must implement to be
           invokable via the Chronos Agent Registry. Health probe + an OpenAI-compatible
-          chat completions endpoint with two Chronos extension fields.
-        - **Agent → Platform.** What Chronos exposes for tool brokering. Agents call
-          back into the MCP Gateway to invoke registered MCP tools without holding
-          MCP-server credentials directly.
+          chat completions endpoint with the Chronos request-metadata headers.
+        - **Agent → Platform.** Chronos exposes a real MCP server (Streamable
+          HTTP transport) at `POST/GET/DELETE /api/v1/mcp-gateway/{agentId}`.
+          Agents connect using any MCP client SDK; tool discovery via
+          `tools/list`, invocation via `tools/call`, change propagation via
+          `notifications/tools/list_changed`.
 
         See `docs/agent-registry.md` and `docs/mcp-gateway.md` for the operator
-        guides. v1.6 supports the `bearer` and `header` outbound-auth shapes;
-        OAuth2 client-credentials is a follow-up. v1.6 supports `streamable-http`
-        and `sse` MCP transports; `stdio` is reserved for v1.8.
+        guides. v1.8 supports `streamable-http` and `sse` MCP transports for
+        registered upstream MCP servers; `stdio` remains reserved.
+
+        v1.8 retired the v1.6/v1.7 bespoke REST callback surface
+        (`/tools/invoke`, `/tools`, `/health`) — see
+        `docs/chronos-tutorials/drafts/migrating-rest-callback-to-mcp.md` if
+        you wrote against those endpoints.
     license:
         name: Apache 2.0
         identifier: Apache-2.0
@@ -85,12 +91,14 @@ paths:
                 field (`x_chronos_call_id`); request metadata for the MCP
                 gateway is carried in headers only.
 
-                For tool use, call back into Chronos at the URL in the
-                `x-chronos-mcp-gateway-url` header with
-                `Authorization: Bearer <agent.mcpGatewayToken>`. The
+                For tool use, open an MCP session back to Chronos using the
+                URL in the `x-chronos-mcp-gateway-url` header and
+                `Authorization: Bearer <agent.mcpGatewayToken>` (see
+                `x-chronos-mcp-gateway-token` for in-band rotation). Use any
+                MCP client SDK; Chronos speaks Streamable HTTP transport. The
                 recommended pattern is to hold the URL in agent-side config
                 and validate the header against it on every request.
-                See `/api/v1/mcp-gateway/{agentId}/tools/invoke`.
+                See `/api/v1/mcp-gateway/{agentId}` below.
 
                 If the request body has `stream: true`, return an SSE stream
                 in OpenAI's chunk format; the dispatcher pipes it back to the
@@ -124,9 +132,9 @@ paths:
                       type: string
                       format: uri
                   description: |
-                      Absolute URL the agent should POST to for tool
-                      invocations on this request, e.g.
-                      `https://chronos.example.com/api/v1/mcp-gateway/<agentId>/tools/invoke`.
+                      Absolute URL of this agent's MCP Streamable HTTP entry
+                      point on Chronos, e.g.
+                      `https://chronos.example.com/api/v1/mcp-gateway/<agentId>`.
                       Computed per-request from the inbound `Host`. The
                       recommended agent-side pattern is to hold this URL in
                       configuration and validate the header value against
@@ -139,8 +147,8 @@ paths:
                   description: |
                       The agent's `mcpGatewayToken`, sent in-band so agents
                       can pick up rotations without restarting. Use as the
-                      `Authorization: Bearer` value when calling
-                      `/api/v1/mcp-gateway/<agentId>/tools/invoke`. Only
+                      `Authorization: Bearer` value when opening the MCP
+                      session at `/api/v1/mcp-gateway/<agentId>`. Only
                       present when the registered Agent has a token (HTTP
                       runtime agents always do; absent for built-in agents
                       that don't reach this surface).
@@ -186,146 +194,6 @@ paths:
                     description: Auth presented to your agent did not pass.
                 '500':
                     description: Internal agent error. Chronos surfaces this as 502 to its caller.
-
-    /api/v1/mcp-gateway/{agentId}/tools/invoke:
-        post:
-            tags:
-                - mcp-gateway
-            summary: Invoke an MCP tool through the Chronos gateway
-            description: |
-                Called by an external HTTP agent when it wants to use a
-                registered MCP tool. The gateway:
-
-                  1. Authenticates the agent's `mcpGatewayToken` (Bearer).
-                  2. Parses the namespaced tool name `<server-slug>.<tool>`.
-                  3. Enforces `Agent.allowedTools ∩ MCPServer.allowedTools`.
-                  4. Opens (or reuses) a pooled MCP client to the resolved
-                     `MCPServer` and calls `tools/call`.
-                  5. Returns the MCP `CallToolResult`.
-
-                The path is whitelisted from the platform's global API-key
-                check — the per-agent gateway token IS the auth.
-
-                A persistent audit table is planned for v1.7. v1.6 emits a
-                structured `logger.info({ event: 'mcp.tool.invoke', … })`
-                line per call.
-            operationId: invokeMcpGatewayTool
-            security:
-                - mcpGatewayToken: []
-            parameters:
-                - in: path
-                  name: agentId
-                  required: true
-                  schema:
-                      type: string
-                      format: uuid
-            requestBody:
-                required: true
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ToolInvokeRequest'
-            responses:
-                '200':
-                    description: Tool returned a result.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ToolInvokeResponse'
-                '400':
-                    description: |
-                        Malformed body (missing `tool`), unparseable
-                        namespaced name, or the MCP server has no `url`
-                        configured.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                '401':
-                    description: Missing / invalid Bearer or unknown agent. (Constant-time compare; existence is not leaked.)
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                '403':
-                    description: |
-                        The agent is BUILT_IN or disabled, OR the requested
-                        namespaced tool name is not in
-                        `Agent.allowedTools ∩ MCPServer.allowedTools`.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                '404':
-                    description: Unknown MCP server slug.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                '409':
-                    description: MCP server is disabled.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                '501':
-                    description: MCP server uses `stdio` (reserved until v1.8).
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                '502':
-                    description: MCP transport error. The pooled client is evicted; the next call reconnects.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                '503':
-                    description: MCP server is unhealthy, OR the gateway itself is not enabled (`ENABLE_MCP_SERVERS=false`).
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-
-    /api/v1/mcp-gateway/{agentId}/tools:
-        get:
-            tags:
-                - mcp-gateway
-            summary: List the tools this agent is allowed to call
-            description: |
-                Returns the static intersection of `Agent.allowedTools` and
-                each registered MCP server's `allowedTools`. Does NOT call
-                `tools/list` on live MCP servers — for that, see
-                `GET /api/v1/mcp-servers/{id}/tools` (operator surface).
-            operationId: listAgentTools
-            security:
-                - mcpGatewayToken: []
-            parameters:
-                - in: path
-                  name: agentId
-                  required: true
-                  schema:
-                      type: string
-                      format: uuid
-            responses:
-                '200':
-                    description: Intersection of agent and server allowlists.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/AllowedToolsResponse'
-                '401':
-                    description: Missing / invalid Bearer or unknown agent.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                '403':
-                    description: Agent is BUILT_IN or disabled.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
 
     /api/v1/mcp-gateway/{agentId}:
         post:
@@ -460,78 +328,6 @@ paths:
                 '404':
                     description: Unknown session.
 
-    /api/v1/mcp-gateway/{agentId}/health:
-        get:
-            tags:
-                - mcp-gateway
-            summary: Per-agent gateway readiness probe
-            description: |
-                Returns 200 once the request has cleared the same auth
-                middleware that gates `/tools/invoke` (token matches, agent
-                enabled, runtime type HTTP) AND the gateway service itself
-                is wired (`ENABLE_MCP_SERVERS=true`). A 200 response is a
-                real proof of end-to-end reachability — token works,
-                gateway is up.
-
-                Echoes the canonical `gatewayUrl` Chronos derives from the
-                inbound `Host`. Agents that hold their own `MCP_GATEWAY_URL`
-                config can compare it against this value at startup and
-                fail loud on mismatch.
-
-                Intended for startup probes and optional periodic heartbeats.
-                Cheap: no downstream MCP calls.
-            operationId: mcpGatewayHealth
-            security:
-                - mcpGatewayToken: []
-            parameters:
-                - in: path
-                  name: agentId
-                  required: true
-                  schema:
-                      type: string
-                      format: uuid
-            responses:
-                '200':
-                    description: Auth and gateway both healthy.
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                required: [ok, agentId, agentEnabled, gatewayUrl]
-                                properties:
-                                    ok:
-                                        type: boolean
-                                    agentId:
-                                        type: string
-                                        format: uuid
-                                    agentEnabled:
-                                        type: boolean
-                                    gatewayUrl:
-                                        type: string
-                                        format: uri
-                                        description: |
-                                            Canonical absolute URL of this
-                                            agent's invoke endpoint, derived
-                                            from the inbound `Host`.
-                '401':
-                    description: Missing / invalid Bearer or unknown agent.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                '403':
-                    description: Agent is BUILT_IN or disabled.
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-                '503':
-                    description: Gateway is not enabled (`ENABLE_MCP_SERVERS=false`).
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Error'
-
 components:
     securitySchemes:
         mcpGatewayToken:
@@ -541,7 +337,12 @@ components:
             description: |
                 Per-agent MCP gateway token. Stored on the `Agent` row as
                 `mcpGatewayToken`. Rotatable from the Agent detail UI; rotation
-                is single-step (no overlap window in v1.6).
+                is single-step (no overlap window).
+
+                Used as the Bearer credential when the agent opens its MCP
+                Streamable HTTP session against Chronos at
+                `POST /api/v1/mcp-gateway/{agentId}` (`initialize` and every
+                subsequent JSON-RPC message).
 
     schemas:
         AgentChatCompletionsRequest:
@@ -634,81 +435,6 @@ components:
                             type: integer
                         total_tokens:
                             type: integer
-
-        ToolInvokeRequest:
-            type: object
-            required:
-                - tool
-            properties:
-                tool:
-                    type: string
-                    description: |
-                        Namespaced tool name `<server-slug>.<tool-name>`,
-                        e.g. `postgres.query`. Must be present in
-                        `Agent.allowedTools` AND, unless empty,
-                        `MCPServer.allowedTools`.
-                    example: postgres.query
-                params:
-                    type: object
-                    description: Arguments forwarded to the MCP tool as the `arguments` field of `tools/call`.
-                    additionalProperties: true
-                    example:
-                        sql: select 1
-                callId:
-                    type: string
-                    format: uuid
-                    description: |
-                        Optional correlation ID. Pass the
-                        `x_chronos_call_id` from the inbound chat-completions
-                        request so audit lines join up.
-
-        ToolInvokeResponse:
-            type: object
-            required:
-                - success
-                - result
-            properties:
-                success:
-                    type: boolean
-                    const: true
-                result:
-                    type: object
-                    description: |
-                        Verbatim MCP `CallToolResult`. See the MCP
-                        specification for the full shape — typically
-                        `{ content: [{ type: 'text', text: '…' }] }` plus an
-                        optional `isError` flag.
-                    additionalProperties: true
-
-        AllowedToolDescriptor:
-            type: object
-            required:
-                - name
-                - server
-                - tool
-            properties:
-                name:
-                    type: string
-                    description: Namespaced name `<server>.<tool>`.
-                    example: postgres.query
-                server:
-                    type: string
-                    description: MCP server slug.
-                    example: postgres
-                tool:
-                    type: string
-                    description: Bare tool name on that server.
-                    example: query
-
-        AllowedToolsResponse:
-            type: object
-            required:
-                - tools
-            properties:
-                tools:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/AllowedToolDescriptor'
 
         Error:
             type: object

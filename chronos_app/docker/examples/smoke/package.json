@@ -1,9 +1,9 @@
 {
-    "name": "chronos-v1.7-smoke",
-    "version": "1.7.0",
+    "name": "chronos-v1.8-smoke",
+    "version": "1.8.0",
     "private": true,
     "type": "module",
-    "description": "v1.6 Agent Registry + MCP Gateway smoke test. Boots an embedded MCP server, registers it with Chronos alongside an HTTP agent, and asserts a real tool callback round-trip.",
+    "description": "v1.8 Agent Registry + MCP Gateway smoke test. Boots an embedded MCP server, registers it with Chronos alongside an HTTP agent, and asserts a real tools/list + tools/call round-trip over MCP Streamable HTTP.",
     "scripts": {
         "start": "tsx src/index.ts"
     },

@@ -32,10 +32,10 @@ const respond = (res: Response, status: number, error: string): Response => {
  *   "agent not found" to avoid leaking which IDs exist)
  * - 403 if the agent is BUILT_IN (gateway is HTTP-only) or disabled
  *
- * Mounted on `POST /api/v1/mcp-gateway/:agentId/tools/invoke` and
- * `GET /api/v1/mcp-gateway/:agentId/tools`. Path is whitelisted in
- * `utils/constants.ts` so external agents bypass the global API-key auth —
- * the gateway token IS the auth.
+ * Mounted on the agent-facing MCP gateway endpoint at
+ * `POST/GET/DELETE /api/v1/mcp-gateway/:agentId` (Streamable HTTP transport).
+ * Path is whitelisted in `utils/constants.ts` so external agents bypass the
+ * global API-key auth — the gateway token IS the auth.
  */
 export const mcpGatewayAuth = async (req: Request, res: Response, next: NextFunction): Promise<Response | void> => {
     try {

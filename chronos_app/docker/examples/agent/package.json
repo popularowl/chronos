@@ -1,13 +1,14 @@
 {
     "name": "chronos-example-http-agent",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "private": true,
     "type": "module",
-    "description": "Minimal HTTP agent that demonstrates the Chronos v1.6 Agent Registry + MCP Gateway callback contract.",
+    "description": "Minimal HTTP agent demonstrating the Chronos v1.8 Agent Registry contract: opens an MCP Streamable HTTP session back to Chronos and invokes registered MCP tools via tools/call.",
     "scripts": {
         "start": "tsx src/index.ts"
     },
     "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.29.0",
         "express": "^4.21.0",
         "tsx": "^4.19.0",
         "typescript": "^5.6.0"

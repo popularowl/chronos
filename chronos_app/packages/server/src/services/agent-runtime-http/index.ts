@@ -168,15 +168,19 @@ const parseRuntimeConfig = (agent: Agent): { timeoutMs: number; requestHeaders: 
 }
 
 /**
- * Builds the absolute MCP gateway URL the agent should hit for tool
- * invocations. Sent to the agent on every request as the
+ * Builds the absolute MCP gateway URL the agent should connect to for tool
+ * discovery + invocation. Sent on every chat-completions forward as the
  * `x-chronos-mcp-gateway-url` header — header-only by design so the body
  * stays a clean OpenAI envelope.
+ *
+ * The URL is the MCP Streamable HTTP entry point: agents open an MCP session
+ * here using `@modelcontextprotocol/sdk` (or any compliant client) and run
+ * `tools/list` + `tools/call` over standard MCP transport.
  */
 const buildMcpGatewayUrl = (req: Request, agentId: string): string => {
     const httpProtocol = req.get('x-forwarded-proto') || req.protocol
     const baseURL = `${httpProtocol}://${req.get('host')}`
-    return `${baseURL}/api/v1/mcp-gateway/${agentId}/tools/invoke`
+    return `${baseURL}/api/v1/mcp-gateway/${agentId}`
 }
 
 const joinUrl = (base: string, path: string): string => {

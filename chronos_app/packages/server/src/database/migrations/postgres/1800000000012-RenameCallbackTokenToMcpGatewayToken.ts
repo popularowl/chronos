@@ -4,10 +4,10 @@ import { MigrationInterface, QueryRunner } from 'typeorm'
  * v1.7 — Rename `agent.callbackToken` → `agent.mcpGatewayToken`.
  *
  * The token authenticates a registered HTTP agent against the MCP gateway's
- * callback surface (`POST /api/v1/mcp-gateway/:id/tools/invoke`). The old
- * "callback token" name didn't say what the callback was for; renaming aligns
- * the column with the gateway path, env var (`MCP_GATEWAY_TOKEN`), and UI
- * label ("MCP Gateway Token").
+ * agent-facing endpoint (`POST/GET/DELETE /api/v1/mcp-gateway/:id`, Streamable
+ * HTTP transport). The old "callback token" name didn't say what the callback
+ * was for; renaming aligns the column with the gateway path, env var
+ * (`MCP_GATEWAY_TOKEN`), and UI label ("MCP Gateway Token").
  */
 export class RenameCallbackTokenToMcpGatewayToken1800000000012 implements MigrationInterface {
     public async up(queryRunner: QueryRunner): Promise<void> {

@@ -159,7 +159,7 @@ export function agentRuntimeHttpServiceTest() {
                 const [url, opts] = fetchMock.mock.calls[0]
                 expect(url).toBe('https://upstream.example.com/v1/chat/completions')
                 expect(opts.headers.Authorization).toBe('Bearer TKN')
-                expect(opts.headers['x-chronos-mcp-gateway-url']).toMatch(/\/api\/v1\/mcp-gateway\/agent-1\/tools\/invoke$/)
+                expect(opts.headers['x-chronos-mcp-gateway-url']).toMatch(/\/api\/v1\/mcp-gateway\/agent-1$/)
                 expect(opts.headers['x-chronos-mcp-gateway-token']).toBe('gw-tok-abc')
                 const body = JSON.parse(opts.body)
                 // Body must NOT carry the gateway URL — it lives in the header only,

@@ -1,11 +1,11 @@
-## v1.6 smoke test — boots Chronos + Postgres + a self-contained smoke
-## runner that drives a real MCP gateway round-trip end-to-end.
+## v1.8 smoke test — boots Chronos + Postgres + a self-contained smoke
+## runner that drives a real MCP-protocol round-trip end-to-end.
 ##
 ## The runner contains both a tiny embedded MCP server (Streamable HTTP,
 ## exposes a single `add` tool) and a test driver. It logs into Chronos,
-## registers the MCP server and an HTTP agent, then directly invokes
-## `POST /api/v1/mcp-gateway/:agentId/tools/invoke` with the new
-## agent's MCP gateway token and asserts the result.
+## registers the MCP server and an HTTP agent, then opens an MCP
+## Streamable HTTP session against `/api/v1/mcp-gateway/:agentId` with
+## the new agent's MCP gateway token and asserts a `tools/call` result.
 ##
 ## Run:
 ##

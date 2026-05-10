@@ -1,4 +1,4 @@
-# Chronos by Intelligex – self-hosted control plane for AI agents and MCP tools
+# Intelligex Chronos – self-hosted control plane for AI agents and MCP tools
 
 ![Build Status](https://github.com/intelligexhq/chronos/actions/workflows/validate.yml/badge.svg)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE.md)
@@ -11,9 +11,9 @@
   <img src="./resources/chronos_main_page.gif" width="600" />
 </div><div style="page-break-after: always;">&nbsp;</div>
 
-## Why use Chronos?
+## Why use Intelligex Chronos?
 
-  - *[Chronos](https://intelligex.com/chronos) is an agent runtime, not a framework.* Deploy, run and manage: agents built on the Chronos visual canvas or standalone, code-first agents via OpenAI API specification. All through one uniform invocation surface.
+  - *[Intelligex Chronos](https://intelligex.com/chronos) is an agent runtime, not a framework.* Deploy, run and manage: agents built on the Chronos visual canvas or standalone, code-first agents via OpenAI API specification. All through one uniform invocation surface.
   - *MCP-first tool layer.* Tools are MCP servers. Chronos provides MCP registry. Agents reach tools in a credential-brokered, audited way.
   - *Governance is the wedge.* SSO, RBAC, per-team budgets with stop-switches, audit log, PII redaction. Reporting is enforcement.
   - *Self-hosted, multiple docker compose examples.* SQLite or Postgres for persistence.
@@ -64,7 +64,7 @@ What's coming next, in rough priority order:
 
 ## Key concepts
 
-Concept-level overviews of the Chronos control plane:
+Concept-level overviews of the Intelligex Chronos control plane:
 
 - [Chronos Agent registry](https://intelligex.com/chronos/agent-registry) — how canvas-built and external HTTP agents share one agent registry.
 - [Chronos MCP registry](https://intelligex.com/chronos/mcp-registry) — the credential-brokered and audited Chronos MCP gateway.
@@ -74,7 +74,7 @@ Concept-level overviews of the Chronos control plane:
 
 ## Tutorials
 
-Hands-on guides for running Chronos and managing agents.
+Hands-on guides for running Intelligex Chronos and managing agents.
 
 - [Chronos self-hosted quickstart](https://intelligex.com/chronos/chronos-self-hosted-quickstart)
 - [Chronos self-hosted – advanced docker compose examples](https://intelligex.com/chronos/hosting-chronos-advanced-examples)
@@ -92,9 +92,9 @@ Source code in this repository is made available under the [Apache License Versi
 
 ## Need assistance?
 
-We provide [professional services](https://intelligex.com/about) to help you deploy, customise, and integrate Chronos in your organisation environment:
+We provide [professional services](https://intelligex.com/about) to help you deploy, customise, and integrate Intelligex Chronos in your organisations environment:
 
 - Architecture and deployment in environments you own (private or public clouds).
 - Custom agent builds and integrations of existing agents.
-- Maintaining MCP tool registries. Metering, managing and auditing MCP tools / internal API usage.
-- Training and best practice blueprints for teams who build and maintain agents.
+- Maintaining MCP tool registries. Managing and auditing MCP tools / internal API usage.
+- Training and best practice blueprints for teams who designing, building and maintain AI agents.

@@ -5,9 +5,9 @@ docker-compose stack which showcases Chronos [Agent Registry](https://intelligex
 - **Chronos** local image with `ENABLE_AGENTS=true` + `ENABLE_MCP_SERVERS=true`.
 - **Postgres** as the database.
 - **mcp-reference** — a small MCP server example in `./mcp/`. Exposes two tools: `echo` and `add`, built locally .
-- **example-agent** — a small agent in `./agent/`, showcases the Chronos MCP gateway contract: when prompted with `2 + 3`, it calls back into the Chronos MCP gateway to invoke `reference.add` and embeds the result in its reply.
+- **example-agent** — a small agent in `./agent/`, showcases the v1.8 Chronos MCP gateway contract: when prompted with `2 + 3`, it opens an MCP Streamable HTTP session back to Chronos using `@modelcontextprotocol/sdk`, runs `tools/list`, then invokes `reference.add` via `tools/call` and embeds the result in its reply. The MCP session is cached across requests and listens for `notifications/tools/list_changed`.
 
-Examples show a "Chronos-aware agent" image — with the gateway flow: `x_chronos_mcp_gateway_url`, `x_chronos_call_id`, Bearer to `/mcp-gateway/{agentId}/tools/invoke`. Use this example as a starting point for your own agents.
+Examples show a "Chronos-aware agent" image — Chronos forwards the OpenAI chat-completions envelope plus three headers (`x-chronos-call-id`, `x-chronos-mcp-gateway-url`, `x-chronos-mcp-gateway-token`); the agent uses the URL + token to open an MCP session at `/api/v1/mcp-gateway/{agentId}` and runs the standard MCP methods over that. Use this example as a starting point for your own agents.
 
 In Chronos, the MCP server side is generic — Chronos recognises any MCP server speaking `streamable-http` or `sse`. You would register real MCP servers (Postgres, GitHub, Slack, etc.) — in the v1.8 release Chronos adds several maintained reference servers to choose from.
 
@@ -123,7 +123,7 @@ You should see a response like:
 {"id":"xxx","object":"chat.completion","created":177818575777,"model":"example-agent","choices":[{"index":0,"message":{"role":"assistant","content":"2 + 3 = 5"},"finish_reason":"stop"}],"usage":{"prompt_tokens":0,"completion_tokens":0,"total_tokens":0}}
 ```
 
-Inside `docker compose logs chronos` you will see one `event=mcp.tool.invoke` audit line per round-trip — that is the v1.6 audit surface. (The persistent `tool_invocation_audit` table lands in v1.7.)
+Inside `docker compose logs chronos` you will see one `event=mcp.tool.invoke` audit line per round-trip and a corresponding row in the `tool_invocation_audit` table — visible from the **Audit Log** page in the UI.
 
 ### Why invoke from inside the network?
 
@@ -154,10 +154,11 @@ Sibling stack that asserts the Chronos works end-to-end without operator interac
 - runs an embedded Streamable-HTTP MCP server with one tool, `add(a, b) → a+b`
 - runs an agent `/health` stub so registration + the health poller are both happy
 - logs into Chronos, registers the MCP server and an HTTP agent, reads back the auto-generated MCP gateway token
-- POSTs `{ tool: "smoke.add", params: { a: 2, b: 3 } }` to `/api/v1/mcp-gateway/:agentId/tools/invoke` with that token
-- asserts the result text is `"5"`, exits 0; any failure exits non-zero
+- opens an MCP Streamable HTTP session against `/api/v1/mcp-gateway/:agentId` with that token
+- runs `tools/list` and asserts the stitched catalog exposes `smoke.add`
+- runs `tools/call smoke.add(a=2, b=3)` and asserts the `CallToolResult` content text is `"5"`, exits 0; any failure exits non-zero
 
-This exercises the full round-trip path (gateway bearer auth, allowedTools intersection, pooled MCP client, real `tools/call` against a real MCP server, audit-log line emitted) without depending on third-party images. It does NOT exercise the Chronos dispatcher → external HTTP agent half — that is unit-tested directly.
+This exercises the full round-trip path (`initialize` bearer auth, allowedTools intersection, pooled MCP client to the upstream server, real `tools/call` against a real MCP server, audit-log line emitted) without depending on third-party images. It does NOT exercise the Chronos dispatcher → external HTTP agent half — that is unit-tested directly.
 
 Run:
 

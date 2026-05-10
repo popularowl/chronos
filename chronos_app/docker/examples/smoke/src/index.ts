@@ -1,24 +1,30 @@
 /**
- * v1.6 smoke test runner. Boots an embedded Streamable-HTTP MCP server
+ * v1.8 smoke test runner. Boots an embedded Streamable-HTTP MCP server
  * (one tool: `add`) and a tiny agent /health stub, then drives a real
- * callback round-trip against a running Chronos instance.
+ * MCP-protocol round-trip against a running Chronos instance.
  *
  * The "agent" half does not implement /v1/chat/completions — the test
- * driver calls /api/v1/mcp-gateway/:agentId/tools/invoke directly
- * with the agent's auto-generated MCP gateway token. That path exercises:
+ * driver opens an MCP Streamable HTTP session against
+ * `/api/v1/mcp-gateway/:agentId` using the agent's auto-generated MCP
+ * gateway token, and runs `tools/list` + `tools/call` over the SDK. This
+ * exercises:
  *
  *   - Agent + MCP server registration via the UI API
- *   - MCP gateway bearer auth (constant-time compare)
- *   - allowedTools intersection (Agent ∩ MCPServer)
- *   - Pooled MCP client connection (Streamable HTTP transport)
- *   - tools/call against a real MCP server with assertion on the result
+ *   - MCP gateway bearer auth at `initialize` (constant-time compare)
+ *   - Stitched `tools/list` (Agent.allowedTools ∩ MCPServer.allowedTools)
+ *   - Pooled MCP client connection from the gateway to the upstream MCP
+ *     server (Streamable HTTP transport on both sides)
+ *   - `tools/call` round-trip with assertion on the CallToolResult content
  *
  * Exit codes: 0 pass, 1 assertion failure, 2 unexpected crash.
  */
 import { randomUUID } from 'crypto'
 import express, { Request, Response as ExpressResponse } from 'express'
+import { Client } from '@modelcontextprotocol/sdk/client/index.js'
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js'
+import { CallToolResultSchema, ListToolsResultSchema } from '@modelcontextprotocol/sdk/types.js'
 import { z } from 'zod'
 
 const CHRONOS_BASE_URL = process.env.CHRONOS_BASE_URL ?? 'http://chronos:3000'
@@ -237,35 +243,54 @@ const runDriver = async (): Promise<void> => {
     // eslint-disable-next-line no-console
     console.log(`[driver] agent registered id=${agent.id} slug=${agent.slug}`)
 
-    // 3. round-trip: agent → gateway → MCP server → result
+    // 3. round-trip: agent → MCP session on gateway → upstream MCP server → result
+    const gatewayUrl = `${CHRONOS_BASE_URL}/api/v1/mcp-gateway/${agent.id}`
     // eslint-disable-next-line no-console
-    console.log(`[driver] invoking smoke.add via /mcp-gateway/${agent.id}/tools/invoke`)
-    const callResp = await fetch(`${CHRONOS_BASE_URL}/api/v1/mcp-gateway/${agent.id}/tools/invoke`, {
-        method: 'POST',
-        headers: {
-            'content-type': 'application/json',
-            authorization: `Bearer ${agent.mcpGatewayToken}`
-        },
-        body: JSON.stringify({
-            tool: 'smoke.add',
-            params: { a: 2, b: 3 },
-            callId: 'smoke-test-1'
-        })
+    console.log(`[driver] opening MCP session at ${gatewayUrl}`)
+    const transport = new StreamableHTTPClientTransport(new URL(gatewayUrl), {
+        requestInit: { headers: { authorization: `Bearer ${agent.mcpGatewayToken}` } }
     })
-    const callBody = (await callResp.json().catch(() => ({}))) as {
-        success?: boolean
-        result?: { content?: Array<{ type?: string; text?: string }> }
-        error?: string
-    }
-    if (!callResp.ok) throw new Error(`callback HTTP ${callResp.status}: ${JSON.stringify(callBody)}`)
-    if (callBody.success !== true) throw new Error(`callback success!=true: ${JSON.stringify(callBody)}`)
-    const text = callBody.result?.content?.find((c) => c?.type === 'text')?.text
-    if (text !== '5') {
-        throw new Error(`expected result text "5", got ${JSON.stringify(callBody.result)}`)
-    }
+    const mcpClient = new Client({ name: 'chronos-smoke-runner', version: '1.8.0' }, { capabilities: {} })
+    try {
+        await mcpClient.connect(transport)
 
-    // eslint-disable-next-line no-console
-    console.log(`[driver] OK — round-trip verified: 2 + 3 = ${text}`)
+        // 3a. tools/list — assert the stitched catalog exposes smoke.add.
+        const listResult = await mcpClient.request({ method: 'tools/list', params: {} }, ListToolsResultSchema)
+        const toolNames = listResult.tools.map((t) => t.name)
+        if (!toolNames.includes('smoke.add')) {
+            throw new Error(`tools/list did not include 'smoke.add' (got ${JSON.stringify(toolNames)})`)
+        }
+
+        // 3b. tools/call — invoke smoke.add through the gateway, expect "5".
+        // eslint-disable-next-line no-console
+        console.log(`[driver] tools/call smoke.add via MCP session`)
+        const callResult = await mcpClient.request(
+            {
+                method: 'tools/call',
+                params: {
+                    name: 'smoke.add',
+                    arguments: { a: 2, b: 3 },
+                    _meta: { chronosCallId: 'smoke-test-1' }
+                }
+            },
+            CallToolResultSchema
+        )
+        if (callResult.isError) {
+            throw new Error(`tools/call returned isError=true: ${JSON.stringify(callResult.content)}`)
+        }
+        const textContent = callResult.content.find((c) => c.type === 'text')
+        const text = textContent?.type === 'text' ? textContent.text : undefined
+        if (text !== '5') {
+            throw new Error(`expected result text "5", got ${JSON.stringify(callResult.content)}`)
+        }
+
+        // eslint-disable-next-line no-console
+        console.log(`[driver] OK — round-trip verified: 2 + 3 = ${text}`)
+    } finally {
+        await mcpClient.close().catch(() => {
+            /* noop */
+        })
+    }
 
     // 4. audit assertion: the gateway invoke above should have written one
     // ToolInvocationAudit row tagged with our callId. Polls briefly because
