@@ -90,6 +90,7 @@ export function agentRuntimeHttpServiceTest() {
             serviceEndpoint: 'https://upstream.example.com',
             runtimeConfig: JSON.stringify({ timeoutMs: 5000 }),
             outboundAuth: undefined,
+            mcpGatewayToken: 'gw-tok-abc',
             ...overrides
         })
 
@@ -159,6 +160,7 @@ export function agentRuntimeHttpServiceTest() {
                 expect(url).toBe('https://upstream.example.com/v1/chat/completions')
                 expect(opts.headers.Authorization).toBe('Bearer TKN')
                 expect(opts.headers['x-chronos-mcp-gateway-url']).toMatch(/\/api\/v1\/mcp-gateway\/agent-1\/tools\/invoke$/)
+                expect(opts.headers['x-chronos-mcp-gateway-token']).toBe('gw-tok-abc')
                 const body = JSON.parse(opts.body)
                 // Body must NOT carry the gateway URL — it lives in the header only,
                 // so the OpenAI envelope stays clean.
@@ -175,6 +177,25 @@ export function agentRuntimeHttpServiceTest() {
                 expect(metrics.inputTokens).toBe(12)
                 expect(metrics.outputTokens).toBe(7)
                 expect(metrics.totalTokens).toBe(19)
+            })
+
+            it('omits the in-band gateway-token header when the agent has no mcpGatewayToken', async () => {
+                // Defensive guard — an Agent row with mcpGatewayToken=undefined
+                // (built-in agents, or a future migration edge) should not have
+                // the header set to "undefined" or empty string.
+                const fetchMock = jest.fn().mockResolvedValue({
+                    ok: true,
+                    status: 200,
+                    headers: new Map([['content-type', 'application/json']]),
+                    json: async () => ({ id: 'cmpl-y', choices: [{ message: { content: '' } }], usage: {} })
+                })
+                global.fetch = fetchMock as any
+
+                const { req, res } = buildReqRes()
+                await runtime.invoke(baseAgent({ mcpGatewayToken: undefined }), { messages: [] }, req, res)
+
+                const opts = fetchMock.mock.calls[0][1]
+                expect(opts.headers['x-chronos-mcp-gateway-token']).toBeUndefined()
             })
 
             it('preserves the start-phase request alongside the finish-phase response on the persisted executionData', async () => {

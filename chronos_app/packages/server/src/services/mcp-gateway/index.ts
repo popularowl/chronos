@@ -43,6 +43,17 @@ export interface LiveToolDescriptor {
 }
 
 /**
+ * Enriched member of the agent's allowed-tool catalog. The MCP server's
+ * `tools/list` handler returns this shape — `name` is namespaced as
+ * `<server-slug>.<tool>` (the same shape `MCPGateway.invoke()` accepts).
+ */
+export interface EnrichedAllowedTool {
+    name: string
+    description?: string
+    inputSchema?: unknown
+}
+
+/**
  * Internal MCP client manager. Brokers `tools/call` requests from registered
  * HTTP agents to registered MCP servers, enforcing the intersection of
  * `Agent.allowedTools` and `MCPServer.allowedTools`. Connections are pooled
@@ -226,6 +237,66 @@ export class MCPGateway {
             }
         }
         return result
+    }
+
+    /**
+     * Like `listAllowedTools` but enriched with `description` + `inputSchema`
+     * by calling each registered server's live `tools/list` (via the existing
+     * pool) and stitching results. Used by the agent-facing MCP server's
+     * `tools/list` handler — agents need rich schemas to compose LLM tool
+     * arrays.
+     *
+     * Fail-soft per server: an unhealthy / disabled / unreachable server
+     * contributes empty rather than failing the whole list. The intersection
+     * still applies — even a server whose live tools/list errors will produce
+     * no tools, which matches the "if the server can't be reached, the agent
+     * cannot call its tools" semantics already enforced at invoke time.
+     */
+    public async listAllowedToolsEnriched(agent: Agent): Promise<EnrichedAllowedTool[]> {
+        const agentAllowed = parseAllowedTools(agent.allowedTools)
+        if (agentAllowed.length === 0) return []
+
+        const bySlug = new Map<string, Set<string>>()
+        for (const namespaced of agentAllowed) {
+            const parsed = tryParseNamespacedTool(namespaced)
+            if (!parsed) continue
+            const set = bySlug.get(parsed.serverSlug) ?? new Set<string>()
+            set.add(parsed.toolName)
+            bySlug.set(parsed.serverSlug, set)
+        }
+        if (bySlug.size === 0) return []
+
+        const repo = this.appDataSource.getRepository(MCPServer)
+        const servers = await repo.find({ where: Array.from(bySlug.keys()).map((slug) => ({ slug })) })
+
+        const enrichedPerServer = await Promise.all(
+            servers.map(async (server) => {
+                if (!server.enabled || server.status === MCPServerStatus.UNHEALTHY) return [] as EnrichedAllowedTool[]
+                const wantedTools = bySlug.get(server.slug)
+                if (!wantedTools || wantedTools.size === 0) return [] as EnrichedAllowedTool[]
+                let live: LiveToolDescriptor[] = []
+                try {
+                    live = await this.listLiveTools(server)
+                } catch {
+                    // Fail-soft per server — see method JSDoc.
+                    return [] as EnrichedAllowedTool[]
+                }
+                const serverAllowed = parseAllowedTools(server.allowedTools)
+                const result: EnrichedAllowedTool[] = []
+                for (const tool of live) {
+                    if (typeof tool.name !== 'string') continue
+                    if (!wantedTools.has(tool.name)) continue
+                    if (serverAllowed.length > 0 && !serverAllowed.includes(tool.name)) continue
+                    result.push({
+                        name: `${server.slug}.${tool.name}`,
+                        description: typeof tool.description === 'string' ? tool.description : undefined,
+                        inputSchema: tool.inputSchema
+                    })
+                }
+                return result
+            })
+        )
+        return enrichedPerServer.flat()
     }
 
     /**

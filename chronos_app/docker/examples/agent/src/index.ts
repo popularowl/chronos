@@ -1,9 +1,15 @@
 import express from 'express'
 
 const PORT = parseInt(process.env.PORT ?? '8001', 10)
-// Per-agent token issued by Chronos when this agent is registered. The agent
-// uses it to invoke MCP tools through the Chronos gateway. Copy from the
-// "MCP Gateway Token" field on the agent's detail page.
+// Per-agent token issued by Chronos when this agent is registered. Two ways
+// the agent gets it:
+//   1. Pre-configured: set MCP_GATEWAY_TOKEN at boot. Recommended for
+//      high-sensitivity deployments that want to keep credentials out of
+//      request headers.
+//   2. In-band: Chronos injects `x-chronos-mcp-gateway-token` on every
+//      forward request. Lets operators rotate the token from the UI without
+//      restarting the agent — see the agent registry guide.
+// Precedence: env wins. If MCP_GATEWAY_TOKEN is set, the header is ignored.
 const MCP_GATEWAY_TOKEN = process.env.MCP_GATEWAY_TOKEN ?? ''
 
 const stamp = () => new Date().toISOString()
@@ -27,9 +33,11 @@ app.get('/health', (_req, res) => {
 app.post('/v1/chat/completions', async (req, res) => {
     const body = req.body ?? {}
     const messages: Array<{ role?: string; content?: string }> = Array.isArray(body.messages) ? body.messages : []
-    const mcpGatewayUrl: string | undefined =
-        body.x_chronos_mcp_gateway_url ?? (req.header('x-chronos-mcp-gateway-url') ?? undefined)
+    const mcpGatewayUrl: string | undefined = req.header('x-chronos-mcp-gateway-url') ?? undefined
     const callId: string | undefined = body.x_chronos_call_id ?? (req.header('x-chronos-call-id') ?? undefined)
+    // Env wins; fall back to the per-request header. See the comment on
+    // MCP_GATEWAY_TOKEN above for the rotation rationale.
+    const gatewayToken = MCP_GATEWAY_TOKEN || (req.header('x-chronos-mcp-gateway-token') ?? '')
 
     const lastUser = [...messages].reverse().find((m) => m?.role === 'user')
     const userText = String(lastUser?.content ?? '')
@@ -37,7 +45,7 @@ app.post('/v1/chat/completions', async (req, res) => {
     const match = userText.match(/(\d+)\s*\+\s*(\d+)/)
 
     let assistantText: string
-    if (match && mcpGatewayUrl && MCP_GATEWAY_TOKEN) {
+    if (match && mcpGatewayUrl && gatewayToken) {
         const a = parseInt(match[1], 10)
         const b = parseInt(match[2], 10)
         try {
@@ -45,7 +53,7 @@ app.post('/v1/chat/completions', async (req, res) => {
                 method: 'POST',
                 headers: {
                     'content-type': 'application/json',
-                    authorization: `Bearer ${MCP_GATEWAY_TOKEN}`
+                    authorization: `Bearer ${gatewayToken}`
                 },
                 body: JSON.stringify({
                     tool: 'reference.add',
@@ -64,8 +72,8 @@ app.post('/v1/chat/completions', async (req, res) => {
         } catch (err) {
             assistantText = `MCP gateway call error: ${(err as Error).message ?? String(err)}`
         }
-    } else if (match && !MCP_GATEWAY_TOKEN) {
-        assistantText = `MCP_GATEWAY_TOKEN not configured — copy it from the Chronos agent detail page. Echo: ${userText}`
+    } else if (match && !gatewayToken) {
+        assistantText = `No gateway token available — set MCP_GATEWAY_TOKEN env or expect the x-chronos-mcp-gateway-token header from Chronos. Echo: ${userText}`
     } else {
         assistantText = `Echo: ${userText}`
     }
@@ -89,5 +97,7 @@ app.post('/v1/chat/completions', async (req, res) => {
 })
 
 app.listen(PORT, () => {
-    log(`listening on :${PORT} (MCP gateway token ${MCP_GATEWAY_TOKEN ? 'configured' : 'NOT configured'})`)
+    log(
+        `listening on :${PORT} (MCP gateway token ${MCP_GATEWAY_TOKEN ? 'configured via env' : 'will read x-chronos-mcp-gateway-token header per request'})`
+    )
 })

@@ -79,7 +79,8 @@ export function mcpGatewayServiceTest() {
             mockSSETransportCtor = jest.fn().mockImplementation(() => ({}))
 
             mockMCPServerRepo = {
-                findOneBy: jest.fn().mockResolvedValue(null)
+                findOneBy: jest.fn().mockResolvedValue(null),
+                find: jest.fn().mockResolvedValue([])
             }
             mockAppDataSource = {
                 getRepository: jest.fn(() => mockMCPServerRepo)
@@ -470,6 +471,94 @@ export function mcpGatewayServiceTest() {
                 })
                 const tools = await gateway.listAllowedTools(agent)
                 expect(tools).toEqual([{ name: 'postgres.query', server: 'postgres', tool: 'query' }])
+            })
+        })
+
+        // ─── listAllowedToolsEnriched ──────────────────────────────────
+
+        describe('listAllowedToolsEnriched', () => {
+            it('returns [] when agent has no allowedTools', async () => {
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                const tools = await gateway.listAllowedToolsEnriched(baseAgent({ allowedTools: undefined }))
+                expect(tools).toEqual([])
+            })
+
+            it('stitches description + inputSchema from each registered server, namespacing as <slug>.<tool>', async () => {
+                mockMCPServerRepo.find.mockResolvedValue([
+                    baseServer({ id: 'srv-1', slug: 'postgres', allowedTools: JSON.stringify(['query']) }),
+                    baseServer({ id: 'srv-2', slug: 'github', allowedTools: JSON.stringify(['create_issue']) })
+                ])
+                mockClientInstance.request.mockImplementation((req: any) => {
+                    if (req.method !== 'tools/list') return Promise.resolve({})
+                    return Promise.resolve({
+                        tools: [
+                            { name: 'query', description: 'run sql', inputSchema: { type: 'object' } },
+                            { name: 'create_issue', description: 'open issue', inputSchema: { type: 'object' } },
+                            { name: 'unrelated', description: 'ignored', inputSchema: { type: 'object' } }
+                        ]
+                    })
+                })
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                const agent = baseAgent({ allowedTools: JSON.stringify(['postgres.query', 'github.create_issue']) })
+                const tools = await gateway.listAllowedToolsEnriched(agent)
+                expect(tools).toContainEqual({ name: 'postgres.query', description: 'run sql', inputSchema: { type: 'object' } })
+                expect(tools).toContainEqual({
+                    name: 'github.create_issue',
+                    description: 'open issue',
+                    inputSchema: { type: 'object' }
+                })
+                expect(tools.find((t: any) => t.name.endsWith('.unrelated'))).toBeUndefined()
+            })
+
+            it('skips disabled or unhealthy servers (fail-soft, contributes empty)', async () => {
+                mockMCPServerRepo.find.mockResolvedValue([
+                    baseServer({ id: 'srv-1', slug: 'postgres', enabled: false, allowedTools: JSON.stringify(['query']) }),
+                    baseServer({ id: 'srv-2', slug: 'github', status: 'UNHEALTHY', allowedTools: JSON.stringify(['create_issue']) })
+                ])
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                const agent = baseAgent({ allowedTools: JSON.stringify(['postgres.query', 'github.create_issue']) })
+                const tools = await gateway.listAllowedToolsEnriched(agent)
+                expect(tools).toEqual([])
+                // Disabled / unhealthy servers must not even be probed.
+                expect(mockClientInstance.request).not.toHaveBeenCalled()
+            })
+
+            it('fails soft when a server tools/list throws — that server contributes no tools, others still listed', async () => {
+                mockMCPServerRepo.find.mockResolvedValue([
+                    baseServer({ id: 'srv-1', slug: 'postgres', allowedTools: JSON.stringify(['query']) }),
+                    baseServer({ id: 'srv-2', slug: 'github', allowedTools: JSON.stringify(['create_issue']) })
+                ])
+                mockClientInstance.request.mockImplementation((req: any) => {
+                    // The MCPGateway opens a per-server pooled client; both servers
+                    // share the same mockClientInstance.request in this test, so we
+                    // toggle by call sequence.
+                    if (req.method !== 'tools/list') return Promise.resolve({})
+                    if (mockClientInstance.request.mock.calls.length === 1) throw new Error('upstream boom')
+                    return Promise.resolve({
+                        tools: [{ name: 'create_issue', description: 'open issue', inputSchema: { type: 'object' } }]
+                    })
+                })
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                const agent = baseAgent({ allowedTools: JSON.stringify(['postgres.query', 'github.create_issue']) })
+                const tools = await gateway.listAllowedToolsEnriched(agent)
+                expect(tools).toEqual([{ name: 'github.create_issue', description: 'open issue', inputSchema: { type: 'object' } }])
+            })
+
+            it('respects MCPServer.allowedTools intersection when non-empty', async () => {
+                mockMCPServerRepo.find.mockResolvedValue([
+                    baseServer({ id: 'srv-1', slug: 'postgres', allowedTools: JSON.stringify(['query']) })
+                ])
+                mockClientInstance.request.mockResolvedValue({
+                    tools: [
+                        { name: 'query', description: 'run sql', inputSchema: { type: 'object' } },
+                        { name: 'list_tables', description: 'list tables', inputSchema: { type: 'object' } }
+                    ]
+                })
+                const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
+                // Agent asks for both — but server.allowedTools only exposes `query`.
+                const agent = baseAgent({ allowedTools: JSON.stringify(['postgres.query', 'postgres.list_tables']) })
+                const tools = await gateway.listAllowedToolsEnriched(agent)
+                expect(tools.map((t: any) => t.name)).toEqual(['postgres.query'])
             })
         })
     })

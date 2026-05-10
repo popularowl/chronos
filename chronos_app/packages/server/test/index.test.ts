@@ -116,6 +116,7 @@ import { mcpServersServiceTest } from './services/mcp-servers.service.test'
 import { agentDispatcherServiceTest } from './services/agent-dispatcher.service.test'
 import { agentRuntimeHttpServiceTest } from './services/agent-runtime-http.service.test'
 import { mcpGatewayServiceTest } from './services/mcp-gateway.service.test'
+import { mcpGatewayServerServiceTest } from './services/mcp-gateway-server.service.test'
 import { auditServiceTest } from './services/audit.service.test'
 import { mcpGatewayAuthMiddlewareTest } from './middlewares/mcp-gateway-auth.test'
 import { mcpGatewayRouteTest } from './routes/v1/mcp-gateway.route.test'
@@ -281,6 +282,7 @@ describe('Services Test', () => {
     agentDispatcherServiceTest()
     agentRuntimeHttpServiceTest()
     mcpGatewayServiceTest()
+    mcpGatewayServerServiceTest()
     auditServiceTest()
     nodesPoolTest()
 })

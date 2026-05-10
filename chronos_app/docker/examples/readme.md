@@ -79,9 +79,14 @@ Once docker compose is running:
    - **allowedTools:** add `reference.add`. Click **Load from MCP Servers** to populate the autocomplete options.
 3. Save.
 
-### 3. Copy the MCP gateway token to the agent
+### 3. (Optional) Copy the MCP gateway token to the agent
 
-The example agent reads its gateway token from the `MCP_GATEWAY_TOKEN` env var. After step 2:
+The example agent supports two ways to get its gateway token:
+
+- **In-band (default).** Chronos injects `x-chronos-mcp-gateway-token` on every forward request — no env var needed, the agent reads the token per request. This is the simplest path and what the demo defaults to.
+- **Pre-configured (env).** Set `MCP_GATEWAY_TOKEN` on the agent at boot. Use this for high-sensitivity deployments that want credentials out of request headers; env wins over the in-band header.
+
+To use the env path:
 
 1. Click into the new agent → Overview tab → reveal the **MCP Gateway Token** → copy.
 2. Set it on the host and restart only the agent service:
@@ -90,11 +95,13 @@ The example agent reads its gateway token from the `MCP_GATEWAY_TOKEN` env var. 
    MCP_GATEWAY_TOKEN=<paste-hex-here> docker compose up -d --no-deps example-agent
 ```
 
-3. Confirm the agent log says `MCP gateway token configured`:
+3. Confirm the agent log says `MCP gateway token configured via env`:
 
 ```bash
 docker compose logs --tail 5 example-agent
 ```
+
+If you skip this step, the agent log will say `will read x-chronos-mcp-gateway-token header per request` — that's correct, the demo will work via the in-band path.
 
 ### 4. Invoke the agent and exercise the round-trip
 

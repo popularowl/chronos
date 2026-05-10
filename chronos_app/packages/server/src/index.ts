@@ -38,6 +38,7 @@ import { SchedulePoller } from './schedulers/SchedulePoller'
 import { AgentHealthPoller } from './schedulers/AgentHealthPoller'
 import { MCPServerHealthPoller } from './schedulers/MCPServerHealthPoller'
 import { MCPGateway } from './services/mcp-gateway'
+import { CatalogChangeEmitter, MCPGatewaySessionStore } from './services/mcp-gateway-server'
 import { MetricsAggregator } from './services/metrics-aggregator'
 import 'global-agent/bootstrap'
 import { UsageCacheManager } from './UsageCacheManager'
@@ -88,6 +89,8 @@ export class App {
     agentHealthPoller?: AgentHealthPoller
     mcpServerHealthPoller?: MCPServerHealthPoller
     mcpGateway?: MCPGateway
+    mcpGatewaySessionStore?: MCPGatewaySessionStore
+    mcpCatalogChangeEmitter?: CatalogChangeEmitter
     metricsAggregator: MetricsAggregator
     httpServer: http.Server
     sessionStore: any
@@ -211,9 +214,21 @@ export class App {
                 this.mcpGateway = new MCPGateway({ appDataSource: this.AppDataSource })
                 this.mcpGateway.start()
 
+                // Agent-facing MCP server (Streamable HTTP at /api/v1/mcp-gateway/:agentId)
+                // owns its own session lifecycle independent of the upstream MCP client pool.
+                this.mcpGatewaySessionStore = new MCPGatewaySessionStore()
+                this.mcpGatewaySessionStore.start()
+
+                // In-process pub/sub for catalog-change notifications. Sessions
+                // subscribe in `openSession`; mutation services and the health
+                // poller emit on agent / mcp-server changes. Worker-mode
+                // (Redis-backed) replaces this in a future patch release.
+                this.mcpCatalogChangeEmitter = new CatalogChangeEmitter()
+
                 this.mcpServerHealthPoller = new MCPServerHealthPoller({
                     appDataSource: this.AppDataSource,
-                    mcpGateway: this.mcpGateway
+                    mcpGateway: this.mcpGateway,
+                    catalogChangeEmitter: this.mcpCatalogChangeEmitter
                 })
                 this.mcpServerHealthPoller.start()
             }
@@ -394,6 +409,9 @@ export class App {
             }
             if (this.mcpServerHealthPoller) {
                 this.mcpServerHealthPoller.stop()
+            }
+            if (this.mcpGatewaySessionStore) {
+                removePromises.push(this.mcpGatewaySessionStore.stop())
             }
             if (this.mcpGateway) {
                 removePromises.push(this.mcpGateway.stop())

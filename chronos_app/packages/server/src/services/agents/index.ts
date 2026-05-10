@@ -224,7 +224,12 @@ const updateAgent = async (agentId: string, body: any): Promise<Agent> => {
             if (body[key] !== undefined) (agent as any)[key] = stringifyJsonField(body[key])
         }
 
-        return await repo.save(agent)
+        const saved = await repo.save(agent)
+        // Notify any active MCP sessions for this agent — `allowedTools` may
+        // have changed and the catalog they show the LLM should refresh.
+        // Best-effort; never block the update on the notification.
+        appServer.mcpCatalogChangeEmitter?.emitForAgent(saved.id)
+        return saved
     } catch (error) {
         if (error instanceof InternalChronosError) throw error
         throw new InternalChronosError(StatusCodes.INTERNAL_SERVER_ERROR, `Error: agentsService.updateAgent - ${getErrorMessage(error)}`)

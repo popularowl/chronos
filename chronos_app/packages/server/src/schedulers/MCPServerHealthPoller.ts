@@ -3,6 +3,7 @@ import { MCPServer } from '../database/entities/MCPServer'
 import { MCPServerStatus, MCPServerTransport } from '../Interface'
 import { getErrorMessage } from '../errors/utils'
 import { MCPGateway } from '../services/mcp-gateway'
+import { CatalogChangeEmitter } from '../services/mcp-gateway-server'
 import logger from '../utils/logger'
 
 const DEFAULT_POLL_INTERVAL_MS = 30000
@@ -11,6 +12,7 @@ const CONCURRENCY_CAP = 10
 interface MCPServerHealthPollerOptions {
     appDataSource: DataSource
     mcpGateway: MCPGateway
+    catalogChangeEmitter?: CatalogChangeEmitter
 }
 
 /**
@@ -26,12 +28,14 @@ interface MCPServerHealthPollerOptions {
 export class MCPServerHealthPoller {
     private appDataSource: DataSource
     private mcpGateway: MCPGateway
+    private catalogChangeEmitter?: CatalogChangeEmitter
     private intervalId: ReturnType<typeof setInterval> | null = null
     private running = false
 
     constructor(options: MCPServerHealthPollerOptions) {
         this.appDataSource = options.appDataSource
         this.mcpGateway = options.mcpGateway
+        this.catalogChangeEmitter = options.catalogChangeEmitter
     }
 
     public start(): void {
@@ -107,21 +111,34 @@ export class MCPServerHealthPoller {
         if (!claimed) return
 
         const repo = this.appDataSource.getRepository(MCPServer)
+        const previousStatus = server.status
+        let newStatus: MCPServerStatus
+
         if (!server.url) {
             await repo.update(server.id, { status: MCPServerStatus.UNHEALTHY, lastHealthError: 'No url configured' })
-            return
+            newStatus = MCPServerStatus.UNHEALTHY
+        } else {
+            try {
+                await this.mcpGateway.healthCheck(server)
+                await repo.update(server.id, { status: MCPServerStatus.HEALTHY, lastHealthError: null as any })
+                newStatus = MCPServerStatus.HEALTHY
+            } catch (error) {
+                const message = getErrorMessage(error)
+                const isTimeout = /timed?\s*out/i.test(message)
+                await repo.update(server.id, {
+                    status: MCPServerStatus.UNHEALTHY,
+                    lastHealthError: isTimeout ? message : `Health check failed: ${message}`
+                })
+                newStatus = MCPServerStatus.UNHEALTHY
+            }
         }
 
-        try {
-            await this.mcpGateway.healthCheck(server)
-            await repo.update(server.id, { status: MCPServerStatus.HEALTHY, lastHealthError: null as any })
-        } catch (error) {
-            const message = getErrorMessage(error)
-            const isTimeout = /timed?\s*out/i.test(message)
-            await repo.update(server.id, {
-                status: MCPServerStatus.UNHEALTHY,
-                lastHealthError: isTimeout ? message : `Health check failed: ${message}`
-            })
+        // Catalog visibility for an agent depends on server health —
+        // `listAllowedToolsEnriched` excludes UNHEALTHY servers. So a status
+        // flip changes what every active session would see on next tools/list.
+        // Emit only on real flip; no-op when status is unchanged.
+        if (newStatus !== previousStatus) {
+            this.catalogChangeEmitter?.emitGlobal()
         }
     }
 }

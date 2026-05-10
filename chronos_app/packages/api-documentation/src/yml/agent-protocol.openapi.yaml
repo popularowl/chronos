@@ -132,6 +132,27 @@ paths:
                       configuration and validate the header value against
                       it (defense-in-depth against header tampering).
                 - in: header
+                  name: x-chronos-mcp-gateway-token
+                  required: false
+                  schema:
+                      type: string
+                  description: |
+                      The agent's `mcpGatewayToken`, sent in-band so agents
+                      can pick up rotations without restarting. Use as the
+                      `Authorization: Bearer` value when calling
+                      `/api/v1/mcp-gateway/<agentId>/tools/invoke`. Only
+                      present when the registered Agent has a token (HTTP
+                      runtime agents always do; absent for built-in agents
+                      that don't reach this surface).
+
+                      Header form is symmetric with `x-chronos-mcp-gateway-url`
+                      and falls under the same redaction conventions as
+                      `Authorization` in most observability stacks. Agents
+                      that prefer to pre-configure the token via env var
+                      should ignore this header — the recommended precedence
+                      is "env wins, header is the fallback" so high-sensitivity
+                      deployments can opt out of in-band tokens entirely.
+                - in: header
                   name: accept
                   required: false
                   schema:
@@ -305,6 +326,139 @@ paths:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Error'
+
+    /api/v1/mcp-gateway/{agentId}:
+        post:
+            tags:
+                - mcp-gateway
+            summary: MCP Streamable HTTP endpoint (client → server messages)
+            description: |
+                Agent-facing MCP server. Clients connect using any MCP client
+                SDK and Streamable HTTP transport; this endpoint accepts
+                JSON-RPC 2.0 messages from the client.
+
+                Auth: `Authorization: Bearer <agent.mcpGatewayToken>` is
+                required on `initialize` and on every subsequent message.
+                The bearer is bound to the `:agentId` URL — the middleware
+                cross-checks token ↔ agent and rejects mismatches with 401.
+
+                Supported MCP methods: `initialize`, `tools/list`,
+                `tools/call`. Capability advertised: `tools.listChanged: true`
+                — server pushes `notifications/tools/list_changed` when the
+                catalog changes.
+
+                Detailed JSON-RPC envelope, capability negotiation, error
+                codes, session-ID semantics: see the upstream
+                [Model Context Protocol specification](https://modelcontextprotocol.io/specification).
+                Operator-facing notes: see the agent-registry guide in repo.
+            operationId: mcpGatewayClientToServer
+            security:
+                - mcpGatewayToken: []
+            parameters:
+                - in: path
+                  name: agentId
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+                - in: header
+                  name: Mcp-Session-Id
+                  required: false
+                  schema:
+                      type: string
+                  description: |
+                      Session ID assigned by Chronos on `initialize`. Echo on
+                      every subsequent message of the same session.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            description: |
+                                JSON-RPC 2.0 envelope per the MCP spec —
+                                `{ jsonrpc, id, method, params }`. Method
+                                values: `initialize`, `tools/list`, `tools/call`.
+                            type: object
+            responses:
+                '200':
+                    description: |
+                        JSON-RPC response envelope. May be a successful result
+                        or a JSON-RPC error response (note: HTTP 200 with a
+                        JSON-RPC error body is the protocol shape for
+                        in-session failures like "tool not allowed").
+                '401':
+                    description: Missing / invalid Bearer, or token does not match the agent.
+                '403':
+                    description: Agent is BUILT_IN or disabled.
+                '429':
+                    description: Per-agent MCP session cap reached (`MCP_GATEWAY_MAX_SESSIONS_PER_AGENT`).
+                '503':
+                    description: Gateway not enabled (`ENABLE_MCP_SERVERS=false`).
+        get:
+            tags:
+                - mcp-gateway
+            summary: MCP Streamable HTTP SSE channel (server → client messages)
+            description: |
+                Server-to-client message channel for the MCP session. Carries
+                server-pushed messages such as `notifications/tools/list_changed`.
+                Opened by the client SDK after `initialize` returns a session ID.
+                Refer to the [MCP specification](https://modelcontextprotocol.io/specification)
+                for transport details.
+            operationId: mcpGatewayServerToClient
+            security:
+                - mcpGatewayToken: []
+            parameters:
+                - in: path
+                  name: agentId
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+                - in: header
+                  name: Mcp-Session-Id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: SSE stream of JSON-RPC messages from server to client.
+                    content:
+                        text/event-stream:
+                            schema:
+                                type: string
+                '401':
+                    description: Missing / invalid Bearer.
+                '404':
+                    description: Unknown session.
+        delete:
+            tags:
+                - mcp-gateway
+            summary: Explicit MCP session termination
+            description: |
+                Closes an active MCP session. Optional — sessions also expire
+                on idle timeout (`MCP_GATEWAY_SESSION_IDLE_TIMEOUT_MS`).
+            operationId: mcpGatewayCloseSession
+            security:
+                - mcpGatewayToken: []
+            parameters:
+                - in: path
+                  name: agentId
+                  required: true
+                  schema:
+                      type: string
+                      format: uuid
+                - in: header
+                  name: Mcp-Session-Id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Session closed.
+                '401':
+                    description: Missing / invalid Bearer.
+                '404':
+                    description: Unknown session.
 
     /api/v1/mcp-gateway/{agentId}/health:
         get:

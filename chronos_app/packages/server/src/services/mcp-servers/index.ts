@@ -150,7 +150,12 @@ const createMCPServer = async (requestBody: any): Promise<MCPServer> => {
         newServer.userId = requestBody.userId || undefined
 
         const saved = appServer.AppDataSource.getRepository(MCPServer).create(newServer)
-        return await appServer.AppDataSource.getRepository(MCPServer).save(saved)
+        const persisted = await appServer.AppDataSource.getRepository(MCPServer).save(saved)
+        // A new MCP server can change the catalog for any registered agent
+        // whose `allowedTools` references this slug. Broadcast — re-fetching
+        // `tools/list` is cheap and the affected-agent set is unbounded.
+        appServer.mcpCatalogChangeEmitter?.emitGlobal()
+        return persisted
     } catch (error) {
         if (error instanceof InternalChronosError) throw error
         throw new InternalChronosError(
@@ -201,7 +206,9 @@ const updateMCPServer = async (id: string, body: any): Promise<MCPServer> => {
             if (body[key] !== undefined) (server as any)[key] = stringifyJsonField(body[key])
         }
 
-        return await repo.save(server)
+        const saved = await repo.save(server)
+        appServer.mcpCatalogChangeEmitter?.emitGlobal()
+        return saved
     } catch (error) {
         if (error instanceof InternalChronosError) throw error
         throw new InternalChronosError(
@@ -219,7 +226,9 @@ const deleteMCPServer = async (id: string): Promise<any> => {
         if (!server) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `MCP server ${id} not found`)
         }
-        return await appServer.AppDataSource.getRepository(MCPServer).delete({ id })
+        const result = await appServer.AppDataSource.getRepository(MCPServer).delete({ id })
+        appServer.mcpCatalogChangeEmitter?.emitGlobal()
+        return result
     } catch (error) {
         if (error instanceof InternalChronosError) throw error
         throw new InternalChronosError(
@@ -298,7 +307,9 @@ const toggleMCPServer = async (id: string, enabled: boolean): Promise<MCPServer>
         server.enabled = enabled
         if (!enabled) server.status = MCPServerStatus.DISABLED
         else if (server.status === MCPServerStatus.DISABLED) server.status = MCPServerStatus.UNKNOWN
-        return await repo.save(server)
+        const saved = await repo.save(server)
+        appServer.mcpCatalogChangeEmitter?.emitGlobal()
+        return saved
     } catch (error) {
         if (error instanceof InternalChronosError) throw error
         throw new InternalChronosError(
