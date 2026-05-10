@@ -1,31 +1,47 @@
-import { useEffect, useState } from 'react'
-import PropTypes from 'prop-types'
+import { useEffect, useMemo, useState } from 'react'
+import moment from 'moment'
 import { useNavigate, useParams } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 
 import {
+    Alert,
     Box,
     Button,
     Chip,
-    Divider,
-    Grid,
     IconButton,
-    InputAdornment,
-    OutlinedInput,
+    Paper,
+    Popover,
     Skeleton,
     Stack,
+    Switch,
     Tab,
+    Table,
+    TableBody,
+    TableContainer,
+    TableHead,
     Tabs,
     Tooltip,
-    Typography
+    Typography,
+    useTheme
 } from '@mui/material'
-import { IconArrowLeft, IconCopy, IconEdit, IconEye, IconEyeOff, IconRefresh, IconSend, IconX } from '@tabler/icons-react'
-import { CopyBlock, atomOneDark } from 'react-code-blocks'
+import {
+    IconArrowLeft,
+    IconCopy,
+    IconEdit,
+    IconEye,
+    IconEyeOff,
+    IconRefresh,
+    IconRobot,
+    IconSend,
+    IconTrash,
+    IconX
+} from '@tabler/icons-react'
 
 import MainCard from '@/ui-component/cards/MainCard'
 import ErrorBoundary from '@/ErrorBoundary'
 import { StyledButton } from '@/ui-component/button/StyledButton'
 import { StyledPermissionButton } from '@/ui-component/button/RBACButtons'
+import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyles'
 import ConfirmDialog from '@/ui-component/dialog/ConfirmDialog'
 
 import AgentDialog from './AgentDialog'
@@ -52,15 +68,21 @@ const RUNTIME_LABEL = {
 }
 
 /**
- * Agent detail page (`/agents/:id`). Three tabs:
- *   - Overview: identity, runtime config (HTTP), gateway URLs and token
- *     (copy + rotate-with-confirm), test connection
- *   - Executions: paginated list scoped to this agent, in-page details
- *     drawer (reuses the global ExecutionsListTable + ExecutionDetails)
- *   - Metrics: 7d / 14d window with summary cards and an Executions Over
- *     Time chart (lighter view than the global Cost Dashboard)
+ * Agent detail page (`/agents/:id`).
+ *
+ * Layout mirrors the MCP Server detail page (which in turn mirrors the
+ * `/apikey` Client Credentials pattern): a page-level `MainCard` carrying a
+ * header bar + one-row apikey-style summary tables (Identity, Connection
+ * for HTTP / Backing Agentflow for built-in) plus the MCP Gateway Token
+ * control. Heavier sub-views (Executions, Metrics) live behind tabs in a
+ * sibling `MainCard`.
+ *
+ * Page-level actions (Test Connection, Edit, Delete) sit in the header bar;
+ * the Enabled toggle lives in the Identity table's Enabled column.
  */
 const AgentDetail = () => {
+    const theme = useTheme()
+    const customization = useSelector((state) => state.customization)
     const { id } = useParams()
     const navigate = useNavigate()
     const dispatch = useDispatch()
@@ -80,6 +102,11 @@ const AgentDetail = () => {
     const [tokenVisible, setTokenVisible] = useState(false)
     const [testLoading, setTestLoading] = useState(false)
     const [rotateLoading, setRotateLoading] = useState(false)
+    const [toggleLoading, setToggleLoading] = useState(false)
+    // Anchor for the "Copied!" Popover, mirroring the /apikey API Key cell
+    // pattern. The Popover dismisses itself after a short delay so the cell
+    // stays clean.
+    const [copyAnchorEl, setCopyAnchorEl] = useState(null)
 
     const showSuccess = (message) =>
         enqueueSnackbar({
@@ -136,10 +163,11 @@ const AgentDetail = () => {
         setShowDialog(true)
     }
 
-    const onCopyToken = () => {
+    const onCopyToken = (event) => {
         if (!agent?.mcpGatewayToken) return
         navigator.clipboard.writeText(agent.mcpGatewayToken)
-        showSuccess('MCP gateway token copied to clipboard')
+        setCopyAnchorEl(event.currentTarget)
+        setTimeout(() => setCopyAnchorEl(null), 1500)
     }
 
     const onRotateToken = async () => {
@@ -182,6 +210,39 @@ const AgentDetail = () => {
         }
     }
 
+    const onToggle = async (next) => {
+        if (!agent?.id) return
+        setToggleLoading(true)
+        try {
+            await agentsApi.toggleAgent(agent.id, next)
+            refresh()
+        } catch (err) {
+            showError(err?.response?.data?.message || 'Failed to toggle agent', true)
+        } finally {
+            setToggleLoading(false)
+        }
+    }
+
+    const onDelete = async () => {
+        if (!agent?.id) return
+        const confirmed = await confirm({
+            title: 'Delete Agent',
+            description: `Delete "${agent.name}"? Any clients calling this agent's slug will start failing immediately.`,
+            confirmButtonName: 'Delete',
+            cancelButtonName: 'Cancel'
+        })
+        if (!confirmed) return
+        try {
+            await agentsApi.deleteAgent(agent.id)
+            showSuccess('Agent deleted')
+            navigate('/agents')
+        } catch (err) {
+            showError(err?.response?.data?.message || 'Failed to delete agent', true)
+        }
+    }
+
+    const allowedTools = useMemo(() => toStringArray(agent?.allowedTools), [agent?.allowedTools])
+
     if (!agent && !error) {
         return (
             <MainCard>
@@ -198,257 +259,294 @@ const AgentDetail = () => {
         )
     }
 
-    const runtimeConfig = parseJson(agent.runtimeConfig) || {}
-    const allowedTools = toStringArray(agent.allowedTools)
+    const isHttp = agent.runtimeType === 'HTTP'
+    const tableHeaderSx = {
+        backgroundColor: customization.isDarkMode ? theme.palette.common.black : theme.palette.grey[100],
+        height: 56
+    }
+    const tableContainerSx = { border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }
 
     return (
         <>
             <MainCard>
-                <Stack direction='row' alignItems='center' spacing={1} sx={{ mb: 2 }}>
-                    <Tooltip title='Back to agents'>
-                        <IconButton onClick={() => navigate('/agents')}>
-                            <IconArrowLeft size={20} />
-                        </IconButton>
-                    </Tooltip>
-                    <Typography variant='h3' sx={{ flexGrow: 1 }}>
-                        {agent.name}
-                    </Typography>
-                    <Chip size='small' label={RUNTIME_LABEL[agent.runtimeType] || agent.runtimeType} variant='outlined' />
-                    <Chip
-                        size='small'
-                        label={agent.status}
-                        color={STATUS_CHIP_COLOR[agent.status] || 'default'}
-                        sx={agent.status === 'DISABLED' ? { opacity: 0.6 } : undefined}
-                    />
-                    <StyledPermissionButton
-                        permissionId={'agents:update'}
-                        variant='outlined'
-                        startIcon={<IconEdit size={16} />}
-                        onClick={onEdit}
-                    >
-                        Edit
-                    </StyledPermissionButton>
-                </Stack>
-
-                <Tabs value={tab} onChange={(_e, v) => setTab(v)} sx={{ mb: 2 }}>
-                    <Tab label='Overview' />
-                    <Tab label='Executions' />
-                    <Tab label='Metrics' />
-                </Tabs>
-
-                {tab === 1 && <AgentExecutionsTab agent={agent} />}
-                {tab === 2 && <AgentMetricsTab agent={agent} />}
-
-                {tab === 0 && (
-                    <Stack spacing={3}>
-                        <Box>
-                            <Typography variant='overline'>Identity</Typography>
-                            <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                                <Grid item xs={12} sm={6}>
-                                    <ReadOnlyField label='Slug' value={agent.slug} mono />
-                                </Grid>
-                                <Grid item xs={12} sm={6}>
-                                    <ReadOnlyField label='Version' value={agent.version} mono />
-                                </Grid>
-                                <Grid item xs={12}>
-                                    <ReadOnlyField label='Description' value={agent.description || '—'} multiline />
-                                </Grid>
-                            </Grid>
+                <Stack flexDirection='column' sx={{ gap: 3 }}>
+                    {/* Header bar — back, identity title, page-level actions */}
+                    <Stack direction='row' alignItems='center' spacing={1} flexWrap='wrap' useFlexGap>
+                        <Tooltip title='Back to agents'>
+                            <IconButton onClick={() => navigate('/agents')}>
+                                <IconArrowLeft size={20} />
+                            </IconButton>
+                        </Tooltip>
+                        <Box
+                            sx={{
+                                width: 35,
+                                height: 35,
+                                borderRadius: '50%',
+                                backgroundColor: customization.isDarkMode ? theme.palette.common.white : theme.palette.grey[300] + 75,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center'
+                            }}
+                        >
+                            <IconRobot size={20} color={theme.palette.grey[700]} />
                         </Box>
+                        <Typography variant='h3' sx={{ flexGrow: 1 }}>
+                            Agent: {agent.name}
+                        </Typography>
+                        {isHttp && (
+                            <Tooltip title='HTTP GET reachability probe'>
+                                <span>
+                                    <StyledButton
+                                        variant='outlined'
+                                        onClick={onTestConnection}
+                                        disabled={testLoading}
+                                        startIcon={<IconSend size={16} />}
+                                    >
+                                        {testLoading ? 'Testing…' : 'Test Connection'}
+                                    </StyledButton>
+                                </span>
+                            </Tooltip>
+                        )}
+                        <StyledPermissionButton
+                            permissionId={'agents:update'}
+                            variant='outlined'
+                            startIcon={<IconEdit size={16} />}
+                            onClick={onEdit}
+                        >
+                            Edit
+                        </StyledPermissionButton>
+                        <StyledPermissionButton
+                            permissionId={'agents:delete'}
+                            variant='outlined'
+                            color='error'
+                            startIcon={<IconTrash size={16} />}
+                            onClick={onDelete}
+                        >
+                            Delete
+                        </StyledPermissionButton>
+                    </Stack>
 
-                        <Divider />
-
-                        {agent.runtimeType === 'HTTP' && (
-                            <>
-                                <Box>
-                                    <Stack direction='row' justifyContent='space-between' alignItems='center'>
-                                        <Typography variant='overline'>HTTP Runtime</Typography>
-                                        <Tooltip title='HTTP GET reachability probe'>
+                    {/* Identity — one-row apikey-style table */}
+                    <TableContainer sx={tableContainerSx} component={Paper}>
+                        <Table sx={{ minWidth: 650 }} aria-label='agent identity'>
+                            <TableHead sx={tableHeaderSx}>
+                                <StyledTableRow>
+                                    <StyledTableCell>Slug</StyledTableCell>
+                                    <StyledTableCell>Runtime</StyledTableCell>
+                                    <StyledTableCell>Status</StyledTableCell>
+                                    <StyledTableCell sx={{ minWidth: 220 }}>Tools</StyledTableCell>
+                                    <StyledTableCell>Created</StyledTableCell>
+                                    <StyledTableCell>Enabled</StyledTableCell>
+                                </StyledTableRow>
+                            </TableHead>
+                            <TableBody>
+                                <StyledTableRow>
+                                    <StyledTableCell sx={{ fontFamily: 'monospace' }}>{agent.slug}</StyledTableCell>
+                                    <StyledTableCell>
+                                        <Chip
+                                            size='small'
+                                            label={RUNTIME_LABEL[agent.runtimeType] || agent.runtimeType}
+                                            variant='outlined'
+                                        />
+                                    </StyledTableCell>
+                                    <StyledTableCell>
+                                        <Chip
+                                            size='small'
+                                            label={(agent.status || '').toLowerCase()}
+                                            color={agent.status === 'HEALTHY' ? undefined : STATUS_CHIP_COLOR[agent.status] || 'default'}
+                                            sx={{
+                                                ...(agent.status === 'HEALTHY' && {
+                                                    backgroundColor: theme.palette.success.dark,
+                                                    color: theme.palette.common.white
+                                                }),
+                                                ...(agent.status === 'DISABLED' && { opacity: 0.6 })
+                                            }}
+                                        />
+                                    </StyledTableCell>
+                                    <StyledTableCell>
+                                        {allowedTools.length === 0 ? (
+                                            <Typography variant='body2' sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                                                none
+                                            </Typography>
+                                        ) : (
+                                            <Stack direction='row' spacing={0.5} flexWrap='wrap' useFlexGap>
+                                                {allowedTools.map((t) => (
+                                                    <Chip key={t} label={t} size='small' variant='outlined' />
+                                                ))}
+                                            </Stack>
+                                        )}
+                                    </StyledTableCell>
+                                    <StyledTableCell>
+                                        {agent.createdDate ? moment(agent.createdDate).format('MMMM Do, YYYY HH:mm:ss') : '—'}
+                                    </StyledTableCell>
+                                    <StyledTableCell>
+                                        <Tooltip
+                                            title={
+                                                agent.enabled
+                                                    ? 'Disable: clients calling this agent will receive 503 until re-enabled.'
+                                                    : 'Enable: makes the agent invokable through /api/v1/agents again.'
+                                            }
+                                        >
                                             <span>
-                                                <StyledButton
+                                                <Switch
+                                                    checked={Boolean(agent.enabled)}
+                                                    onChange={(e) => onToggle(e.target.checked)}
+                                                    disabled={toggleLoading}
                                                     size='small'
-                                                    variant='outlined'
-                                                    onClick={onTestConnection}
-                                                    disabled={testLoading}
-                                                    startIcon={<IconSend size={14} />}
-                                                >
-                                                    {testLoading ? 'Testing…' : 'Test Connection'}
-                                                </StyledButton>
+                                                />
                                             </span>
                                         </Tooltip>
-                                    </Stack>
-                                    <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                                        <Grid item xs={12} sm={6}>
-                                            <ReadOnlyField label='Service Endpoint' value={agent.serviceEndpoint || '—'} mono />
-                                        </Grid>
-                                        <Grid item xs={12} sm={6}>
-                                            <ReadOnlyField label='Health Endpoint' value={runtimeConfig.healthEndpoint || '—'} mono />
-                                        </Grid>
-                                        <Grid item xs={12} sm={6}>
-                                            <ReadOnlyField label='Timeout (ms)' value={String(runtimeConfig.timeoutMs ?? 60000)} mono />
-                                        </Grid>
-                                        <Grid item xs={12} sm={6}>
-                                            <ReadOnlyField
-                                                label='Last Health Check'
-                                                value={agent.lastHealthCheckAt ? new Date(agent.lastHealthCheckAt).toLocaleString() : '—'}
-                                            />
-                                        </Grid>
-                                        {agent.lastHealthError && (
-                                            <Grid item xs={12}>
-                                                <ReadOnlyField label='Last Health Error' value={agent.lastHealthError} multiline />
-                                            </Grid>
-                                        )}
-                                    </Grid>
-                                </Box>
+                                    </StyledTableCell>
+                                </StyledTableRow>
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
 
-                                <Divider />
-
-                                <Box>
-                                    <Typography variant='overline'>Allowed MCP Tools</Typography>
-                                    {allowedTools.length === 0 ? (
-                                        <Typography variant='body2' sx={{ mt: 0.5, color: 'text.secondary' }}>
-                                            No tools configured. The agent will receive 403 from the gateway on any tool call.
-                                        </Typography>
-                                    ) : (
-                                        <Stack direction='row' spacing={0.5} flexWrap='wrap' useFlexGap sx={{ mt: 0.5 }}>
-                                            {allowedTools.map((t) => (
-                                                <Chip key={t} label={t} size='small' variant='outlined' />
-                                            ))}
-                                        </Stack>
-                                    )}
-                                </Box>
-
-                                <Divider />
-
-                                <Box>
-                                    <Typography variant='overline'>MCP Gateway URLs</Typography>
-                                    <Typography variant='body2' sx={{ mb: 1, color: 'text.secondary' }}>
-                                        We recommend external agent stores the invoke URL in its own config (e.g.{' '}
-                                        <code>MCP_GATEWAY_URL</code>) and validates the per-request <code>x-chronos-mcp-gateway-url</code>{' '}
-                                        header against it. If your agent runs in a different network (Docker, internal subnet), substitute
-                                        the hostname reachable from there. Replace <code>$MCP_GATEWAY_TOKEN</code> with the token from the
-                                        field below.
-                                    </Typography>
-                                    <Stack spacing={1.5} sx={{ mt: 1 }}>
-                                        {(() => {
-                                            const origin = typeof window !== 'undefined' ? window.location.origin : ''
-                                            const invokeUrl = `${origin}/api/v1/mcp-gateway/${agent.id}/tools/invoke`
-                                            const healthUrl = `${origin}/api/v1/mcp-gateway/${agent.id}/health`
-                                            const invokeCurl = `curl ${invokeUrl} \\
-     -X POST \\
-     -H "Content-Type: application/json" \\
-     -H "Authorization: Bearer $MCP_GATEWAY_TOKEN" \\
-     -d '{
-       "tool": "<server-slug>.<tool-name>",
-       "params": {},
-       "callId": "<optional-uuid>"
-     }'`
-                                            const healthCurl = `curl ${healthUrl} \\
-     -H "Authorization: Bearer $MCP_GATEWAY_TOKEN"`
-                                            return (
+                    {/* Runtime details — Connection table for HTTP, Backing Agentflow row for BUILT_IN */}
+                    {isHttp ? (
+                        <TableContainer sx={tableContainerSx} component={Paper}>
+                            <Table sx={{ minWidth: 650 }} aria-label='agent connection'>
+                                <TableHead sx={tableHeaderSx}>
+                                    <StyledTableRow>
+                                        <StyledTableCell sx={{ width: '25%' }}>Service Endpoint</StyledTableCell>
+                                        <StyledTableCell sx={{ width: '55%' }}>Token</StyledTableCell>
+                                        <StyledTableCell>Last Health Check</StyledTableCell>
+                                    </StyledTableRow>
+                                </TableHead>
+                                <TableBody>
+                                    <StyledTableRow>
+                                        <StyledTableCell sx={{ fontFamily: 'monospace', maxWidth: 240 }}>
+                                            <Box
+                                                sx={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                                                title={agent.serviceEndpoint || ''}
+                                            >
+                                                {agent.serviceEndpoint || '—'}
+                                            </Box>
+                                        </StyledTableCell>
+                                        <StyledTableCell>
+                                            {agent.mcpGatewayToken ? (
                                                 <>
-                                                    <Box>
-                                                        <Typography
-                                                            variant='caption'
-                                                            sx={{ display: 'block', color: 'text.secondary', mb: 0.5 }}
-                                                        >
-                                                            Invoke a tool (POST)
-                                                        </Typography>
-                                                        <CopyBlock
-                                                            theme={atomOneDark}
-                                                            text={invokeCurl}
-                                                            language='bash'
-                                                            showLineNumbers={false}
-                                                            wrapLines
-                                                            customStyle={{ padding: '16px 18px', borderRadius: 6 }}
-                                                        />
+                                                    <Box
+                                                        component='span'
+                                                        sx={{
+                                                            fontFamily: 'monospace',
+                                                            fontSize: '0.85rem',
+                                                            verticalAlign: 'middle'
+                                                        }}
+                                                    >
+                                                        {tokenVisible
+                                                            ? agent.mcpGatewayToken
+                                                            : `${agent.mcpGatewayToken.substring(0, 2)}${'•'.repeat(
+                                                                  18
+                                                              )}${agent.mcpGatewayToken.substring(agent.mcpGatewayToken.length - 5)}`}
                                                     </Box>
-                                                    <Box>
+                                                    <IconButton title='Copy' color='success' onClick={onCopyToken}>
+                                                        <IconCopy />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        title={tokenVisible ? 'Hide' : 'Show'}
+                                                        color='inherit'
+                                                        onClick={() => setTokenVisible((v) => !v)}
+                                                    >
+                                                        {tokenVisible ? <IconEyeOff /> : <IconEye />}
+                                                    </IconButton>
+                                                    <IconButton
+                                                        title='Rotate (invalidates the current token)'
+                                                        color='primary'
+                                                        onClick={onRotateToken}
+                                                        disabled={rotateLoading}
+                                                    >
+                                                        <IconRefresh />
+                                                    </IconButton>
+                                                    <Popover
+                                                        open={Boolean(copyAnchorEl)}
+                                                        anchorEl={copyAnchorEl}
+                                                        onClose={() => setCopyAnchorEl(null)}
+                                                        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+                                                        transformOrigin={{ vertical: 'top', horizontal: 'left' }}
+                                                    >
                                                         <Typography
-                                                            variant='caption'
-                                                            sx={{ display: 'block', color: 'text.secondary', mb: 0.5 }}
+                                                            variant='h6'
+                                                            sx={{ pl: 1, pr: 1, color: 'white', background: theme.palette.success.dark }}
                                                         >
-                                                            Gateway health probe (GET)
+                                                            Copied!
                                                         </Typography>
-                                                        <CopyBlock
-                                                            theme={atomOneDark}
-                                                            text={healthCurl}
-                                                            language='bash'
-                                                            showLineNumbers={false}
-                                                            wrapLines
-                                                            customStyle={{ padding: '16px 18px', borderRadius: 6 }}
-                                                        />
-                                                    </Box>
+                                                    </Popover>
                                                 </>
-                                            )
-                                        })()}
-                                    </Stack>
-                                </Box>
+                                            ) : (
+                                                <Typography variant='body2' sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                                                    not issued
+                                                </Typography>
+                                            )}
+                                        </StyledTableCell>
+                                        <StyledTableCell>
+                                            {agent.lastHealthCheckAt ? moment(agent.lastHealthCheckAt).format('MMM D, YYYY h:mm A') : '—'}
+                                        </StyledTableCell>
+                                    </StyledTableRow>
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    ) : (
+                        <TableContainer sx={tableContainerSx} component={Paper}>
+                            <Table sx={{ minWidth: 650 }} aria-label='backing agentflow'>
+                                <TableHead sx={tableHeaderSx}>
+                                    <StyledTableRow>
+                                        <StyledTableCell>Backing Agentflow ID</StyledTableCell>
+                                        <StyledTableCell>Canvas</StyledTableCell>
+                                    </StyledTableRow>
+                                </TableHead>
+                                <TableBody>
+                                    <StyledTableRow>
+                                        <StyledTableCell sx={{ fontFamily: 'monospace' }}>
+                                            {agent.builtinAgentflowId || '—'}
+                                        </StyledTableCell>
+                                        <StyledTableCell>
+                                            <Button
+                                                size='small'
+                                                variant='outlined'
+                                                disabled={!agent.builtinAgentflowId}
+                                                onClick={() => navigate(`/canvas/${agent.builtinAgentflowId}`)}
+                                            >
+                                                Open in canvas
+                                            </Button>
+                                        </StyledTableCell>
+                                    </StyledTableRow>
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
 
-                                <Divider />
+                    {/* Last health error — only when failing */}
+                    {agent.lastHealthError && (
+                        <Alert severity='error' variant='outlined' sx={{ alignItems: 'center' }}>
+                            <strong>Last health error:</strong> {agent.lastHealthError}
+                        </Alert>
+                    )}
 
-                                <Box>
-                                    <Typography variant='overline'>MCP Gateway Token</Typography>
-                                    <Typography variant='body2' sx={{ mb: 1, color: 'text.secondary' }}>
-                                        Your agent uses this token to invoke MCP tools through Chronos&apos;s gateway. Bearer it on the
-                                        invoke URL above.
-                                    </Typography>
-                                    <OutlinedInput
-                                        fullWidth
-                                        size='small'
-                                        type={tokenVisible ? 'text' : 'password'}
-                                        value={agent.mcpGatewayToken || ''}
-                                        readOnly
-                                        sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
-                                        endAdornment={
-                                            <InputAdornment position='end'>
-                                                <Tooltip title={tokenVisible ? 'Hide' : 'Show'}>
-                                                    <IconButton size='small' onClick={() => setTokenVisible((v) => !v)}>
-                                                        {tokenVisible ? <IconEyeOff size={16} /> : <IconEye size={16} />}
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title='Copy'>
-                                                    <IconButton size='small' onClick={onCopyToken}>
-                                                        <IconCopy size={16} />
-                                                    </IconButton>
-                                                </Tooltip>
-                                                <Tooltip title='Rotate (invalidates the current token)'>
-                                                    <span>
-                                                        <IconButton size='small' onClick={onRotateToken} disabled={rotateLoading}>
-                                                            <IconRefresh size={16} />
-                                                        </IconButton>
-                                                    </span>
-                                                </Tooltip>
-                                            </InputAdornment>
-                                        }
-                                    />
-                                </Box>
-                            </>
-                        )}
-
-                        {agent.runtimeType === 'BUILT_IN' && (
-                            <Box>
-                                <Typography variant='overline'>Built-in Runtime</Typography>
-                                <Grid container spacing={2} sx={{ mt: 0.5 }}>
-                                    <Grid item xs={12}>
-                                        <ReadOnlyField label='Backing AgentFlow ID' value={agent.builtinAgentflowId || '—'} mono />
-                                    </Grid>
-                                    <Grid item xs={12}>
-                                        <Button
-                                            variant='outlined'
-                                            size='small'
-                                            disabled={!agent.builtinAgentflowId}
-                                            onClick={() => navigate(`/canvas/${agent.builtinAgentflowId}`)}
-                                        >
-                                            Open in canvas
-                                        </Button>
-                                    </Grid>
-                                </Grid>
-                            </Box>
-                        )}
-                    </Stack>
-                )}
+                    {/* Description — only when set */}
+                    {agent.description && (
+                        <Box>
+                            <Typography variant='overline'>Description</Typography>
+                            <Typography variant='body2' sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
+                                {agent.description}
+                            </Typography>
+                        </Box>
+                    )}
+                </Stack>
             </MainCard>
+
+            {/* Heavy content behind tabs in a sibling card */}
+            <Box sx={{ mt: 3 }}>
+                <MainCard>
+                    <Tabs value={tab} onChange={(_e, v) => setTab(v)} sx={{ mb: 3 }}>
+                        <Tab label='Executions' />
+                        <Tab label='Metrics' />
+                    </Tabs>
+                    {tab === 0 && <AgentExecutionsTab agent={agent} />}
+                    {tab === 1 && <AgentMetricsTab agent={agent} />}
+                </MainCard>
+            </Box>
+
             <AgentDialog
                 show={showDialog}
                 dialogProps={dialogProps}
@@ -461,32 +559,6 @@ const AgentDetail = () => {
             <ConfirmDialog />
         </>
     )
-}
-
-const ReadOnlyField = ({ label, value, mono, multiline }) => (
-    <Box>
-        <Typography variant='caption' sx={{ display: 'block', color: 'text.secondary' }}>
-            {label}
-        </Typography>
-        <Box
-            sx={{
-                fontFamily: mono ? 'monospace' : undefined,
-                fontSize: '0.9rem',
-                whiteSpace: multiline ? 'pre-wrap' : 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis'
-            }}
-        >
-            {value}
-        </Box>
-    </Box>
-)
-
-ReadOnlyField.propTypes = {
-    label: PropTypes.string.isRequired,
-    value: PropTypes.node,
-    mono: PropTypes.bool,
-    multiline: PropTypes.bool
 }
 
 const parseJson = (raw) => {

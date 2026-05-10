@@ -4,6 +4,7 @@ import { tableCellClasses } from '@mui/material/TableCell'
 
 export const StyledTableCell = styled(TableCell)(({ theme }) => ({
     borderColor: theme.palette.grey[900] + 25,
+    padding: '6px 16px',
 
     [`&.${tableCellClasses.head}`]: {
         color: theme.palette.grey[900]
