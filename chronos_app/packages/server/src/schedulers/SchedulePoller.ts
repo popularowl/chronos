@@ -46,7 +46,7 @@ export class SchedulePoller {
             ? parseInt(process.env.SCHEDULE_POLL_INTERVAL_MS, 10)
             : DEFAULT_POLL_INTERVAL_MS
 
-        logger.info(`📅 [SchedulePoller] Starting with ${pollIntervalMs}ms poll interval (DB polling mode)`)
+        logger.info(`[SchedulePoller] Starting with ${pollIntervalMs}ms poll interval (DB polling mode)`)
 
         this.intervalId = setInterval(() => {
             this.poll()
@@ -60,7 +60,7 @@ export class SchedulePoller {
         if (this.intervalId) {
             clearInterval(this.intervalId)
             this.intervalId = null
-            logger.info('📅 [SchedulePoller] Stopped')
+            logger.info('[SchedulePoller] Stopped')
         }
     }
 

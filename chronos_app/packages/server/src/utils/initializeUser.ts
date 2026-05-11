@@ -87,14 +87,14 @@ export async function initializeInitialUser(): Promise<void> {
 
     // If env vars not set, skip silently
     if (!config) {
-        logger.debug('👤 [server]: No initial user configuration provided (CHRONOS_INITIAL_USER not set)')
+        logger.debug('[server]: No initial user configuration provided (CHRONOS_INITIAL_USER not set)')
         return
     }
 
     // Check if users already exist
     const usersExist = await hasExistingUsers()
     if (usersExist) {
-        logger.info('👤 [server]: Users already exist in database, skipping initial user creation')
+        logger.info('[server]: Users already exist in database, skipping initial user creation')
         return
     }
 
@@ -113,7 +113,7 @@ export async function initializeInitialUser(): Promise<void> {
             name: config.name
         })
 
-        logger.info(`✅ [server]: Initial admin user created successfully: ${config.email}`)
+        logger.info(`[server]: Initial admin user created successfully: ${config.email}`)
     } catch (error) {
         logger.error(`❌ [server]: Failed to create initial user: ${error}`)
     }

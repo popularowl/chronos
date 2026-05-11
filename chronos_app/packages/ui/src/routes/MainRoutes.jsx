@@ -27,6 +27,7 @@ const Webhooks = Loadable(lazy(() => import('@/views/webhooks')))
 
 // mcp-servers routing
 const MCPServers = Loadable(lazy(() => import('@/views/mcp-servers')))
+const MCPServerDetail = Loadable(lazy(() => import('@/views/mcp-servers/MCPServerDetail')))
 
 // audit log routing
 const AuditLog = Loadable(lazy(() => import('@/views/audit-log')))
@@ -154,6 +155,14 @@ const MainRoutes = {
             element: (
                 <RequireAuth permission={'mcp-servers:view'}>
                     <MCPServers />
+                </RequireAuth>
+            )
+        },
+        {
+            path: '/mcp-servers/:id',
+            element: (
+                <RequireAuth permission={'mcp-servers:view'}>
+                    <MCPServerDetail />
                 </RequireAuth>
             )
         },

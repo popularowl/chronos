@@ -78,7 +78,7 @@ export class MCPGateway {
 
     public start(): void {
         if (this.reaperId) return
-        logger.info(`🛰️ Starting (idleTimeoutMs=${this.idleTimeoutMs}, reaperIntervalMs=${REAPER_INTERVAL_MS})`)
+        logger.info(`Starting (idleTimeoutMs=${this.idleTimeoutMs}, reaperIntervalMs=${REAPER_INTERVAL_MS})`)
         this.reaperId = setInterval(() => this.reapIdle(), REAPER_INTERVAL_MS)
     }
 
@@ -96,7 +96,7 @@ export class MCPGateway {
                 logger.warn(`Failed to close client for server ${id}: ${getErrorMessage(error)}`)
             }
         }
-        logger.info('🛰️ Stopped')
+        logger.info('Stopped')
     }
 
     /**

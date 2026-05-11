@@ -7,29 +7,27 @@ import {
     Button,
     ButtonGroup,
     Chip,
-    IconButton,
     Paper,
     Skeleton,
     Stack,
     Switch,
     Table,
     TableBody,
-    TableCell,
     TableContainer,
     TableHead,
-    TableRow,
     TableSortLabel,
     Tooltip,
     Typography,
     useTheme
 } from '@mui/material'
-import { IconEdit, IconExternalLink, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
+import { IconEdit, IconExternalLink, IconPlus, IconRobot, IconTrash, IconX } from '@tabler/icons-react'
 
 import MainCard from '@/ui-component/cards/MainCard'
 import ViewHeader from '@/layout/MainLayout/ViewHeader'
 import ErrorBoundary from '@/ErrorBoundary'
-import { StyledPermissionButton } from '@/ui-component/button/RBACButtons'
+import { PermissionIconButton, StyledPermissionButton } from '@/ui-component/button/RBACButtons'
 import TablePagination, { DEFAULT_ITEMS_PER_PAGE } from '@/ui-component/pagination/TablePagination'
+import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyles'
 import ConfirmDialog from '@/ui-component/dialog/ConfirmDialog'
 
 import AgentDialog from './AgentDialog'
@@ -286,8 +284,11 @@ const Agents = () => {
                         )}
                         {!isLoading && total > 0 && (
                             <>
-                                <TableContainer component={Paper} variant='outlined'>
-                                    <Table>
+                                <TableContainer
+                                    sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }}
+                                    component={Paper}
+                                >
+                                    <Table sx={{ minWidth: 650 }} aria-label='agents table'>
                                         <TableHead
                                             sx={{
                                                 backgroundColor: customization.isDarkMode
@@ -296,8 +297,8 @@ const Agents = () => {
                                                 height: 56
                                             }}
                                         >
-                                            <TableRow>
-                                                <TableCell>
+                                            <StyledTableRow>
+                                                <StyledTableCell>
                                                     <TableSortLabel
                                                         active={orderBy === 'name'}
                                                         direction={order}
@@ -305,78 +306,75 @@ const Agents = () => {
                                                     >
                                                         Name
                                                     </TableSortLabel>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <TableSortLabel
-                                                        active={orderBy === 'slug'}
-                                                        direction={order}
-                                                        onClick={() => handleRequestSort('slug')}
-                                                    >
-                                                        Slug
-                                                    </TableSortLabel>
-                                                </TableCell>
-                                                <TableCell>Runtime</TableCell>
-                                                <TableCell>Status</TableCell>
-                                                <TableCell>Endpoint / Flow</TableCell>
-                                                <TableCell sx={{ minWidth: 220 }}>Allowed MCP Tools</TableCell>
-                                                <TableCell>Enabled</TableCell>
-                                                <TableCell align='right'>Actions</TableCell>
-                                            </TableRow>
+                                                </StyledTableCell>
+                                                <StyledTableCell>Runtime</StyledTableCell>
+                                                <StyledTableCell>Status</StyledTableCell>
+                                                <StyledTableCell sx={{ minWidth: 220 }}>Allowed MCP Tools</StyledTableCell>
+                                                <StyledTableCell>Enabled</StyledTableCell>
+                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
+                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
+                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
+                                            </StyledTableRow>
                                         </TableHead>
                                         <TableBody>
                                             {rows.map((agent) => (
-                                                <TableRow key={agent.id} hover>
-                                                    <TableCell>
-                                                        <Box
-                                                            component='span'
-                                                            sx={{
-                                                                cursor: 'pointer',
-                                                                color: theme.palette.primary.main,
-                                                                '&:hover': { textDecoration: 'underline' }
-                                                            }}
-                                                            onClick={() => goToDetail(agent)}
-                                                        >
-                                                            {agent.name}
+                                                <StyledTableRow key={agent.id} hover>
+                                                    <StyledTableCell scope='row'>
+                                                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+                                                            <Box
+                                                                sx={{
+                                                                    width: 35,
+                                                                    height: 35,
+                                                                    borderRadius: '50%',
+                                                                    backgroundColor: customization.isDarkMode
+                                                                        ? theme.palette.common.white
+                                                                        : theme.palette.grey[300] + 75,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center'
+                                                                }}
+                                                            >
+                                                                <IconRobot size={20} color={theme.palette.grey[700]} />
+                                                            </Box>
+                                                            <Box
+                                                                component='span'
+                                                                sx={{
+                                                                    cursor: 'pointer',
+                                                                    color: theme.palette.primary.main,
+                                                                    '&:hover': { textDecoration: 'underline' }
+                                                                }}
+                                                                onClick={() => goToDetail(agent)}
+                                                            >
+                                                                {agent.name}
+                                                            </Box>
                                                         </Box>
-                                                    </TableCell>
-                                                    <TableCell>
-                                                        <code style={{ fontSize: '0.85em' }}>{agent.slug}</code>
-                                                    </TableCell>
-                                                    <TableCell>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
                                                         <Chip
                                                             size='small'
                                                             label={RUNTIME_LABEL[agent.runtimeType] || agent.runtimeType}
                                                             variant='outlined'
                                                         />
-                                                    </TableCell>
-                                                    <TableCell>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
                                                         <Chip
                                                             size='small'
-                                                            label={agent.status}
-                                                            color={STATUS_CHIP_COLOR[agent.status] || 'default'}
-                                                            sx={agent.status === 'DISABLED' ? { opacity: 0.6 } : undefined}
+                                                            label={(agent.status || '').toLowerCase()}
+                                                            color={
+                                                                agent.status === 'HEALTHY'
+                                                                    ? undefined
+                                                                    : STATUS_CHIP_COLOR[agent.status] || 'default'
+                                                            }
+                                                            sx={{
+                                                                ...(agent.status === 'HEALTHY' && {
+                                                                    backgroundColor: theme.palette.success.dark,
+                                                                    color: theme.palette.common.white
+                                                                }),
+                                                                ...(agent.status === 'DISABLED' && { opacity: 0.6 })
+                                                            }}
                                                         />
-                                                    </TableCell>
-                                                    <TableCell sx={{ maxWidth: 280 }}>
-                                                        <Tooltip title={agent.serviceEndpoint || agent.builtinAgentflowId || ''}>
-                                                            <Box
-                                                                sx={{
-                                                                    overflow: 'hidden',
-                                                                    textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap',
-                                                                    fontFamily: 'monospace',
-                                                                    fontSize: '0.85em'
-                                                                }}
-                                                            >
-                                                                {agent.runtimeType === 'HTTP'
-                                                                    ? agent.serviceEndpoint || '—'
-                                                                    : agent.builtinAgentflowId
-                                                                    ? `flow:${agent.builtinAgentflowId.substring(0, 8)}…`
-                                                                    : '—'}
-                                                            </Box>
-                                                        </Tooltip>
-                                                    </TableCell>
-                                                    <TableCell sx={{ maxWidth: 320 }}>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell sx={{ maxWidth: 320 }}>
                                                         {(() => {
                                                             const tools = parseAllowedTools(agent.allowedTools)
                                                             if (tools.length === 0) {
@@ -423,28 +421,41 @@ const Agents = () => {
                                                                 </Tooltip>
                                                             )
                                                         })()}
-                                                    </TableCell>
-                                                    <TableCell>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
                                                         <Switch checked={agent.enabled} onChange={() => handleToggle(agent)} size='small' />
-                                                    </TableCell>
-                                                    <TableCell align='right'>
-                                                        <Tooltip title='Open detail'>
-                                                            <IconButton size='small' onClick={() => goToDetail(agent)}>
-                                                                <IconExternalLink size={18} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title='Edit'>
-                                                            <IconButton size='small' onClick={() => edit(agent)}>
-                                                                <IconEdit size={18} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title='Delete'>
-                                                            <IconButton size='small' onClick={() => handleDelete(agent)}>
-                                                                <IconTrash size={18} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </TableCell>
-                                                </TableRow>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
+                                                        <PermissionIconButton
+                                                            permissionId={'agents:view'}
+                                                            title='Open detail'
+                                                            color='primary'
+                                                            onClick={() => goToDetail(agent)}
+                                                        >
+                                                            <IconExternalLink />
+                                                        </PermissionIconButton>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
+                                                        <PermissionIconButton
+                                                            permissionId={'agents:update'}
+                                                            title='Edit'
+                                                            color='primary'
+                                                            onClick={() => edit(agent)}
+                                                        >
+                                                            <IconEdit />
+                                                        </PermissionIconButton>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
+                                                        <PermissionIconButton
+                                                            permissionId={'agents:delete'}
+                                                            title='Delete'
+                                                            color='error'
+                                                            onClick={() => handleDelete(agent)}
+                                                        >
+                                                            <IconTrash />
+                                                        </PermissionIconButton>
+                                                    </StyledTableCell>
+                                                </StyledTableRow>
                                             ))}
                                         </TableBody>
                                     </Table>

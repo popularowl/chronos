@@ -30,7 +30,7 @@ export class MetricsAggregator {
             ? parseInt(process.env.METRICS_ROLLUP_INTERVAL_MS, 10)
             : DEFAULT_ROLLUP_INTERVAL_MS
 
-        logger.info(`📊 [MetricsAggregator] Starting with ${rollupIntervalMs}ms rollup interval`)
+        logger.info(`[MetricsAggregator] Starting with ${rollupIntervalMs}ms rollup interval`)
 
         this.intervalId = setInterval(() => {
             this.rollup()
@@ -52,7 +52,7 @@ export class MetricsAggregator {
             clearInterval(this.intervalId)
             this.intervalId = null
         }
-        logger.info('📊 [MetricsAggregator] Stopped')
+        logger.info('[MetricsAggregator] Stopped')
     }
 
     /**

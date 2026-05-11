@@ -38,7 +38,7 @@ export class AgentHealthPoller {
             ? parseInt(process.env.AGENT_HEALTH_POLL_INTERVAL_MS, 10)
             : DEFAULT_POLL_INTERVAL_MS
 
-        logger.info(`🩺 [AgentHealthPoller] Starting with ${pollIntervalMs}ms poll interval`)
+        logger.info(`[AgentHealthPoller] Starting with ${pollIntervalMs}ms poll interval`)
 
         this.intervalId = setInterval(() => {
             this.poll()
@@ -51,7 +51,7 @@ export class AgentHealthPoller {
         if (this.intervalId) {
             clearInterval(this.intervalId)
             this.intervalId = null
-            logger.info('🩺 [AgentHealthPoller] Stopped')
+            logger.info('[AgentHealthPoller] Stopped')
         }
     }
 

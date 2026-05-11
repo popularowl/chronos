@@ -1,9 +1,12 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 import DatePicker from 'react-datepicker'
 import 'react-datepicker/dist/react-datepicker.css'
+import moment from 'moment'
 
 import {
+    Alert,
     Box,
     Button,
     Chip,
@@ -17,22 +20,25 @@ import {
     Stack,
     Table,
     TableBody,
-    TableCell,
     TableContainer,
     TableHead,
-    TableRow,
     TextField,
     Tooltip,
     useTheme
 } from '@mui/material'
-import { IconDownload } from '@tabler/icons-react'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import ErrorIcon from '@mui/icons-material/Error'
+import { IconDownload, IconX } from '@tabler/icons-react'
 
 import MainCard from '@/ui-component/cards/MainCard'
 import ViewHeader from '@/layout/MainLayout/ViewHeader'
 import ErrorBoundary from '@/ErrorBoundary'
 import TablePagination, { DEFAULT_ITEMS_PER_PAGE } from '@/ui-component/pagination/TablePagination'
+import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyles'
+import AuditRowDetails from './AuditRowDetails'
 
 import auditApi from '@/api/audit'
+import mcpServersApi from '@/api/mcp-servers'
 import useApi from '@/hooks/useApi'
 import { useError } from '@/store/context/ErrorContext'
 
@@ -51,8 +57,25 @@ const AuditLog = () => {
     const customization = useSelector((state) => state.customization)
     const borderColor = theme.palette.grey[900] + 25
 
+    const [searchParams, setSearchParams] = useSearchParams()
+    // Pre-set scope from `?mcpServerId=<id>` query param. Set by the
+    // MCPServerDetail page's "View in Audit Log" / "Open in Audit Log" links so
+    // Chronos users can deep-link into a per-server view of the audit table.
+    const scopedMcpServerId = searchParams.get('mcpServerId') || ''
+    // Pre-fill the callId filter from `?callId=<id>` so the AuditRowDetails
+    // drawer's "Find related rows" jump lands with the filter already applied.
+    const initialCallId = searchParams.get('callId') || ''
+
     const fetchApi = useApi(auditApi.fetchToolInvocations)
+    const getMcpServerApi = useApi(mcpServersApi.getMCPServerById)
     const { error, setError } = useError()
+
+    // Human-readable name for the scoped MCP server. Resolved when the URL
+    // carries `?mcpServerId=<id>` so the scope banner reads "Filtered to MCP
+    // Server: <name>" instead of leaking the raw UUID. Falls back to the ID
+    // if the lookup fails (e.g. server was deleted between page open and
+    // fetch).
+    const [scopedMcpServerName, setScopedMcpServerName] = useState('')
 
     const [isLoading, setLoading] = useState(true)
     const [currentPage, setCurrentPage] = useState(1)
@@ -65,8 +88,16 @@ const AuditLog = () => {
         startDate: null,
         endDate: null,
         namespacedTool: '',
-        callId: ''
+        callId: initialCallId
     })
+
+    const [selectedRow, setSelectedRow] = useState(null)
+    const [drawerOpen, setDrawerOpen] = useState(false)
+
+    const onRowClick = (row) => {
+        setSelectedRow(row)
+        setDrawerOpen(true)
+    }
 
     const handleFilterChange = (field, value) => {
         setFilters((prev) => ({ ...prev, [field]: value }))
@@ -85,10 +116,11 @@ const AuditLog = () => {
         if (filters.success) params.success = filters.success
         if (filters.namespacedTool.trim()) params.namespacedTool = filters.namespacedTool.trim()
         if (filters.callId.trim()) params.callId = filters.callId.trim()
+        if (scopedMcpServerId) params.mcpServerId = scopedMcpServerId
 
         // Same TZ-stable date formatting as Executions: anchor the start date
         // at 00:00:00.000Z and the end date at 23:59:59.999Z so the server
-        // sees the dates the operator selected regardless of local timezone.
+        // sees the dates the user selected regardless of local timezone.
         if (filters.startDate) {
             const d = new Date(filters.startDate)
             const y = d.getFullYear()
@@ -127,6 +159,7 @@ const AuditLog = () => {
             if (filters.success) csvParams.success = filters.success
             if (filters.namespacedTool.trim()) csvParams.namespacedTool = filters.namespacedTool.trim()
             if (filters.callId.trim()) csvParams.callId = filters.callId.trim()
+            if (scopedMcpServerId) csvParams.mcpServerId = scopedMcpServerId
             if (filters.startDate) {
                 const d = new Date(filters.startDate)
                 csvParams.startDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(
@@ -158,8 +191,23 @@ const AuditLog = () => {
 
     useEffect(() => {
         applyFilters(1, DEFAULT_ITEMS_PER_PAGE)
+        if (scopedMcpServerId) {
+            getMcpServerApi.request(scopedMcpServerId)
+        } else {
+            setScopedMcpServerName('')
+        }
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, [scopedMcpServerId])
+
+    useEffect(() => {
+        if (getMcpServerApi.data?.name) setScopedMcpServerName(getMcpServerApi.data.name)
+    }, [getMcpServerApi.data])
+
+    const clearMcpServerScope = () => {
+        const next = new URLSearchParams(searchParams)
+        next.delete('mcpServerId')
+        setSearchParams(next, { replace: true })
+    }
 
     useEffect(() => {
         setLoading(fetchApi.loading)
@@ -172,13 +220,10 @@ const AuditLog = () => {
         }
     }, [fetchApi.data])
 
-    const formatTimestamp = (iso) => {
-        try {
-            return new Date(iso).toISOString().replace('T', ' ').slice(0, 19) + 'Z'
-        } catch {
-            return iso
-        }
-    }
+    // Match Agent Executions style: moment-formatted timestamps in plain text,
+    // icon-based status, no monospace overrides on identifier cells. See
+    // ui-component/table/ExecutionsListTable.jsx for the canonical pattern.
+    const formatTimestamp = (value) => moment(value).format('MMM D, YYYY h:mm A')
 
     return (
         <MainCard>
@@ -190,6 +235,30 @@ const AuditLog = () => {
                         title='Audit Log'
                         description='Persistent record of every MCP tool invocation brokered through the Chronos gateway'
                     />
+
+                    {scopedMcpServerId && (
+                        <Alert
+                            severity='info'
+                            // MUI's default Alert places the action at flex-start, which puts the
+                            // Clear chip at the top of the banner with extra space below. Centering
+                            // the root flex axis aligns the chip vertically with the message text.
+                            sx={{ alignItems: 'center', '& .MuiAlert-action': { alignItems: 'center', py: 0, mt: 0, mb: 0 } }}
+                            action={
+                                <Tooltip title='Clear MCP server scope'>
+                                    <Chip
+                                        size='small'
+                                        label='Clear'
+                                        icon={<IconX size={14} />}
+                                        onClick={clearMcpServerScope}
+                                        sx={{ cursor: 'pointer' }}
+                                    />
+                                </Tooltip>
+                            }
+                        >
+                            Filtered to MCP Server: <strong>{scopedMcpServerName || scopedMcpServerId}</strong>. The below filters and CSV
+                            export will only show entries for this specific server.
+                        </Alert>
+                    )}
 
                     {/* Filter Section */}
                     <Box sx={{ mb: 2, width: '100%' }}>
@@ -307,8 +376,11 @@ const AuditLog = () => {
 
                     {!isLoading && total > 0 && (
                         <>
-                            <TableContainer component={Paper} variant='outlined'>
-                                <Table>
+                            <TableContainer
+                                sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }}
+                                component={Paper}
+                            >
+                                <Table sx={{ minWidth: 650 }} size='small' aria-label='audit log entries'>
                                     <TableHead
                                         sx={{
                                             backgroundColor: customization.isDarkMode
@@ -317,46 +389,33 @@ const AuditLog = () => {
                                             height: 56
                                         }}
                                     >
-                                        <TableRow>
-                                            <TableCell>Timestamp (UTC)</TableCell>
-                                            <TableCell>Agent</TableCell>
-                                            <TableCell>Tool</TableCell>
-                                            <TableCell>Outcome</TableCell>
-                                            <TableCell align='right'>Duration</TableCell>
-                                            <TableCell>Call ID</TableCell>
-                                        </TableRow>
+                                        <StyledTableRow>
+                                            <StyledTableCell>Outcome</StyledTableCell>
+                                            <StyledTableCell>Timestamp</StyledTableCell>
+                                            <StyledTableCell>Agent</StyledTableCell>
+                                            <StyledTableCell>Tool</StyledTableCell>
+                                            <StyledTableCell align='right'>Duration</StyledTableCell>
+                                            <StyledTableCell>Call ID</StyledTableCell>
+                                        </StyledTableRow>
                                     </TableHead>
                                     <TableBody>
                                         {rows.map((row) => (
-                                            <TableRow key={row.id} hover>
-                                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85em' }}>
-                                                    {formatTimestamp(row.createdDate)}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <code style={{ fontSize: '0.85em' }}>{row.agentSlug}</code>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <code style={{ fontSize: '0.85em' }}>{row.namespacedTool}</code>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        size='small'
-                                                        label={row.success ? 'success' : 'failure'}
-                                                        color={row.success ? 'success' : 'error'}
-                                                    />
-                                                    {!row.success && row.errorMessage && (
-                                                        <Tooltip title={row.errorMessage}>
-                                                            <Box component='span' sx={{ ml: 1, color: 'text.secondary', cursor: 'help' }}>
-                                                                ⓘ
-                                                            </Box>
+                                            <StyledTableRow key={row.id} hover sx={{ cursor: 'pointer' }} onClick={() => onRowClick(row)}>
+                                                <StyledTableCell>
+                                                    {row.success ? (
+                                                        <Box component={CheckCircleIcon} className='labelIcon' color='success.dark' />
+                                                    ) : (
+                                                        <Tooltip title={row.errorMessage || 'tool invocation failed'}>
+                                                            <Box component={ErrorIcon} className='labelIcon' color='error.main' />
                                                         </Tooltip>
                                                     )}
-                                                </TableCell>
-                                                <TableCell align='right'>{row.durationMs}ms</TableCell>
-                                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '0.85em' }}>
-                                                    {row.callId || '—'}
-                                                </TableCell>
-                                            </TableRow>
+                                                </StyledTableCell>
+                                                <StyledTableCell>{formatTimestamp(row.createdDate)}</StyledTableCell>
+                                                <StyledTableCell>{row.agentSlug}</StyledTableCell>
+                                                <StyledTableCell>{row.namespacedTool}</StyledTableCell>
+                                                <StyledTableCell align='right'>{row.durationMs}ms</StyledTableCell>
+                                                <StyledTableCell>{row.callId || '—'}</StyledTableCell>
+                                            </StyledTableRow>
                                         ))}
                                     </TableBody>
                                 </Table>
@@ -372,6 +431,7 @@ const AuditLog = () => {
                     )}
                 </Stack>
             )}
+            <AuditRowDetails open={drawerOpen} row={selectedRow} onClose={() => setDrawerOpen(false)} />
         </MainCard>
     )
 }

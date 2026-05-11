@@ -103,11 +103,11 @@ export class App {
         // Initialize database
         try {
             await this.AppDataSource.initialize()
-            logger.info('📦 [server]: Data Source initialized successfully')
+            logger.info('[server]: Data Source initialized successfully')
 
             // Run Migrations Scripts
             await this.AppDataSource.runMigrations({ transaction: 'each' })
-            logger.info('🔄 [server]: Database migrations completed successfully')
+            logger.info('[server]: Database migrations completed successfully')
 
             // Initialize initial user from environment variables (first run only)
             await initializeInitialUser()
@@ -117,41 +117,41 @@ export class App {
 
             // Initialize Identity Manager
             this.identityManager = await SimpleIdentityManager.getInstance()
-            logger.info('🔐 [server]: User Manager initialized successfully')
+            logger.info('[server]: User Manager initialized successfully')
 
             // Initialize nodes pool
             this.nodesPool = new NodesPool()
             await this.nodesPool.initialize()
-            logger.info('🔧 [server]: Nodes pool initialized successfully')
+            logger.info('[server]: Nodes pool initialized successfully')
 
             // Initialize abort controllers pool
             this.abortControllerPool = new AbortControllerPool()
-            logger.info('⏹️  [server]: Abort controllers pool initialized successfully')
+            logger.info('[server]: Abort controllers pool initialized successfully')
 
             // Initialize encryption key
             await getEncryptionKey()
-            logger.info('🔑 [server]: Encryption key initialized successfully')
+            logger.info('[server]: Encryption key initialized successfully')
 
             // Initialize Rate Limit
             this.rateLimiterManager = RateLimiterManager.getInstance()
             await this.rateLimiterManager.initializeRateLimiters(await getDataSource().getRepository(AgentFlow).find())
-            logger.info('🚦 [server]: Rate limiters initialized successfully')
+            logger.info('[server]: Rate limiters initialized successfully')
 
             // Initialize cache pool
             this.cachePool = new CachePool()
-            logger.info('💾 [server]: Cache pool initialized successfully')
+            logger.info('[server]: Cache pool initialized successfully')
 
             // Initialize usage cache manager
             this.usageCacheManager = await UsageCacheManager.getInstance()
-            logger.info('📊 [server]: Usage cache manager initialized successfully')
+            logger.info('[server]: Usage cache manager initialized successfully')
 
             // Initialize telemetry
             this.telemetry = new Telemetry()
-            logger.info('📈 [server]: Telemetry initialized successfully')
+            logger.info('[server]: Telemetry initialized successfully')
 
             // Initialize SSE Streamer
             this.sseStreamer = new SSEStreamer()
-            logger.info('🌊 [server]: SSE Streamer initialized successfully')
+            logger.info('[server]: SSE Streamer initialized successfully')
 
             // Init Queues
             if (process.env.MODE === MODE.QUEUE) {
@@ -167,7 +167,7 @@ export class App {
                     usageCacheManager: this.usageCacheManager,
                     serverAdapter
                 })
-                logger.info('✅ [Queue]: All queues setup successfully')
+                logger.info('[Queue]: All queues setup successfully')
 
                 // Create inline workers so a single container can both enqueue and process jobs.
                 // Safe alongside external workers — BullMQ distributes jobs via Redis locks.
@@ -179,7 +179,7 @@ export class App {
                         const scheduleQueue = this.queueManager.getQueue('schedule') as ScheduleQueue
                         const enabledSchedules = await this.AppDataSource.getRepository(Schedule).find({ where: { enabled: true } })
                         await scheduleQueue.syncRepeatableJobs(enabledSchedules)
-                        logger.info(`📅 [Queue]: Synced ${enabledSchedules.length} schedule(s)`)
+                        logger.info(`[Queue]: Synced ${enabledSchedules.length} schedule(s)`)
                     } catch (error) {
                         logger.error('❌ [Queue]: Failed to sync schedule jobs:', error)
                     }
@@ -187,7 +187,7 @@ export class App {
 
                 this.redisSubscriber = new RedisEventSubscriber(this.sseStreamer)
                 await this.redisSubscriber.connect()
-                logger.info('🔗 [server]: Redis event subscriber connected successfully')
+                logger.info('[server]: Redis event subscriber connected successfully')
             }
 
             // DB polling scheduler — used when ENABLE_SCHEDULES=true without MODE=queue (no Redis)
@@ -239,7 +239,7 @@ export class App {
                 this.metricsAggregator.start()
             }
 
-            logger.info('🎉 [server]: All initialization steps completed successfully!')
+            logger.info('[server]: All initialization steps completed successfully!')
         } catch (error) {
             logger.error('❌ [server]: Error during Data Source initialization:', error)
         }
@@ -351,7 +351,7 @@ export class App {
             }
             if (this.metricsProvider) {
                 await this.metricsProvider.initializeCounters()
-                logger.info(`📊 [server]: Metrics Provider [${this.metricsProvider.getName()}] has been initialized!`)
+                logger.info(`[server]: Metrics Provider [${this.metricsProvider.getName()}] has been initialized!`)
             } else {
                 logger.error(
                     "❌ [server]: Metrics collection is enabled, but failed to initialize provider (valid values are 'prometheus' or 'open_telemetry'."
@@ -426,7 +426,7 @@ export class App {
             }
             await Promise.all(removePromises)
         } catch (e) {
-            logger.error(`❌[server]: Chronos Server shut down error: ${e}`)
+            logger.error(`❌ [server]: Chronos Server shut down error: ${e}`)
         }
     }
 }
@@ -446,7 +446,7 @@ export async function start(): Promise<void> {
     await serverApp.config()
 
     serverApp.httpServer.listen(port, host, () => {
-        logger.info(`⚡️ [server]: Chronos Server is listening at ${host ? 'http://' + host : ''}:${port}`)
+        logger.info(`[server]: Chronos Server is listening at ${host ? 'http://' + host : ''}:${port}`)
     })
 }
 

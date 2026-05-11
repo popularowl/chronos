@@ -349,7 +349,7 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                 showError('Server returned no tools', false)
             } else {
                 // Merge into the active selection so chips render immediately.
-                // Operators deselect with the chip's X. Manual entries that
+                // Chronos users deselect with the chip's X. Manual entries that
                 // came before Discover are preserved.
                 const previous = allowedTools
                 const merged = mergeUnique(previous, tools)

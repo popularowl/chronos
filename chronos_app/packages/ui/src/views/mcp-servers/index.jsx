@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 
 import {
@@ -6,28 +7,26 @@ import {
     Button,
     ButtonGroup,
     Chip,
-    IconButton,
     Paper,
     Skeleton,
     Stack,
     Switch,
     Table,
     TableBody,
-    TableCell,
     TableContainer,
     TableHead,
-    TableRow,
     TableSortLabel,
     Tooltip,
     useTheme
 } from '@mui/material'
-import { IconEdit, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
+import { IconEdit, IconExternalLink, IconPlug, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
 
 import MainCard from '@/ui-component/cards/MainCard'
 import ViewHeader from '@/layout/MainLayout/ViewHeader'
 import ErrorBoundary from '@/ErrorBoundary'
-import { StyledPermissionButton } from '@/ui-component/button/RBACButtons'
+import { PermissionIconButton, StyledPermissionButton } from '@/ui-component/button/RBACButtons'
 import TablePagination, { DEFAULT_ITEMS_PER_PAGE } from '@/ui-component/pagination/TablePagination'
+import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyles'
 import ConfirmDialog from '@/ui-component/dialog/ConfirmDialog'
 
 import MCPServerDialog from './MCPServerDialog'
@@ -61,6 +60,7 @@ const TRANSPORT_LABEL = {
  */
 const MCPServers = () => {
     const theme = useTheme()
+    const navigate = useNavigate()
     const customization = useSelector((state) => state.customization)
     const dispatch = useDispatch()
 
@@ -256,8 +256,11 @@ const MCPServers = () => {
                         )}
                         {!isLoading && total > 0 && (
                             <>
-                                <TableContainer component={Paper} variant='outlined'>
-                                    <Table>
+                                <TableContainer
+                                    sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }}
+                                    component={Paper}
+                                >
+                                    <Table sx={{ minWidth: 650 }} aria-label='mcp servers table'>
                                         <TableHead
                                             sx={{
                                                 backgroundColor: customization.isDarkMode
@@ -266,8 +269,8 @@ const MCPServers = () => {
                                                 height: 56
                                             }}
                                         >
-                                            <TableRow>
-                                                <TableCell>
+                                            <StyledTableRow>
+                                                <StyledTableCell>
                                                     <TableSortLabel
                                                         active={orderBy === 'name'}
                                                         direction={order}
@@ -275,8 +278,8 @@ const MCPServers = () => {
                                                     >
                                                         Name
                                                     </TableSortLabel>
-                                                </TableCell>
-                                                <TableCell>
+                                                </StyledTableCell>
+                                                <StyledTableCell>
                                                     <TableSortLabel
                                                         active={orderBy === 'slug'}
                                                         direction={order}
@@ -284,71 +287,126 @@ const MCPServers = () => {
                                                     >
                                                         Slug
                                                     </TableSortLabel>
-                                                </TableCell>
-                                                <TableCell>Transport</TableCell>
-                                                <TableCell>Status</TableCell>
-                                                <TableCell>URL</TableCell>
-                                                <TableCell>Enabled</TableCell>
-                                                <TableCell align='right'>Actions</TableCell>
-                                            </TableRow>
+                                                </StyledTableCell>
+                                                <StyledTableCell>Transport</StyledTableCell>
+                                                <StyledTableCell>Status</StyledTableCell>
+                                                <StyledTableCell>URL</StyledTableCell>
+                                                <StyledTableCell>Enabled</StyledTableCell>
+                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
+                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
+                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
+                                            </StyledTableRow>
                                         </TableHead>
                                         <TableBody>
                                             {rows.map((server) => (
-                                                <TableRow key={server.id} hover>
-                                                    <TableCell>{server.name}</TableCell>
-                                                    <TableCell>
-                                                        <code style={{ fontSize: '0.85em' }}>{server.slug}</code>
-                                                    </TableCell>
-                                                    <TableCell>
+                                                <StyledTableRow key={server.id} hover>
+                                                    <StyledTableCell scope='row'>
+                                                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+                                                            <Box
+                                                                sx={{
+                                                                    width: 35,
+                                                                    height: 35,
+                                                                    borderRadius: '50%',
+                                                                    backgroundColor: customization.isDarkMode
+                                                                        ? theme.palette.common.white
+                                                                        : theme.palette.grey[300] + 75,
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center'
+                                                                }}
+                                                            >
+                                                                <IconPlug size={20} color={theme.palette.grey[700]} />
+                                                            </Box>
+                                                            <Box
+                                                                component='span'
+                                                                sx={{
+                                                                    cursor: 'pointer',
+                                                                    color: theme.palette.primary.main,
+                                                                    '&:hover': { textDecoration: 'underline' }
+                                                                }}
+                                                                onClick={() => navigate(`/mcp-servers/${server.id}`)}
+                                                            >
+                                                                {server.name}
+                                                            </Box>
+                                                        </Box>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>{server.slug}</StyledTableCell>
+                                                    <StyledTableCell>
                                                         <Chip
                                                             size='small'
                                                             label={TRANSPORT_LABEL[server.transport] || server.transport}
                                                             variant='outlined'
                                                         />
-                                                    </TableCell>
-                                                    <TableCell>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
                                                         <Chip
                                                             size='small'
-                                                            label={server.status}
-                                                            color={STATUS_CHIP_COLOR[server.status] || 'default'}
-                                                            sx={server.status === 'DISABLED' ? { opacity: 0.6 } : undefined}
+                                                            label={(server.status || '').toLowerCase()}
+                                                            color={
+                                                                server.status === 'HEALTHY'
+                                                                    ? undefined
+                                                                    : STATUS_CHIP_COLOR[server.status] || 'default'
+                                                            }
+                                                            sx={{
+                                                                ...(server.status === 'HEALTHY' && {
+                                                                    backgroundColor: theme.palette.success.dark,
+                                                                    color: theme.palette.common.white
+                                                                }),
+                                                                ...(server.status === 'DISABLED' && { opacity: 0.6 })
+                                                            }}
                                                         />
-                                                    </TableCell>
-                                                    <TableCell sx={{ maxWidth: 280 }}>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell sx={{ maxWidth: 280 }}>
                                                         <Tooltip title={server.url || ''}>
                                                             <Box
                                                                 sx={{
                                                                     overflow: 'hidden',
                                                                     textOverflow: 'ellipsis',
-                                                                    whiteSpace: 'nowrap',
-                                                                    fontFamily: 'monospace',
-                                                                    fontSize: '0.85em'
+                                                                    whiteSpace: 'nowrap'
                                                                 }}
                                                             >
                                                                 {server.url || '—'}
                                                             </Box>
                                                         </Tooltip>
-                                                    </TableCell>
-                                                    <TableCell>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
                                                         <Switch
                                                             checked={server.enabled}
                                                             onChange={() => handleToggle(server)}
                                                             size='small'
                                                         />
-                                                    </TableCell>
-                                                    <TableCell align='right'>
-                                                        <Tooltip title='Edit'>
-                                                            <IconButton size='small' onClick={() => edit(server)}>
-                                                                <IconEdit size={18} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                        <Tooltip title='Delete'>
-                                                            <IconButton size='small' onClick={() => handleDelete(server)}>
-                                                                <IconTrash size={18} />
-                                                            </IconButton>
-                                                        </Tooltip>
-                                                    </TableCell>
-                                                </TableRow>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
+                                                        <PermissionIconButton
+                                                            permissionId={'mcp-servers:view'}
+                                                            title='Open detail'
+                                                            color='primary'
+                                                            onClick={() => navigate(`/mcp-servers/${server.id}`)}
+                                                        >
+                                                            <IconExternalLink />
+                                                        </PermissionIconButton>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
+                                                        <PermissionIconButton
+                                                            permissionId={'mcp-servers:update'}
+                                                            title='Edit'
+                                                            color='primary'
+                                                            onClick={() => edit(server)}
+                                                        >
+                                                            <IconEdit />
+                                                        </PermissionIconButton>
+                                                    </StyledTableCell>
+                                                    <StyledTableCell>
+                                                        <PermissionIconButton
+                                                            permissionId={'mcp-servers:delete'}
+                                                            title='Delete'
+                                                            color='error'
+                                                            onClick={() => handleDelete(server)}
+                                                        >
+                                                            <IconTrash />
+                                                        </PermissionIconButton>
+                                                    </StyledTableCell>
+                                                </StyledTableRow>
                                             ))}
                                         </TableBody>
                                     </Table>
