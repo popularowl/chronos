@@ -45,7 +45,7 @@ export class MCPServerHealthPoller {
             ? parseInt(process.env.MCP_SERVER_HEALTH_POLL_INTERVAL_MS, 10)
             : DEFAULT_POLL_INTERVAL_MS
 
-        logger.info(`🩺 [MCPServerHealthPoller] Starting with ${pollIntervalMs}ms poll interval`)
+        logger.info(`[MCPServerHealthPoller] Starting with ${pollIntervalMs}ms poll interval`)
 
         this.intervalId = setInterval(() => {
             this.poll()
@@ -58,7 +58,7 @@ export class MCPServerHealthPoller {
         if (this.intervalId) {
             clearInterval(this.intervalId)
             this.intervalId = null
-            logger.info('🩺 [MCPServerHealthPoller] Stopped')
+            logger.info('[MCPServerHealthPoller] Stopped')
         }
     }
 

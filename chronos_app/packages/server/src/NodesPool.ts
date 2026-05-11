@@ -100,7 +100,7 @@ export class NodesPool {
         const nodesConfig = loadNodesConfig()
         if (nodesConfig) {
             const categoryCount = Object.keys(nodesConfig).length
-            logger.info(`🔧 [server]: Nodes allowlist active — ${categoryCount} categories enabled`)
+            logger.info(`[server]: Nodes allowlist active — ${categoryCount} categories enabled`)
         }
         const packagePath = getNodeModulesPackagePath('chronos-components')
         const nodesPath = path.join(packagePath, 'dist', 'nodes')

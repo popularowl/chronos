@@ -27,7 +27,7 @@ export const bootstrapAdminOAuthClient = async (): Promise<void> => {
     try {
         const client = await oauthClientService.createBootstrapClient(clientId, clientSecret, scopes)
         if (client) {
-            logger.info(`🔑 [server]: Admin OAuth client [${clientId}] is ready`)
+            logger.info(`[server]: Admin OAuth client [${clientId}] is ready`)
         }
     } catch (error) {
         logger.error(`❌ [server]: Failed to bootstrap admin OAuth client: ${error}`)
