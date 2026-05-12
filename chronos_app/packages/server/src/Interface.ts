@@ -331,6 +331,14 @@ export interface IMCPServer {
     allowedTools?: string
     requestHeaders?: string
     timeoutMs?: number
+    /**
+     * JSON-stringified `{ retry?, rateLimit?, circuitBreaker? }` policy bag,
+     * applied by the MCP gateway on each `tools/call`. Each top-level key
+     * is optional; absent keys fall back to platform defaults resolved at
+     * the service layer from `MCP_DEFAULT_RETRY_MAX_ATTEMPTS` /
+     * `MCP_DEFAULT_RATE_LIMIT_RPS`. v1.8.0 Group A.
+     */
+    policies?: string
     status: MCPServerStatus
     enabled: boolean
     lastHealthCheckAt?: Date
@@ -338,6 +346,52 @@ export interface IMCPServer {
     userId?: string
     createdDate: Date
     updatedDate: Date
+}
+
+/**
+ * Reliability-policy verdict carried on each `tool_invocation_audit` row.
+ * Set by the policy chain (`services/mcp-gateway/policy.ts`) before the audit
+ * row is written. v1.8.0 Group A.
+ */
+export enum PolicyOutcome {
+    /** Call ran without any policy intervention. */
+    PASSED = 'PASSED',
+    /** Rate-limit gate rejected the call before it ran. */
+    RATE_LIMITED = 'RATE_LIMITED',
+    /** Retry policy fired at least once before the call resolved. */
+    RETRIED = 'RETRIED',
+    /** Circuit-breaker rejected the call. */
+    CIRCUIT_OPEN = 'CIRCUIT_OPEN'
+}
+
+/**
+ * Discriminator for `mcp_server_change_log.changeKind`. v1.8.0 Group A.
+ */
+export enum MCPServerChangeKind {
+    CREATED = 'CREATED',
+    UPDATED = 'UPDATED',
+    DELETED = 'DELETED',
+    ENABLED = 'ENABLED',
+    DISABLED = 'DISABLED'
+}
+
+/**
+ * Persisted entry on the `mcp_server_change_log` table. One row per MCP
+ * server mutation, attributed to the Chronos user who made the change.
+ * `userEmail` is snapshotted at change time — the user row may be deleted
+ * later but the log entry remains correct.
+ */
+export interface IMCPServerChangeLog {
+    id: string
+    mcpServerId: string
+    userId: string | null
+    userEmail: string | null
+    changeKind: MCPServerChangeKind
+    /** JSON-stringified diff `{ field: { before, after } }` — secrets redacted. */
+    changedFields: string | null
+    /** Human-readable one-liner, e.g. `Updated retry policy: 3 → 5 attempts`. */
+    changeSummary: string
+    createdDate: Date
 }
 
 export interface IComponentNodes {

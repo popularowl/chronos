@@ -3,7 +3,8 @@ import { MCPServer } from '../../database/entities/MCPServer'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
-import { MCPServerStatus, MCPServerTransport } from '../../Interface'
+import { MCPServerChangeKind, MCPServerStatus, MCPServerTransport } from '../../Interface'
+import mcpServerChangeLogService, { snapshotMCPServer } from '../mcp-server-change-log'
 
 const DEFAULT_MCP_TIMEOUT_MS = 30000
 
@@ -144,6 +145,7 @@ const createMCPServer = async (requestBody: any): Promise<MCPServer> => {
         newServer.outboundAuth = stringifyJsonField(requestBody.outboundAuth)
         newServer.allowedTools = stringifyJsonField(requestBody.allowedTools)
         newServer.requestHeaders = stringifyJsonField(requestBody.requestHeaders)
+        newServer.policies = stringifyJsonField(requestBody.policies)
         newServer.timeoutMs = requestBody.timeoutMs ?? DEFAULT_MCP_TIMEOUT_MS
         newServer.status = MCPServerStatus.UNKNOWN
         newServer.enabled = requestBody.enabled !== false
@@ -151,6 +153,14 @@ const createMCPServer = async (requestBody: any): Promise<MCPServer> => {
 
         const saved = appServer.AppDataSource.getRepository(MCPServer).create(newServer)
         const persisted = await appServer.AppDataSource.getRepository(MCPServer).save(saved)
+        // Best-effort change-log write — runs after persist so the diff
+        // reflects what's actually on the row. Failures never break the
+        // create path (see service contract).
+        void mcpServerChangeLogService.recordCreate({
+            mcpServerId: persisted.id,
+            snapshot: snapshotMCPServer(persisted as unknown as Record<string, unknown>),
+            actor: { userId: requestBody.userId ?? null, userEmail: requestBody.userEmail ?? null }
+        })
         // A new MCP server can change the catalog for any registered agent
         // whose `allowedTools` references this slug. Broadcast — re-fetching
         // `tools/list` is cheap and the affected-agent set is unbounded.
@@ -174,6 +184,9 @@ const updateMCPServer = async (id: string, body: any): Promise<MCPServer> => {
         if (!server) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `MCP server ${id} not found`)
         }
+
+        // Snapshot before any mutations so the diff captures every change.
+        const beforeSnapshot = snapshotMCPServer(server as unknown as Record<string, unknown>)
 
         if (body.transport && body.transport !== server.transport) {
             const transport = body.transport as MCPServerTransport
@@ -201,12 +214,18 @@ const updateMCPServer = async (id: string, body: any): Promise<MCPServer> => {
             if (body[key] !== undefined) (server as any)[key] = body[key]
         }
 
-        const jsonFields: Array<keyof MCPServer> = ['command', 'outboundAuth', 'allowedTools', 'requestHeaders']
+        const jsonFields: Array<keyof MCPServer> = ['command', 'outboundAuth', 'allowedTools', 'requestHeaders', 'policies']
         for (const key of jsonFields) {
             if (body[key] !== undefined) (server as any)[key] = stringifyJsonField(body[key])
         }
 
         const saved = await repo.save(server)
+        void mcpServerChangeLogService.recordUpdate({
+            mcpServerId: saved.id,
+            before: beforeSnapshot,
+            after: snapshotMCPServer(saved as unknown as Record<string, unknown>),
+            actor: { userId: body.userId ?? null, userEmail: body.userEmail ?? null }
+        })
         appServer.mcpCatalogChangeEmitter?.emitGlobal()
         return saved
     } catch (error) {
@@ -218,7 +237,7 @@ const updateMCPServer = async (id: string, body: any): Promise<MCPServer> => {
     }
 }
 
-const deleteMCPServer = async (id: string): Promise<any> => {
+const deleteMCPServer = async (id: string, actor: { userId?: string; userEmail?: string } = {}): Promise<any> => {
     try {
         assertMCPServersEnabled()
         const appServer = getRunningExpressApp()
@@ -226,7 +245,13 @@ const deleteMCPServer = async (id: string): Promise<any> => {
         if (!server) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `MCP server ${id} not found`)
         }
+        const snapshot = snapshotMCPServer(server as unknown as Record<string, unknown>)
         const result = await appServer.AppDataSource.getRepository(MCPServer).delete({ id })
+        void mcpServerChangeLogService.recordDelete({
+            mcpServerId: id,
+            snapshot,
+            actor: { userId: actor.userId ?? null, userEmail: actor.userEmail ?? null }
+        })
         appServer.mcpCatalogChangeEmitter?.emitGlobal()
         return result
     } catch (error) {
@@ -295,7 +320,7 @@ const getMCPServerBySlug = async (slug: string): Promise<MCPServer | null> => {
     }
 }
 
-const toggleMCPServer = async (id: string, enabled: boolean): Promise<MCPServer> => {
+const toggleMCPServer = async (id: string, enabled: boolean, actor: { userId?: string; userEmail?: string } = {}): Promise<MCPServer> => {
     try {
         assertMCPServersEnabled()
         const appServer = getRunningExpressApp()
@@ -304,10 +329,21 @@ const toggleMCPServer = async (id: string, enabled: boolean): Promise<MCPServer>
         if (!server) {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `MCP server ${id} not found`)
         }
+        const beforeSnapshot = snapshotMCPServer(server as unknown as Record<string, unknown>)
+        const wasEnabled = server.enabled
         server.enabled = enabled
         if (!enabled) server.status = MCPServerStatus.DISABLED
         else if (server.status === MCPServerStatus.DISABLED) server.status = MCPServerStatus.UNKNOWN
         const saved = await repo.save(server)
+        if (wasEnabled !== enabled) {
+            void mcpServerChangeLogService.recordUpdate({
+                mcpServerId: saved.id,
+                before: beforeSnapshot,
+                after: snapshotMCPServer(saved as unknown as Record<string, unknown>),
+                actor: { userId: actor.userId ?? null, userEmail: actor.userEmail ?? null },
+                kindOverride: enabled ? MCPServerChangeKind.ENABLED : MCPServerChangeKind.DISABLED
+            })
+        }
         appServer.mcpCatalogChangeEmitter?.emitGlobal()
         return saved
     } catch (error) {

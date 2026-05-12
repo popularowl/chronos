@@ -4,6 +4,7 @@ import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 import { createModuleLogger } from '../../utils/logger'
+import { PolicyOutcome } from '../../Interface'
 
 const logger = createModuleLogger('audit')
 import { StatusCodes } from 'http-status-codes'
@@ -33,6 +34,12 @@ export interface ToolInvocationAuditInput {
     errorMessage: string | null
     callId: string | null
     userId: string | null
+    /**
+     * Reliability-policy verdict for this call. Null on pre-v1.8 callsites
+     * that haven't been routed through the policy chain yet; one of
+     * `PolicyOutcome` for v1.8+ callsites. v1.8.0 Group A.
+     */
+    policyOutcome?: PolicyOutcome | null
 }
 
 /**
@@ -47,6 +54,8 @@ export interface ToolInvocationAuditFilters {
     success?: boolean
     callId?: string
     userId?: string
+    /** Filter by reliability-policy verdict. v1.8.0 Group A. */
+    policyOutcome?: PolicyOutcome
     /** Inclusive lower bound on `createdDate`; ISO 8601. */
     startDate?: string
     /** Inclusive upper bound on `createdDate`; ISO 8601. */
@@ -84,6 +93,7 @@ const buildFilteredQuery = (filters: ToolInvocationAuditFilters) => {
     if (typeof filters.success === 'boolean') qb.andWhere('audit.success = :success', { success: filters.success })
     if (filters.callId) qb.andWhere('audit.callId = :callId', { callId: filters.callId })
     if (filters.userId) qb.andWhere('audit.userId = :userId', { userId: filters.userId })
+    if (filters.policyOutcome) qb.andWhere('audit.policyOutcome = :policyOutcome', { policyOutcome: filters.policyOutcome })
 
     if (filters.startDate) {
         const startDate = new Date(filters.startDate)
@@ -146,6 +156,7 @@ const exportToolInvocationsCsv = async (filters: ToolInvocationAuditFilters = {}
         'errorMessage',
         'callId',
         'userId',
+        'policyOutcome',
         'createdDate'
     ] as const
 

@@ -50,6 +50,9 @@ export class MCPServer implements IMCPServer {
     @Column({ nullable: true, type: 'int' })
     timeoutMs?: number
 
+    @Column({ nullable: true, type: 'text' })
+    policies?: string
+
     @Column({ type: 'varchar', length: 20, default: MCPServerStatus.UNKNOWN })
     status: MCPServerStatus
 

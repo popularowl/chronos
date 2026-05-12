@@ -36,11 +36,13 @@ import ErrorBoundary from '@/ErrorBoundary'
 import TablePagination, { DEFAULT_ITEMS_PER_PAGE } from '@/ui-component/pagination/TablePagination'
 import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyles'
 import AuditRowDetails from './AuditRowDetails'
+import { PolicyOutcomeCell } from './PolicyOutcome'
 
 import auditApi from '@/api/audit'
 import mcpServersApi from '@/api/mcp-servers'
 import useApi from '@/hooks/useApi'
 import { useError } from '@/store/context/ErrorContext'
+import execution_empty from '@/assets/images/executions_empty.svg'
 
 /**
  * v1.7 § 3c — Audit Log viewer.
@@ -85,6 +87,7 @@ const AuditLog = () => {
 
     const [filters, setFilters] = useState({
         success: '',
+        policyOutcome: '',
         startDate: null,
         endDate: null,
         namespacedTool: '',
@@ -114,6 +117,7 @@ const AuditLog = () => {
 
         const params = { page: pageNum, limit: limitNum }
         if (filters.success) params.success = filters.success
+        if (filters.policyOutcome) params.policyOutcome = filters.policyOutcome
         if (filters.namespacedTool.trim()) params.namespacedTool = filters.namespacedTool.trim()
         if (filters.callId.trim()) params.callId = filters.callId.trim()
         if (scopedMcpServerId) params.mcpServerId = scopedMcpServerId
@@ -140,7 +144,7 @@ const AuditLog = () => {
     }
 
     const resetFilters = () => {
-        setFilters({ success: '', startDate: null, endDate: null, namespacedTool: '', callId: '' })
+        setFilters({ success: '', policyOutcome: '', startDate: null, endDate: null, namespacedTool: '', callId: '' })
         setCurrentPage(1)
         // Re-fetch with cleared filters at next tick — applyFilters reads from
         // current state so we wait one render before triggering it.
@@ -157,6 +161,7 @@ const AuditLog = () => {
         try {
             const csvParams = {}
             if (filters.success) csvParams.success = filters.success
+            if (filters.policyOutcome) csvParams.policyOutcome = filters.policyOutcome
             if (filters.namespacedTool.trim()) csvParams.namespacedTool = filters.namespacedTool.trim()
             if (filters.callId.trim()) csvParams.callId = filters.callId.trim()
             if (scopedMcpServerId) csvParams.mcpServerId = scopedMcpServerId
@@ -233,7 +238,7 @@ const AuditLog = () => {
                 <Stack flexDirection='column' sx={{ gap: 3 }}>
                     <ViewHeader
                         title='Audit Log'
-                        description='Persistent record of every MCP tool invocation brokered through the Chronos gateway'
+                        description='Audit logs all MCP tool invocations in Intelligex Chronos gateway'
                     />
 
                     {scopedMcpServerId && (
@@ -260,7 +265,11 @@ const AuditLog = () => {
                         </Alert>
                     )}
 
-                    {/* Filter Section */}
+                    {/* Filter Section — six filter inputs in one Grid row, action
+                        buttons in a Stack below. Adding the Policy filter pushed the
+                        original 6-item single-row layout past 12 columns of grid; the
+                        cleanest fix was lifting the action buttons out of the Grid
+                        rather than compressing date pickers. */}
                     <Box sx={{ mb: 2, width: '100%' }}>
                         <Grid container spacing={2} alignItems='center'>
                             <Grid item xs={12} md={2}>
@@ -280,6 +289,28 @@ const AuditLog = () => {
                                         <MenuItem value=''>All</MenuItem>
                                         <MenuItem value='true'>Success</MenuItem>
                                         <MenuItem value='false'>Failure</MenuItem>
+                                    </Select>
+                                </FormControl>
+                            </Grid>
+                            <Grid item xs={12} md={2}>
+                                <FormControl fullWidth size='small'>
+                                    <InputLabel id='policy-select-label'>Policy</InputLabel>
+                                    <Select
+                                        labelId='policy-select-label'
+                                        value={filters.policyOutcome}
+                                        label='Policy'
+                                        onChange={(e) => handleFilterChange('policyOutcome', e.target.value)}
+                                        size='small'
+                                        sx={{
+                                            '& .MuiOutlinedInput-notchedOutline': { borderColor: borderColor },
+                                            '& .MuiSvgIcon-root': { color: customization.isDarkMode ? '#fff' : 'inherit' }
+                                        }}
+                                    >
+                                        <MenuItem value=''>All</MenuItem>
+                                        <MenuItem value='PASSED'>Passed</MenuItem>
+                                        <MenuItem value='RETRIED'>Retried</MenuItem>
+                                        <MenuItem value='RATE_LIMITED'>Rate-limited</MenuItem>
+                                        <MenuItem value='CIRCUIT_OPEN'>Circuit-open</MenuItem>
                                     </Select>
                                 </FormControl>
                             </Grid>
@@ -335,16 +366,6 @@ const AuditLog = () => {
                                     sx={{ '& .MuiOutlinedInput-notchedOutline': { borderColor: borderColor } }}
                                 />
                             </Grid>
-                            <Grid sx={{ ml: -1 }} item xs={12} md={2}>
-                                <TextField
-                                    fullWidth
-                                    label='Call ID'
-                                    value={filters.callId}
-                                    onChange={(e) => handleFilterChange('callId', e.target.value)}
-                                    size='small'
-                                    sx={{ '& .MuiOutlinedInput-notchedOutline': { borderColor: borderColor } }}
-                                />
-                            </Grid>
                             <Grid item xs={12} md={2}>
                                 <Stack direction='row' spacing={1}>
                                     <Button variant='contained' color='primary' size='small' onClick={() => applyFilters(1, pageLimit)}>
@@ -366,6 +387,10 @@ const AuditLog = () => {
                                 </Stack>
                             </Grid>
                         </Grid>
+                        {/* Call ID isn't a row-level filter input — the ?callId=
+                            deep-link from AuditRowDetails still seeds filters.callId
+                            and is sent to the backend, but Chronos users navigate
+                            related-by-callId via the drawer chip rather than typing it. */}
                     </Box>
 
                     {isLoading && (
@@ -391,6 +416,7 @@ const AuditLog = () => {
                                     >
                                         <StyledTableRow>
                                             <StyledTableCell>Outcome</StyledTableCell>
+                                            <StyledTableCell>Policy</StyledTableCell>
                                             <StyledTableCell>Timestamp</StyledTableCell>
                                             <StyledTableCell>Agent</StyledTableCell>
                                             <StyledTableCell>Tool</StyledTableCell>
@@ -410,6 +436,9 @@ const AuditLog = () => {
                                                         </Tooltip>
                                                     )}
                                                 </StyledTableCell>
+                                                <StyledTableCell>
+                                                    <PolicyOutcomeCell value={row.policyOutcome} />
+                                                </StyledTableCell>
                                                 <StyledTableCell>{formatTimestamp(row.createdDate)}</StyledTableCell>
                                                 <StyledTableCell>{row.agentSlug}</StyledTableCell>
                                                 <StyledTableCell>{row.namespacedTool}</StyledTableCell>
@@ -425,8 +454,15 @@ const AuditLog = () => {
                     )}
 
                     {!isLoading && total === 0 && (
-                        <Stack sx={{ alignItems: 'center', justifyContent: 'center', py: 6 }}>
-                            <Box sx={{ color: 'text.secondary' }}>No tool invocations match the current filters.</Box>
+                        <Stack sx={{ alignItems: 'center', justifyContent: 'center' }} flexDirection='column'>
+                            <Box sx={{ p: 2, height: 'auto' }}>
+                                <img
+                                    style={{ objectFit: 'cover', height: '20vh', width: 'auto' }}
+                                    src={execution_empty}
+                                    alt='audit_log_empty'
+                                />
+                            </Box>
+                            <div>No Audit Logs Yet</div>
                         </Stack>
                     )}
                 </Stack>

@@ -34,10 +34,8 @@ const ErrorBoundary = ({ error }) => {
                         </pre>
                     </Box>
                 </Card>
-                <Typography variant='body1' sx={{ fontSize: '1.1rem', textAlign: 'center', lineHeight: '1.5' }}>
-                    Please retry after some time. If the issue persists, reach out to us on our Discord server.
-                    <br />
-                    Alternatively, you can raise an issue on Github.
+                <Typography variant='body1' sx={{ fontSize: '1.0rem', textAlign: 'center', lineHeight: '1.5' }}>
+                    Please try again. If the issue persists, raise an issue on <a href="https://github.com/intelligexhq/chronos" target='_blank'>our Github site</a>.
                 </Typography>
             </Stack>
         </Box>

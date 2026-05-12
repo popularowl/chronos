@@ -6,7 +6,7 @@ import { DataSource } from 'typeorm'
 import { StatusCodes } from 'http-status-codes'
 import { Agent } from '../../database/entities/Agent'
 import { MCPServer } from '../../database/entities/MCPServer'
-import { MCPServerStatus, MCPServerTransport } from '../../Interface'
+import { MCPServerStatus, MCPServerTransport, PolicyOutcome } from '../../Interface'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import { getErrorMessage } from '../../errors/utils'
 import { createModuleLogger } from '../../utils/logger'
@@ -14,6 +14,7 @@ import { createModuleLogger } from '../../utils/logger'
 const logger = createModuleLogger('MCPGateway')
 import auditService from '../audit'
 import httpAgentRuntime from '../agent-runtime-http'
+import { PolicyState, resolvePolicies, runWithPolicy } from './policy'
 
 const DEFAULT_IDLE_TIMEOUT_MS = 300000
 const REAPER_INTERVAL_MS = 60000
@@ -68,6 +69,13 @@ export class MCPGateway {
     private pool: Map<string, PoolEntry> = new Map()
     private reaperId: ReturnType<typeof setInterval> | null = null
     private idleTimeoutMs: number
+    /**
+     * In-memory rate-limit buckets + circuit-breaker state shared across all
+     * invocations of this gateway instance. Locked decision #11 — Redis-
+     * backed shared state is a v1.8.x patch (the in-memory model is
+     * consistent with locked decision #7's single-instance MVP for v1.8.0).
+     */
+    private policyState: PolicyState = new PolicyState()
 
     constructor(options: MCPGatewayOptions) {
         this.appDataSource = options.appDataSource
@@ -136,16 +144,40 @@ export class MCPGateway {
         }
 
         const startedAt = Date.now()
-        const entry = await this.getOrOpen(server)
+        const policies = resolvePolicies(server)
         const timeout = typeof server.timeoutMs === 'number' ? server.timeoutMs : DEFAULT_TOOL_CALL_TIMEOUT_MS
 
         try {
-            const result = await entry.client.request(
-                { method: 'tools/call', params: { name: toolName, arguments: (params ?? {}) as Record<string, unknown> } },
-                CallToolResultSchema,
-                { timeout }
-            )
-            entry.lastUsedAt = Date.now()
+            const { result, outcome } = await runWithPolicy({
+                serverId: server.id,
+                serverSlug,
+                policies,
+                state: this.policyState,
+                doInvoke: async () => {
+                    const entry = await this.getOrOpen(server)
+                    try {
+                        const callResult = await entry.client.request(
+                            {
+                                method: 'tools/call',
+                                params: { name: toolName, arguments: (params ?? {}) as Record<string, unknown> }
+                            },
+                            CallToolResultSchema,
+                            { timeout }
+                        )
+                        entry.lastUsedAt = Date.now()
+                        return callResult
+                    } catch (innerError) {
+                        // Drop the pooled client on error — the connection may
+                        // be poisoned. Retries reopen via `getOrOpen()`.
+                        this.pool.delete(server.id)
+                        entry.client.close().catch(() => {
+                            /* noop */
+                        })
+                        throw innerError
+                    }
+                }
+            })
+
             const durationMs = Date.now() - startedAt
             logger.info({
                 event: 'mcp.tool.invoke',
@@ -154,7 +186,8 @@ export class MCPGateway {
                 server: serverSlug,
                 tool: toolName,
                 durationMs,
-                callId: callContext.callId
+                callId: callContext.callId,
+                policyOutcome: outcome
             })
             // Persist the audit row best-effort. Fire-and-forget — the gateway
             // hot path must not block on the DB write, and the auditService
@@ -170,17 +203,18 @@ export class MCPGateway {
                 durationMs,
                 errorMessage: null,
                 callId: callContext.callId ?? null,
-                userId: agent.userId ?? null
+                userId: agent.userId ?? null,
+                policyOutcome: outcome
             })
             return result
         } catch (error) {
-            // Drop the pooled client on error — the connection may be poisoned.
-            this.pool.delete(server.id)
-            entry.client.close().catch(() => {
-                /* noop */
-            })
             const durationMs = Date.now() - startedAt
             const errorMessage = getErrorMessage(error)
+            // `runWithPolicy` tags the error with the verdict (RATE_LIMITED,
+            // CIRCUIT_OPEN, RETRIED, or PASSED for a single-attempt failure).
+            // Fall back to PASSED so the audit-row column is always populated
+            // for v1.8+ rows even if a downstream caller throws without the tag.
+            const policyOutcome = (error as { policyOutcome?: PolicyOutcome })?.policyOutcome ?? PolicyOutcome.PASSED
             logger.warn({
                 event: 'mcp.tool.invoke.error',
                 agentId: agent.id,
@@ -189,7 +223,8 @@ export class MCPGateway {
                 tool: toolName,
                 durationMs,
                 callId: callContext.callId,
-                error: errorMessage
+                error: errorMessage,
+                policyOutcome
             })
             void auditService.recordToolInvocation({
                 agentId: agent.id,
@@ -202,8 +237,14 @@ export class MCPGateway {
                 durationMs,
                 errorMessage,
                 callId: callContext.callId ?? null,
-                userId: agent.userId ?? null
+                userId: agent.userId ?? null,
+                policyOutcome
             })
+            // Preserve policy-rejection status codes so the controller
+            // returns the right HTTP shape (429 / 503) instead of 502.
+            if (error instanceof InternalChronosError) {
+                throw error
+            }
             throw new InternalChronosError(StatusCodes.BAD_GATEWAY, `MCP tool ${namespacedToolName} failed: ${errorMessage}`)
         }
     }

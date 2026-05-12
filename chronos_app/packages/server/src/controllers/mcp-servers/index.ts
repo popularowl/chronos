@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express'
 import { StatusCodes } from 'http-status-codes'
 import { InternalChronosError } from '../../errors/internalChronosError'
 import mcpServersService from '../../services/mcp-servers'
+import mcpServerChangeLogService from '../../services/mcp-server-change-log'
 import { getPageAndLimitParams } from '../../utils/pagination'
 
 const createMCPServer = async (req: Request, res: Response, next: NextFunction) => {
@@ -12,7 +13,7 @@ const createMCPServer = async (req: Request, res: Response, next: NextFunction) 
                 `Error: mcpServersController.createMCPServer - body not provided!`
             )
         }
-        const body = { ...req.body, userId: req.userId }
+        const body = { ...req.body, userId: req.userId, userEmail: req.userEmail }
         const apiResponse = await mcpServersService.createMCPServer(body)
         return res.json(apiResponse)
     } catch (error) {
@@ -34,7 +35,8 @@ const updateMCPServer = async (req: Request, res: Response, next: NextFunction) 
                 `Error: mcpServersController.updateMCPServer - body not provided!`
             )
         }
-        const apiResponse = await mcpServersService.updateMCPServer(req.params.id, req.body)
+        const body = { ...req.body, userId: req.userId, userEmail: req.userEmail }
+        const apiResponse = await mcpServersService.updateMCPServer(req.params.id, body)
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -49,7 +51,10 @@ const deleteMCPServer = async (req: Request, res: Response, next: NextFunction) 
                 `Error: mcpServersController.deleteMCPServer - id not provided!`
             )
         }
-        const apiResponse = await mcpServersService.deleteMCPServer(req.params.id)
+        const apiResponse = await mcpServersService.deleteMCPServer(req.params.id, {
+            userId: req.userId,
+            userEmail: req.userEmail
+        })
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -99,7 +104,10 @@ const toggleMCPServer = async (req: Request, res: Response, next: NextFunction) 
                 `Error: mcpServersController.toggleMCPServer - enabled (boolean) not provided!`
             )
         }
-        const apiResponse = await mcpServersService.toggleMCPServer(req.params.id, req.body.enabled)
+        const apiResponse = await mcpServersService.toggleMCPServer(req.params.id, req.body.enabled, {
+            userId: req.userId,
+            userEmail: req.userEmail
+        })
         return res.json(apiResponse)
     } catch (error) {
         next(error)
@@ -145,6 +153,32 @@ const previewMCPServerTools = async (req: Request, res: Response, next: NextFunc
     }
 }
 
+/**
+ * Returns the change-history rows for one MCP server, newest-first. Paginated
+ * via the standard `page` / `limit` query params. Feeds the **History** tab
+ * on `MCPServerDetail` (v1.8.0 Group A — UI slice A2).
+ *
+ * Wraps the service response in the `{ rows, total, page, limit }` envelope
+ * used by `listToolInvocations` so the UI tab can mirror the Recent
+ * Invocations data flow exactly.
+ */
+const getMCPServerChangeLog = async (req: Request, res: Response, next: NextFunction) => {
+    try {
+        if (!req.params.id) {
+            throw new InternalChronosError(
+                StatusCodes.PRECONDITION_FAILED,
+                `Error: mcpServersController.getMCPServerChangeLog - id not provided!`
+            )
+        }
+        const { page, limit } = getPageAndLimitParams(req)
+        const result = await mcpServerChangeLogService.listForServer(req.params.id, { page, limit })
+        if (Array.isArray(result)) return res.json({ rows: result })
+        return res.json({ rows: result.data, total: result.total, page, limit })
+    } catch (error) {
+        next(error)
+    }
+}
+
 export default {
     createMCPServer,
     updateMCPServer,
@@ -154,5 +188,6 @@ export default {
     toggleMCPServer,
     testMCPServerConnection,
     listMCPServerTools,
-    previewMCPServerTools
+    previewMCPServerTools,
+    getMCPServerChangeLog
 }

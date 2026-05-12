@@ -11,6 +11,9 @@ import { RenameAgentflowV2TemplateType1800000000009 } from './1800000000009-Rena
 import { AddToolInvocationAudit1800000000010 } from './1800000000010-AddToolInvocationAudit'
 import { AddCredentialAccessAudit1800000000011 } from './1800000000011-AddCredentialAccessAudit'
 import { RenameCallbackTokenToMcpGatewayToken1800000000012 } from './1800000000012-RenameCallbackTokenToMcpGatewayToken'
+import { AddMCPServerPolicies1800000000013 } from './1800000000013-AddMCPServerPolicies'
+import { CreateMCPServerChangeLog1800000000014 } from './1800000000014-CreateMCPServerChangeLog'
+import { AddPolicyOutcomeToToolInvocationAudit1800000000015 } from './1800000000015-AddPolicyOutcomeToToolInvocationAudit'
 
 export const sqliteMigrations = [
     ConsolidatedBaseline1800000000000,
@@ -25,5 +28,8 @@ export const sqliteMigrations = [
     RenameAgentflowV2TemplateType1800000000009,
     AddToolInvocationAudit1800000000010,
     AddCredentialAccessAudit1800000000011,
-    RenameCallbackTokenToMcpGatewayToken1800000000012
+    RenameCallbackTokenToMcpGatewayToken1800000000012,
+    AddMCPServerPolicies1800000000013,
+    CreateMCPServerChangeLog1800000000014,
+    AddPolicyOutcomeToToolInvocationAudit1800000000015
 ]

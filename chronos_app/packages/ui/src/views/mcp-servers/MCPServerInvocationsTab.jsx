@@ -10,6 +10,7 @@ import ErrorIcon from '@mui/icons-material/Error'
 import TablePagination, { DEFAULT_ITEMS_PER_PAGE } from '@/ui-component/pagination/TablePagination'
 import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyles'
 import AuditRowDetails from '@/views/audit-log/AuditRowDetails'
+import { PolicyOutcomeCell } from '@/views/audit-log/PolicyOutcome'
 
 import auditApi from '@/api/audit'
 import useApi from '@/hooks/useApi'
@@ -88,6 +89,7 @@ const MCPServerInvocationsTab = ({ server }) => {
                             >
                                 <StyledTableRow>
                                     <StyledTableCell>Outcome</StyledTableCell>
+                                    <StyledTableCell>Policy</StyledTableCell>
                                     <StyledTableCell>Timestamp</StyledTableCell>
                                     <StyledTableCell>Agent</StyledTableCell>
                                     <StyledTableCell>Tool</StyledTableCell>
@@ -114,6 +116,9 @@ const MCPServerInvocationsTab = ({ server }) => {
                                                     <Box component={ErrorIcon} className='labelIcon' color='error.main' />
                                                 </Tooltip>
                                             )}
+                                        </StyledTableCell>
+                                        <StyledTableCell>
+                                            <PolicyOutcomeCell value={row.policyOutcome} />
                                         </StyledTableCell>
                                         <StyledTableCell>{formatTimestamp(row.createdDate)}</StyledTableCell>
                                         <StyledTableCell>{row.agentSlug}</StyledTableCell>

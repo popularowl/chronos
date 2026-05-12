@@ -165,7 +165,7 @@ export function auditServiceTest() {
                 const csv = await auditService.exportToolInvocationsCsv()
                 const lines = csv.split('\n')
                 expect(lines[0]).toBe(
-                    'id,agentId,agentSlug,mcpServerId,mcpServerSlug,toolName,namespacedTool,success,durationMs,errorMessage,callId,userId,createdDate'
+                    'id,agentId,agentSlug,mcpServerId,mcpServerSlug,toolName,namespacedTool,success,durationMs,errorMessage,callId,userId,policyOutcome,createdDate'
                 )
                 expect(lines).toHaveLength(2)
                 expect(lines[1]).toContain('"r1"')

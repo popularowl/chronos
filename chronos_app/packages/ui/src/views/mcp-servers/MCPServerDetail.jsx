@@ -24,25 +24,71 @@ import {
     Typography,
     useTheme
 } from '@mui/material'
-import { IconArrowLeft, IconEdit, IconExternalLink, IconPlug, IconRefresh, IconTrash, IconX } from '@tabler/icons-react'
+import Menu from '@mui/material/Menu'
+import { styled, alpha } from '@mui/material/styles'
+import EditIcon from '@mui/icons-material/Edit'
+import FileDeleteIcon from '@mui/icons-material/Delete'
+import RefreshIcon from '@mui/icons-material/Refresh'
+import BoltIcon from '@mui/icons-material/Bolt'
+import PolicyIcon from '@mui/icons-material/Policy'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import { IconArrowLeft, IconExternalLink, IconPlug, IconX } from '@tabler/icons-react'
 
 import MainCard from '@/ui-component/cards/MainCard'
 import ErrorBoundary from '@/ErrorBoundary'
-import { StyledButton } from '@/ui-component/button/StyledButton'
-import { StyledPermissionButton } from '@/ui-component/button/RBACButtons'
+import { PermissionMenuItem } from '@/ui-component/button/RBACButtons'
 import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyles'
 import ConfirmDialog from '@/ui-component/dialog/ConfirmDialog'
 
 import MCPServerDialog from './MCPServerDialog'
 import MCPServerCatalogTab from './MCPServerCatalogTab'
 import MCPServerInvocationsTab from './MCPServerInvocationsTab'
+import MCPServerChangeLogTab from './MCPServerChangeLogTab'
+import EditPoliciesDialog from './EditPoliciesDialog'
 
 import mcpServersApi from '@/api/mcp-servers'
 import useApi from '@/hooks/useApi'
 import useConfirm from '@/hooks/useConfirm'
-import { useError } from '@/store/context/ErrorContext'
 import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction } from '@/store/actions'
 import useNotifier from '@/utils/useNotifier'
+
+/**
+ * Identity-row Options dropdown styling. Mirrors `FlowListMenu`'s
+ * `StyledMenu` so the visual treatment matches the `/agentflows` list —
+ * right-anchored, rounded corners, soft drop shadow, secondary-coloured
+ * icons. Defined inline rather than imported because the agentflows version
+ * is private to its own file; pulling it out as a shared component is a
+ * separate refactor.
+ */
+const StyledMenu = styled((props) => (
+    <Menu
+        elevation={0}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        {...props}
+    />
+))(({ theme }) => ({
+    '& .MuiPaper-root': {
+        borderRadius: 6,
+        marginTop: theme.spacing(1),
+        minWidth: 180,
+        boxShadow:
+            'rgb(255, 255, 255) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.05) 0px 4px 6px -2px',
+        '& .MuiMenu-list': {
+            padding: '4px 0'
+        },
+        '& .MuiMenuItem-root': {
+            '& .MuiSvgIcon-root': {
+                fontSize: 18,
+                color: theme.palette.text.secondary,
+                marginRight: theme.spacing(1.5)
+            },
+            '&:active': {
+                backgroundColor: alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity)
+            }
+        }
+    }
+}))
 
 const STATUS_CHIP_COLOR = {
     HEALTHY: 'success',
@@ -80,7 +126,6 @@ const MCPServerDetail = () => {
     const enqueueSnackbar = (...args) => dispatch(enqueueSnackbarAction(...args))
     const closeSnackbar = (...args) => dispatch(closeSnackbarAction(...args))
 
-    const { error, setError } = useError()
     const { confirm } = useConfirm()
     const getApi = useApi(mcpServersApi.getMCPServerById)
 
@@ -88,11 +133,19 @@ const MCPServerDetail = () => {
     const [tab, setTab] = useState(0)
     const [showDialog, setShowDialog] = useState(false)
     const [dialogProps, setDialogProps] = useState({})
+    const [showPoliciesDialog, setShowPoliciesDialog] = useState(false)
     const [toggleLoading, setToggleLoading] = useState(false)
+    const [menuAnchorEl, setMenuAnchorEl] = useState(null)
+    const menuOpen = Boolean(menuAnchorEl)
+    const openMenu = (event) => setMenuAnchorEl(event.currentTarget)
+    const closeMenu = () => setMenuAnchorEl(null)
     // Bumping `catalogRefreshKey` re-mounts the catalog effect — lets the
     // Refresh button live in the tabs row instead of inside the tab body so
     // the visual spacing matches the agent detail page (no extra toolbar).
     const [catalogRefreshKey, setCatalogRefreshKey] = useState(0)
+    // Same trick for the change-log tab: after a policy save (or any mutation)
+    // we bump this so the History tab re-fetches without losing its place.
+    const [changeLogRefreshKey, setChangeLogRefreshKey] = useState(0)
 
     const showSuccess = (message) =>
         enqueueSnackbar({
@@ -131,10 +184,6 @@ const MCPServerDetail = () => {
     useEffect(() => {
         if (getApi.data) setServer(getApi.data)
     }, [getApi.data])
-
-    useEffect(() => {
-        if (getApi.error && setError) setError(getApi.error)
-    }, [getApi.error, setError])
 
     const refresh = () => id && getApi.request(id)
 
@@ -180,11 +229,39 @@ const MCPServerDetail = () => {
         }
     }
 
+    /**
+     * Operator-facing connection test triggered from the Options menu. Same
+     * underlying API as the dialog's Test Connection — issues a live
+     * `tools/list` round-trip via the pooled gateway client and surfaces the
+     * outcome as a snackbar (success message includes discovered tool count;
+     * failure persists so the Chronos user can copy the reason).
+     */
+    const onTestConnection = async () => {
+        if (!server?.id) return
+        try {
+            const res = await mcpServersApi.testMCPServerConnection(server.id)
+            const result = res.data
+            if (result?.success) {
+                showSuccess(result.message || 'Connection OK')
+            } else {
+                showError(result?.message || 'Connection failed', true)
+            }
+        } catch (err) {
+            showError(err?.response?.data?.message || 'Connection test failed', true)
+        }
+    }
+
     const allowedTools = useMemo(() => toStringArray(server?.allowedTools), [server?.allowedTools])
     const outboundAuth = useMemo(() => parseJson(server?.outboundAuth), [server?.outboundAuth])
-    const requestHeaderKeys = useMemo(() => objectKeys(parseJson(server?.requestHeaders)), [server?.requestHeaders])
+    const policiesSummary = useMemo(() => summarisePolicies(parseJson(server?.policies)), [server?.policies])
 
-    if (!server && !error) {
+    // Page-level error only fires for the page-load fetch (`getMCPServerById`).
+    // Sub-tabs (catalog / recent invocations / history) own their local error
+    // surfaces — e.g. an unreachable upstream MCP server makes the Tool catalog
+    // tab's tools/list 502, but that's a tab-level Alert, not a page-killing
+    // boundary. Reading the global error context here would propagate every
+    // sub-tab failure to the whole page.
+    if (!server && !getApi.error) {
         return (
             <MainCard>
                 <Skeleton variant='rounded' height={300} />
@@ -192,10 +269,10 @@ const MCPServerDetail = () => {
         )
     }
 
-    if (error) {
+    if (getApi.error && !server) {
         return (
             <MainCard>
-                <ErrorBoundary error={error} />
+                <ErrorBoundary error={getApi.error} />
             </MainCard>
         )
     }
@@ -233,23 +310,6 @@ const MCPServerDetail = () => {
                         <Typography variant='h3' sx={{ flexGrow: 1 }}>
                             MCP Server: {server.name}
                         </Typography>
-                        <StyledPermissionButton
-                            permissionId={'mcp-servers:update'}
-                            variant='outlined'
-                            startIcon={<IconEdit size={16} />}
-                            onClick={onEdit}
-                        >
-                            Edit
-                        </StyledPermissionButton>
-                        <StyledPermissionButton
-                            permissionId={'mcp-servers:delete'}
-                            variant='outlined'
-                            color='error'
-                            startIcon={<IconTrash size={16} />}
-                            onClick={onDelete}
-                        >
-                            Delete
-                        </StyledPermissionButton>
                     </Stack>
 
                     {/* Identity — one-row apikey-style table */}
@@ -258,23 +318,18 @@ const MCPServerDetail = () => {
                             <TableHead sx={tableHeaderSx}>
                                 <StyledTableRow>
                                     <StyledTableCell>Slug</StyledTableCell>
-                                    <StyledTableCell>Transport</StyledTableCell>
                                     <StyledTableCell>Status</StyledTableCell>
                                     <StyledTableCell sx={{ minWidth: 220 }}>Tools</StyledTableCell>
                                     <StyledTableCell>Created</StyledTableCell>
                                     <StyledTableCell>Enabled</StyledTableCell>
+                                    <StyledTableCell align='right' sx={{ width: 120 }}>
+                                        Actions
+                                    </StyledTableCell>
                                 </StyledTableRow>
                             </TableHead>
                             <TableBody>
                                 <StyledTableRow>
                                     <StyledTableCell sx={{ fontFamily: 'monospace' }}>{server.slug}</StyledTableCell>
-                                    <StyledTableCell>
-                                        <Chip
-                                            size='small'
-                                            label={TRANSPORT_LABEL[server.transport] || server.transport}
-                                            variant='outlined'
-                                        />
-                                    </StyledTableCell>
                                     <StyledTableCell>
                                         <Chip
                                             size='small'
@@ -323,6 +378,19 @@ const MCPServerDetail = () => {
                                             </span>
                                         </Tooltip>
                                     </StyledTableCell>
+                                    <StyledTableCell align='right'>
+                                        <Button
+                                            size='small'
+                                            aria-controls={menuOpen ? 'mcp-server-options-menu' : undefined}
+                                            aria-haspopup='true'
+                                            aria-expanded={menuOpen ? 'true' : undefined}
+                                            disableElevation
+                                            onClick={openMenu}
+                                            endIcon={<KeyboardArrowDownIcon />}
+                                        >
+                                            Options
+                                        </Button>
+                                    </StyledTableCell>
                                 </StyledTableRow>
                             </TableBody>
                         </Table>
@@ -334,9 +402,8 @@ const MCPServerDetail = () => {
                             <TableHead sx={tableHeaderSx}>
                                 <StyledTableRow>
                                     <StyledTableCell sx={{ width: '40%' }}>URL</StyledTableCell>
+                                    <StyledTableCell>Transport</StyledTableCell>
                                     <StyledTableCell>Outbound Auth</StyledTableCell>
-                                    <StyledTableCell>Request Headers</StyledTableCell>
-                                    <StyledTableCell>Timeout</StyledTableCell>
                                     <StyledTableCell>Last Health Check</StyledTableCell>
                                 </StyledTableRow>
                             </TableHead>
@@ -351,14 +418,54 @@ const MCPServerDetail = () => {
                                         </Box>
                                     </StyledTableCell>
                                     <StyledTableCell>
+                                        <Chip
+                                            size='small'
+                                            label={TRANSPORT_LABEL[server.transport] || server.transport}
+                                            variant='outlined'
+                                        />
+                                    </StyledTableCell>
+                                    <StyledTableCell>
                                         <OutboundAuthSummary auth={outboundAuth} />
                                     </StyledTableCell>
                                     <StyledTableCell>
-                                        <RequestHeaderKeys keys={requestHeaderKeys} />
-                                    </StyledTableCell>
-                                    <StyledTableCell>{server.timeoutMs ?? 30000}ms</StyledTableCell>
-                                    <StyledTableCell>
                                         {server.lastHealthCheckAt ? moment(server.lastHealthCheckAt).format('MMM D, YYYY h:mm A') : '—'}
+                                    </StyledTableCell>
+                                </StyledTableRow>
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
+
+                    {/* Policies — one-row apikey-style table. The Updated column
+                        anchors when the entity row was last touched; policy editing
+                        is reached via the Identity row's Options dropdown rather
+                        than an inline pencil to keep page-level actions in one place. */}
+                    <TableContainer sx={tableContainerSx} component={Paper}>
+                        <Table sx={{ minWidth: 650 }} aria-label='mcp server policies'>
+                            <TableHead sx={tableHeaderSx}>
+                                <StyledTableRow>
+                                    <StyledTableCell>Retry Policy</StyledTableCell>
+                                    <StyledTableCell>Rate limit</StyledTableCell>
+                                    <StyledTableCell>Circuit breaker</StyledTableCell>
+                                    <StyledTableCell>Jitter</StyledTableCell>
+                                    <StyledTableCell>Policy Updated</StyledTableCell>
+                                </StyledTableRow>
+                            </TableHead>
+                            <TableBody>
+                                <StyledTableRow>
+                                    <StyledTableCell>
+                                        <PolicyCell {...policiesSummary.retry} />
+                                    </StyledTableCell>
+                                    <StyledTableCell>
+                                        <PolicyCell {...policiesSummary.rateLimit} />
+                                    </StyledTableCell>
+                                    <StyledTableCell>
+                                        <PolicyCell {...policiesSummary.circuitBreaker} />
+                                    </StyledTableCell>
+                                    <StyledTableCell>
+                                        <PolicyCell {...policiesSummary.jitter} />
+                                    </StyledTableCell>
+                                    <StyledTableCell>
+                                        {server.updatedDate ? moment(server.updatedDate).format('MMMM Do, YYYY HH:mm:ss') : '—'}
                                     </StyledTableCell>
                                 </StyledTableRow>
                             </TableBody>
@@ -391,21 +498,8 @@ const MCPServerDetail = () => {
                         <Tabs value={tab} onChange={(_e, v) => setTab(v)}>
                             <Tab label='Tool catalog' />
                             <Tab label='Recent invocations' />
+                            <Tab label='Policy Edits' />
                         </Tabs>
-                        {tab === 0 && (
-                            <Tooltip title='Re-run tools/list'>
-                                <span>
-                                    <StyledButton
-                                        size='small'
-                                        variant='outlined'
-                                        onClick={() => setCatalogRefreshKey((k) => k + 1)}
-                                        startIcon={<IconRefresh size={14} />}
-                                    >
-                                        Refresh
-                                    </StyledButton>
-                                </span>
-                            </Tooltip>
-                        )}
                         {tab === 1 && (
                             <Button
                                 size='small'
@@ -419,8 +513,76 @@ const MCPServerDetail = () => {
                     </Stack>
                     {tab === 0 && <MCPServerCatalogTab server={server} refreshKey={catalogRefreshKey} />}
                     {tab === 1 && <MCPServerInvocationsTab server={server} />}
+                    {tab === 2 && <MCPServerChangeLogTab server={server} refreshKey={changeLogRefreshKey} />}
                 </MainCard>
             </Box>
+
+            <StyledMenu
+                id='mcp-server-options-menu'
+                anchorEl={menuAnchorEl}
+                open={menuOpen}
+                onClose={closeMenu}
+                MenuListProps={{ 'aria-labelledby': 'mcp-server-options-menu' }}
+            >
+                <PermissionMenuItem
+                    permissionId={'mcp-servers:update'}
+                    onClick={() => {
+                        closeMenu()
+                        onEdit()
+                    }}
+                    disableRipple
+                >
+                    <EditIcon />
+                    Edit
+                </PermissionMenuItem>
+                <PermissionMenuItem
+                    permissionId={'mcp-servers:update'}
+                    onClick={() => {
+                        closeMenu()
+                        setShowPoliciesDialog(true)
+                    }}
+                    disableRipple
+                >
+                    <PolicyIcon />
+                    Edit Policies
+                </PermissionMenuItem>
+                <PermissionMenuItem
+                    permissionId={'mcp-servers:view'}
+                    onClick={() => {
+                        closeMenu()
+                        refresh()
+                        setCatalogRefreshKey((k) => k + 1)
+                        setChangeLogRefreshKey((k) => k + 1)
+                    }}
+                    disableRipple
+                >
+                    <RefreshIcon />
+                    Refresh
+                </PermissionMenuItem>
+                <PermissionMenuItem
+                    permissionId={'mcp-servers:update'}
+                    onClick={() => {
+                        closeMenu()
+                        onTestConnection()
+                    }}
+                    disableRipple
+                >
+                    <BoltIcon />
+                    Test Connection
+                </PermissionMenuItem>
+                <PermissionMenuItem
+                    permissionId={'mcp-servers:delete'}
+                    onClick={() => {
+                        closeMenu()
+                        onDelete()
+                    }}
+                    disableRipple
+                    sx={{ color: 'error.main', '& .MuiSvgIcon-root': { color: 'error.main !important' } }}
+                >
+                    <FileDeleteIcon />
+                    Delete
+                </PermissionMenuItem>
+            </StyledMenu>
 
             <MCPServerDialog
                 show={showDialog}
@@ -429,6 +591,17 @@ const MCPServerDetail = () => {
                 onConfirm={() => {
                     setShowDialog(false)
                     refresh()
+                    setChangeLogRefreshKey((k) => k + 1)
+                }}
+            />
+            <EditPoliciesDialog
+                show={showPoliciesDialog}
+                server={server}
+                onCancel={() => setShowPoliciesDialog(false)}
+                onConfirm={() => {
+                    setShowPoliciesDialog(false)
+                    refresh()
+                    setChangeLogRefreshKey((k) => k + 1)
                 }}
             />
             <ConfirmDialog />
@@ -479,27 +652,71 @@ const OutboundAuthSummary = ({ auth }) => {
 OutboundAuthSummary.propTypes = { auth: PropTypes.object }
 
 /**
- * Renders the static request-header keys (no values) as compact chips. Empty
- * state hides the cell content behind a muted en-dash.
+ * Renders a single policy cell: the resolved value as the primary line plus
+ * an italic "default" tag when the server isn't overriding the platform
+ * default. Mirrors the secondary-line treatment in `OutboundAuthSummary` so
+ * the Policies row visually nests with the other one-row tables.
  */
-const RequestHeaderKeys = ({ keys }) => {
-    if (!keys || keys.length === 0) {
-        return (
-            <Typography variant='body2' sx={{ color: 'text.secondary' }}>
-                —
+const PolicyCell = ({ value, isDefault }) => (
+    <Stack direction='column' spacing={0.25}>
+        <Typography variant='body2'>{value}</Typography>
+        {isDefault && (
+            <Typography variant='caption' sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                default
             </Typography>
-        )
-    }
-    return (
-        <Stack direction='row' spacing={0.5} flexWrap='wrap' useFlexGap>
-            {keys.map((k) => (
-                <Chip key={k} label={k} size='small' variant='outlined' />
-            ))}
-        </Stack>
-    )
+        )}
+    </Stack>
+)
+
+PolicyCell.propTypes = {
+    value: PropTypes.string.isRequired,
+    isDefault: PropTypes.bool
 }
 
-RequestHeaderKeys.propTypes = { keys: PropTypes.arrayOf(PropTypes.string) }
+const POLICY_DEFAULTS = {
+    retry: { maxAttempts: 3, baseDelayMs: 500, jitter: true },
+    rateLimit: { rps: 0, burst: 0 },
+    circuitBreaker: { failureThreshold: 5, openMs: 30000 }
+}
+
+/**
+ * Distills the persisted `policies` JSON into the four cells the Overview
+ * row renders. Each cell carries `{ value, isDefault }` so the cell renderer
+ * can show "default" italics when the server is leaning on platform defaults
+ * rather than its own override. Defaults here mirror the resolver in
+ * `services/mcp-gateway/policy.ts`.
+ */
+const summarisePolicies = (raw) => {
+    const policies = raw && typeof raw === 'object' && !Array.isArray(raw) ? raw : {}
+    const r = policies.retry
+    const rl = policies.rateLimit
+    const cb = policies.circuitBreaker
+    const retryAttempts = r?.maxAttempts ?? POLICY_DEFAULTS.retry.maxAttempts
+    const retryDelay = r?.baseDelayMs ?? POLICY_DEFAULTS.retry.baseDelayMs
+    const retryJitter = r?.jitter ?? POLICY_DEFAULTS.retry.jitter
+    const rps = rl?.rps ?? POLICY_DEFAULTS.rateLimit.rps
+    const burst = rl?.burst ?? POLICY_DEFAULTS.rateLimit.burst
+    const threshold = cb?.failureThreshold ?? POLICY_DEFAULTS.circuitBreaker.failureThreshold
+    const openMs = cb?.openMs ?? POLICY_DEFAULTS.circuitBreaker.openMs
+    return {
+        retry: {
+            value: `${retryAttempts} attempt${retryAttempts === 1 ? '' : 's'} · ${retryDelay}ms backoff`,
+            isDefault: !r
+        },
+        rateLimit: {
+            value: rps === 0 ? 'unlimited' : `${rps} rps${burst > 0 ? ` · burst ${burst}` : ''}`,
+            isDefault: !rl
+        },
+        circuitBreaker: {
+            value: threshold === 0 ? 'disabled' : `${threshold} fail${threshold === 1 ? '' : 's'} · open ${openMs}ms`,
+            isDefault: !cb
+        },
+        jitter: {
+            value: retryJitter ? 'on (±50%)' : 'off',
+            isDefault: !r
+        }
+    }
+}
 
 const shortId = (raw) => (typeof raw === 'string' && raw.length > 8 ? `${raw.slice(0, 8)}…` : raw || '—')
 
@@ -518,7 +735,5 @@ const toStringArray = (raw) => {
     if (Array.isArray(parsed)) return parsed.filter((v) => typeof v === 'string')
     return []
 }
-
-const objectKeys = (obj) => (obj && typeof obj === 'object' && !Array.isArray(obj) ? Object.keys(obj) : [])
 
 export default MCPServerDetail

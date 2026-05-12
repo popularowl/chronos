@@ -203,8 +203,10 @@ export function mcpGatewayServiceTest() {
             })
 
             it('evicts client and maps to 502 when tools/call rejects', async () => {
-                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer())
-                mockClientInstance.request.mockRejectedValueOnce(new Error('upstream blew up'))
+                // Policy chain retries by default (3 attempts) — use a no-retry
+                // policy so this test still exercises a single-attempt failure.
+                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer({ policies: JSON.stringify({ retry: { maxAttempts: 1 } }) }))
+                mockClientInstance.request.mockRejectedValue(new Error('upstream blew up'))
                 const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
                 await expect(gateway.invoke(baseAgent(), 'postgres.query', {})).rejects.toMatchObject({ statusCode: 502 })
                 expect(gateway.poolSize()).toBe(0)
@@ -212,8 +214,8 @@ export function mcpGatewayServiceTest() {
             })
 
             it('maps connect failure to 502 BAD_GATEWAY', async () => {
-                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer())
-                mockClientInstance.connect.mockRejectedValueOnce(new Error('refused'))
+                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer({ policies: JSON.stringify({ retry: { maxAttempts: 1 } }) }))
+                mockClientInstance.connect.mockRejectedValue(new Error('refused'))
                 const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
                 await expect(gateway.invoke(baseAgent(), 'postgres.query', {})).rejects.toMatchObject({ statusCode: 502 })
             })
@@ -283,8 +285,8 @@ export function mcpGatewayServiceTest() {
             })
 
             it('records a failed invocation with success=false and the operator-friendly errorMessage', async () => {
-                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer())
-                mockClientInstance.request.mockRejectedValueOnce(new Error('upstream broke'))
+                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer({ policies: JSON.stringify({ retry: { maxAttempts: 1 } }) }))
+                mockClientInstance.request.mockRejectedValue(new Error('upstream broke'))
                 const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
                 await expect(gateway.invoke(baseAgent(), 'postgres.query', {}, { callId: 'call-fail' })).rejects.toMatchObject({
                     statusCode: 502

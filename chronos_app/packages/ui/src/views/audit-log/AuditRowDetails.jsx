@@ -9,6 +9,7 @@ import ErrorIcon from '@mui/icons-material/Error'
 import { IconCopy, IconExternalLink, IconX } from '@tabler/icons-react'
 
 import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction } from '@/store/actions'
+import { PolicyOutcomeDetail } from './PolicyOutcome'
 
 const DRAWER_WIDTH = 560
 
@@ -176,6 +177,13 @@ const AuditRowDetails = ({ open, row, onClose }) => {
                             </Box>
 
                             <Box>
+                                <Typography variant='overline'>Policy</Typography>
+                                <Box sx={{ mt: 0.5 }}>
+                                    <PolicyOutcomeDetail value={row.policyOutcome} />
+                                </Box>
+                            </Box>
+
+                            <Box>
                                 <Typography variant='overline'>Call ID</Typography>
                                 <Box sx={{ mt: 0.5 }}>
                                     {row.callId ? (
@@ -254,6 +262,7 @@ AuditRowDetails.propTypes = {
         errorMessage: PropTypes.string,
         callId: PropTypes.string,
         userId: PropTypes.string,
+        policyOutcome: PropTypes.oneOf([null, undefined, 'PASSED', 'RETRIED', 'RATE_LIMITED', 'CIRCUIT_OPEN']),
         createdDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)])
     }),
     onClose: PropTypes.func

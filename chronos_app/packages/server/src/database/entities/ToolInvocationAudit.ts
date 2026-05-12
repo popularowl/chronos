@@ -1,4 +1,5 @@
 import { Entity, Column, Index, PrimaryGeneratedColumn, CreateDateColumn } from 'typeorm'
+import { PolicyOutcome } from '../../Interface'
 
 /**
  * Persistent audit row for every MCP tool invocation brokered through the
@@ -54,6 +55,14 @@ export class ToolInvocationAudit {
     @Index()
     @Column({ type: 'varchar', nullable: true })
     userId: string | null
+
+    /**
+     * Reliability-policy verdict for this invocation. NULL for pre-v1.8 rows
+     * that pre-date the policy chain; one of `PolicyOutcome` for v1.8+ rows.
+     */
+    @Index()
+    @Column({ type: 'varchar', nullable: true })
+    policyOutcome: PolicyOutcome | null
 
     @Index()
     @Column({ type: 'timestamp' })
