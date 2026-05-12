@@ -3,7 +3,9 @@ import { Credential } from '../database/entities/Credential'
 import { ensureFreshAccessToken } from '../services/credentials/oauth2-refresh'
 import { decryptCredentialData } from '../utils'
 import { getErrorMessage } from '../errors/utils'
-import logger from '../utils/logger'
+import { createModuleLogger } from '../utils/logger'
+
+const logger = createModuleLogger('OAuth2RefreshScheduler')
 
 const DEFAULT_POLL_INTERVAL_MS = 60_000
 const DEFAULT_REFRESH_LEAD_MS = 300_000
@@ -60,7 +62,7 @@ export class OAuth2RefreshScheduler {
 
         const pollIntervalMs = readEnvInt('MCP_OAUTH2_REFRESH_INTERVAL_MS', DEFAULT_POLL_INTERVAL_MS)
 
-        logger.info(`[OAuth2RefreshScheduler] Starting with ${pollIntervalMs}ms poll interval`)
+        logger.info(`Starting with ${pollIntervalMs}ms poll interval`)
 
         this.intervalId = setInterval(() => {
             this.poll()
@@ -73,7 +75,7 @@ export class OAuth2RefreshScheduler {
         if (this.intervalId) {
             clearInterval(this.intervalId)
             this.intervalId = null
-            logger.info('[OAuth2RefreshScheduler] Stopped')
+            logger.info('Stopped')
         }
     }
 
@@ -105,7 +107,7 @@ export class OAuth2RefreshScheduler {
                 await Promise.allSettled(batch.map((credentialId) => this.refreshOne(credentialId)))
             }
         } catch (error) {
-            logger.error('[OAuth2RefreshScheduler] Poll failed:', { error })
+            logger.error('Poll failed:', { error })
         } finally {
             this.running = false
         }
@@ -116,17 +118,17 @@ export class OAuth2RefreshScheduler {
             const decrypted = await decryptCredentialData(credential.encryptedData)
             const expiresAt = decrypted?.expiresAt
             if (typeof expiresAt !== 'string') {
-                logger.warn(`[OAuth2RefreshScheduler] Credential ${credential.id} payload has no string expiresAt; skipping`)
+                logger.warn(`Credential ${credential.id} payload has no string expiresAt; skipping`)
                 return false
             }
             const expiresAtMs = Date.parse(expiresAt)
             if (!Number.isFinite(expiresAtMs)) {
-                logger.warn(`[OAuth2RefreshScheduler] Credential ${credential.id} has unparseable expiresAt "${expiresAt}"; skipping`)
+                logger.warn(`Credential ${credential.id} has unparseable expiresAt "${expiresAt}"; skipping`)
                 return false
             }
             return expiresAtMs - nowMs < leadMs
         } catch (error) {
-            logger.warn(`[OAuth2RefreshScheduler] Decrypt peek failed for credential ${credential.id}: ${getErrorMessage(error)}`)
+            logger.warn(`Decrypt peek failed for credential ${credential.id}: ${getErrorMessage(error)}`)
             return false
         }
     }
@@ -139,7 +141,7 @@ export class OAuth2RefreshScheduler {
             // dependent MCP servers UNHEALTHY on invalid_grant. The background
             // scheduler only logs at warn level so a flapping provider does
             // not flood ERROR-level logs.
-            logger.warn(`[OAuth2RefreshScheduler] Refresh failed for credential ${credentialId}: ${getErrorMessage(error)}`)
+            logger.warn(`Refresh failed for credential ${credentialId}: ${getErrorMessage(error)}`)
         }
     }
 }

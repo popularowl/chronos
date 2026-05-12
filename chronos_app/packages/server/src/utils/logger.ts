@@ -277,23 +277,11 @@ export function expressRequestLogger(req: Request, res: Response, next: NextFunc
             requestMetadata.request.headers = sanitizedHeaders
         }
 
-        const getRequestEmoji = (method: string) => {
-            const requetsEmojis: Record<string, string> = {
-                GET: '⬇️',
-                POST: '⬆️',
-                PUT: '🖊️',
-                DELETE: '❌',
-                OPTION: '🔗'
-            }
-
-            return requetsEmojis[method] || '?'
-        }
-
         if (req.method !== 'GET') {
-            requestLogger.info(`${getRequestEmoji(req.method)} [server]: ${req.method} ${req.url}`, requestMetadata)
-            logger.info(`${getRequestEmoji(req.method)} [server]: ${req.method} ${req.url}`)
+            requestLogger.info(`[server]: ${req.method} ${req.url}`, requestMetadata)
+            logger.info(`[server]: ${req.method} ${req.url}`)
         } else {
-            requestLogger.http(`${getRequestEmoji(req.method)} [server]: ${req.method} ${req.url}`, requestMetadata)
+            requestLogger.http(`[server]: ${req.method} ${req.url}`, requestMetadata)
         }
     }
 

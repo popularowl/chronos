@@ -4,7 +4,9 @@ import { MCPServerStatus, MCPServerTransport } from '../Interface'
 import { getErrorMessage } from '../errors/utils'
 import { MCPGateway } from '../services/mcp-gateway'
 import { CatalogChangeEmitter } from '../services/mcp-gateway-server'
-import logger from '../utils/logger'
+import { createModuleLogger } from '../utils/logger'
+
+const logger = createModuleLogger('MCPServerHealthPoller')
 
 const DEFAULT_POLL_INTERVAL_MS = 30000
 const CONCURRENCY_CAP = 10
@@ -45,7 +47,7 @@ export class MCPServerHealthPoller {
             ? parseInt(process.env.MCP_SERVER_HEALTH_POLL_INTERVAL_MS, 10)
             : DEFAULT_POLL_INTERVAL_MS
 
-        logger.info(`[MCPServerHealthPoller] Starting with ${pollIntervalMs}ms poll interval`)
+        logger.info(`Starting with ${pollIntervalMs}ms poll interval`)
 
         this.intervalId = setInterval(() => {
             this.poll()
@@ -58,7 +60,7 @@ export class MCPServerHealthPoller {
         if (this.intervalId) {
             clearInterval(this.intervalId)
             this.intervalId = null
-            logger.info('[MCPServerHealthPoller] Stopped')
+            logger.info('Stopped')
         }
     }
 
@@ -82,7 +84,7 @@ export class MCPServerHealthPoller {
                 await Promise.allSettled(batch.map((server) => this.checkServerHealth(server)))
             }
         } catch (error) {
-            logger.error('[MCPServerHealthPoller] Poll failed:', { error })
+            logger.error('Poll failed:', { error })
         } finally {
             this.running = false
         }

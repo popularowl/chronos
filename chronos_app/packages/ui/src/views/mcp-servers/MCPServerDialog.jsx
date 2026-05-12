@@ -49,7 +49,8 @@ const TRANSPORTS = [
 const AUTH_TYPES = [
     { value: 'none', label: 'None' },
     { value: 'bearer', label: 'Bearer token' },
-    { value: 'header', label: 'Custom header' }
+    { value: 'header', label: 'Custom header' },
+    { value: 'oauth2-refresh', label: 'OAuth2 (refresh-token)' }
 ]
 
 const slugify = (raw) =>
@@ -136,6 +137,12 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             .catch(() => setCredentials([]))
     }, [show])
 
+    // Credential picker is auth-type aware: oauth2-refresh only lists
+    // credentials of the matching shape so the user cannot accidentally
+    // point the refresher at a static-bearer credential.
+    const authCredentialOptions =
+        authType === 'oauth2-refresh' ? credentials.filter((c) => c.credentialName === 'oauth2-refresh') : credentials
+
     // Hydrate fields when transitioning between ADD / EDIT.
     useEffect(() => {
         if (!show) return
@@ -164,6 +171,15 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                 setAuthHeaderName(auth.name || '')
                 setAuthToken(auth.value || '')
                 setAuthCredentialId(auth.credentialId || '')
+            } else if (auth.type === 'oauth2-refresh') {
+                // OAuth2 refresh has no inline mode — refresh tokens always
+                // live in the credential vault so the background refresher
+                // can rotate them in place.
+                setAuthType('oauth2-refresh')
+                setAuthMode('credential')
+                setAuthCredentialId(auth.credentialId || '')
+                setAuthToken('')
+                setAuthHeaderName('')
             } else {
                 setAuthType('none')
                 setAuthMode('inline')
@@ -234,6 +250,9 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             }
             return authToken ? { type: 'header', name: authHeaderName, value: authToken } : undefined
         }
+        if (authType === 'oauth2-refresh') {
+            return authCredentialId ? { type: 'oauth2-refresh', credentialId: authCredentialId } : undefined
+        }
         return undefined
     }
 
@@ -251,6 +270,7 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
         if (authType === 'header' && !authHeaderName) errors.authHeaderName = 'Header name is required'
         if (authType === 'header' && authMode === 'inline' && !authToken) errors.authToken = 'Header value is required'
         if (authType === 'header' && authMode === 'credential' && !authCredentialId) errors.authCredentialId = 'Credential is required'
+        if (authType === 'oauth2-refresh' && !authCredentialId) errors.authCredentialId = 'OAuth2 refresh credential is required'
         return errors
     }
 
@@ -493,7 +513,7 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                     </MenuItem>
                                 ))}
                             </Select>
-                            {authType !== 'none' && (
+                            {authType !== 'none' && authType !== 'oauth2-refresh' && (
                                 <RadioGroup row value={authMode} onChange={(e) => setAuthMode(e.target.value)}>
                                     <FormControlLabel value='inline' control={<Radio size='small' />} label='Inline' />
                                     <FormControlLabel value='credential' control={<Radio size='small' />} label='From credential vault' />
@@ -514,7 +534,7 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                 {fieldErrors.authHeaderName && <FormHelperText error>{fieldErrors.authHeaderName}</FormHelperText>}
                             </Box>
                         )}
-                        {authType !== 'none' && authMode === 'inline' && (
+                        {authType !== 'none' && authType !== 'oauth2-refresh' && authMode === 'inline' && (
                             <Box sx={{ mt: 1 }}>
                                 <Typography variant='caption'>{authType === 'bearer' ? 'Token' : 'Value'}</Typography>
                                 <OutlinedInput
@@ -529,9 +549,11 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                 {fieldErrors.authToken && <FormHelperText error>{fieldErrors.authToken}</FormHelperText>}
                             </Box>
                         )}
-                        {authType !== 'none' && authMode === 'credential' && (
+                        {authType !== 'none' && (authMode === 'credential' || authType === 'oauth2-refresh') && (
                             <Box sx={{ mt: 1 }}>
-                                <Typography variant='caption'>Credential</Typography>
+                                <Typography variant='caption'>
+                                    {authType === 'oauth2-refresh' ? 'OAuth2 Refresh Credential' : 'Credential'}
+                                </Typography>
                                 <Select
                                     fullWidth
                                     size='small'
@@ -541,9 +563,13 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                     displayEmpty
                                 >
                                     <MenuItem value='' disabled>
-                                        {credentials.length === 0 ? 'No credentials available' : 'Select a credential'}
+                                        {authCredentialOptions.length === 0
+                                            ? authType === 'oauth2-refresh'
+                                                ? 'No oauth2-refresh credentials available — create one in Credentials first'
+                                                : 'No credentials available'
+                                            : 'Select a credential'}
                                     </MenuItem>
-                                    {credentials.map((c) => (
+                                    {authCredentialOptions.map((c) => (
                                         <MenuItem key={c.id} value={c.id}>
                                             {c.name}
                                         </MenuItem>

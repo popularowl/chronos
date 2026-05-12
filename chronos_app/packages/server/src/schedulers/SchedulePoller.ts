@@ -10,7 +10,9 @@ import { Schedule } from '../database/entities/Schedule'
 import { Execution } from '../database/entities/Execution'
 import { AgentFlow } from '../database/entities/AgentFlow'
 import { SSEStreamer } from '../utils/SSEStreamer'
-import logger from '../utils/logger'
+import { createModuleLogger } from '../utils/logger'
+
+const logger = createModuleLogger('SchedulePoller')
 
 const DEFAULT_POLL_INTERVAL_MS = 10000
 
@@ -46,7 +48,7 @@ export class SchedulePoller {
             ? parseInt(process.env.SCHEDULE_POLL_INTERVAL_MS, 10)
             : DEFAULT_POLL_INTERVAL_MS
 
-        logger.info(`[SchedulePoller] Starting with ${pollIntervalMs}ms poll interval (DB polling mode)`)
+        logger.info(`Starting with ${pollIntervalMs}ms poll interval (DB polling mode)`)
 
         this.intervalId = setInterval(() => {
             this.poll()
@@ -60,7 +62,7 @@ export class SchedulePoller {
         if (this.intervalId) {
             clearInterval(this.intervalId)
             this.intervalId = null
-            logger.info('[SchedulePoller] Stopped')
+            logger.info('Stopped')
         }
     }
 
@@ -84,11 +86,11 @@ export class SchedulePoller {
                 try {
                     await this.executeSchedule(schedule)
                 } catch (error) {
-                    logger.error(`[SchedulePoller] Failed to execute schedule ${schedule.id}:`, { error })
+                    logger.error(`Failed to execute schedule ${schedule.id}:`, { error })
                 }
             }
         } catch (error) {
-            logger.error('[SchedulePoller] Poll failed:', { error })
+            logger.error('Poll failed:', { error })
         } finally {
             this.running = false
         }
@@ -107,7 +109,7 @@ export class SchedulePoller {
             const interval = parseExpression(schedule.cronExpression, { tz: schedule.timezone })
             nextRunDate = interval.next().toDate()
         } catch {
-            logger.error(`[SchedulePoller] Invalid cron for schedule ${schedule.id}, disabling`)
+            logger.error(`Invalid cron for schedule ${schedule.id}, disabling`)
             await this.appDataSource.getRepository(Schedule).update(schedule.id, { enabled: false })
             return null
         }
@@ -143,7 +145,7 @@ export class SchedulePoller {
 
         const agentflow = await agentflowRepo.findOneBy({ id: schedule.agentflowId })
         if (!agentflow) {
-            logger.error(`[SchedulePoller] AgentFlow ${schedule.agentflowId} not found for schedule ${schedule.id}`)
+            logger.error(`AgentFlow ${schedule.agentflowId} not found for schedule ${schedule.id}`)
             await scheduleRepo.update(schedule.id, {
                 lastRunDate: new Date(),
                 lastRunStatus: 'ERROR' as ExecutionState
@@ -157,7 +159,7 @@ export class SchedulePoller {
             try {
                 inputPayload = JSON.parse(schedule.inputPayload)
             } catch {
-                logger.warn(`[SchedulePoller] Invalid inputPayload JSON for schedule ${schedule.id}`)
+                logger.warn(`Invalid inputPayload JSON for schedule ${schedule.id}`)
             }
         }
 
@@ -182,20 +184,20 @@ export class SchedulePoller {
 
         let executionState: ExecutionState = 'FINISHED'
 
-        logger.info(`[SchedulePoller] Executing schedule "${schedule.name}" (${schedule.id})`)
+        logger.info(`Executing schedule "${schedule.name}" (${schedule.id})`)
 
         try {
             await executeFlow(executeParams)
         } catch (error: any) {
             executionState = 'ERROR'
-            logger.error(`[SchedulePoller] Schedule ${schedule.id} execution failed:`, { error })
+            logger.error(`Schedule ${schedule.id} execution failed:`, { error })
         }
 
         // Tag the execution created by executeFlow with the scheduleId
         try {
             await executionRepo.update({ sessionId: chatId }, { scheduleId: schedule.id })
         } catch (error) {
-            logger.warn(`[SchedulePoller] Failed to tag execution with scheduleId:`, { error })
+            logger.warn(`Failed to tag execution with scheduleId:`, { error })
         }
 
         // Update schedule status
@@ -204,6 +206,6 @@ export class SchedulePoller {
             lastRunStatus: executionState
         })
 
-        logger.info(`[SchedulePoller] Schedule "${schedule.name}" completed with status: ${executionState}`)
+        logger.info(`Schedule "${schedule.name}" completed with status: ${executionState}`)
     }
 }

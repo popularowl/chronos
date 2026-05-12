@@ -2,7 +2,9 @@ import { DataSource } from 'typeorm'
 import { v4 as uuidv4 } from 'uuid'
 import { ExecutionMetrics } from '../../database/entities/ExecutionMetrics'
 import { DailyMetrics } from '../../database/entities/DailyMetrics'
-import logger from '../../utils/logger'
+import { createModuleLogger } from '../../utils/logger'
+
+const logger = createModuleLogger('MetricsAggregator')
 
 const DEFAULT_ROLLUP_INTERVAL_MS = 86400000 // 24 hours
 
@@ -30,7 +32,7 @@ export class MetricsAggregator {
             ? parseInt(process.env.METRICS_ROLLUP_INTERVAL_MS, 10)
             : DEFAULT_ROLLUP_INTERVAL_MS
 
-        logger.info(`[MetricsAggregator] Starting with ${rollupIntervalMs}ms rollup interval`)
+        logger.info(`Starting with ${rollupIntervalMs}ms rollup interval`)
 
         this.intervalId = setInterval(() => {
             this.rollup()
@@ -52,7 +54,7 @@ export class MetricsAggregator {
             clearInterval(this.intervalId)
             this.intervalId = null
         }
-        logger.info('[MetricsAggregator] Stopped')
+        logger.info('Stopped')
     }
 
     /**
@@ -71,9 +73,9 @@ export class MetricsAggregator {
             await this.rollupDate(this.formatDate(yesterday))
             await this.rollupDate(this.formatDate(today))
 
-            logger.debug('[MetricsAggregator] Rollup completed')
+            logger.debug('Rollup completed')
         } catch (error) {
-            logger.warn(`[MetricsAggregator] Rollup error: ${error}`)
+            logger.warn(`Rollup error: ${error}`)
         } finally {
             this.running = false
         }
@@ -106,7 +108,7 @@ export class MetricsAggregator {
             try {
                 await this.rollupAgentflowDate(agentflowId, dateStr, metricsRepo, dailyRepo)
             } catch (error) {
-                logger.warn(`[MetricsAggregator] Error rolling up agentflow ${agentflowId} for ${dateStr}: ${error}`)
+                logger.warn(`Error rolling up agentflow ${agentflowId} for ${dateStr}: ${error}`)
             }
         }
     }

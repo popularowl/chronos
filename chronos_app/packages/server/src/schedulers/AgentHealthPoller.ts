@@ -2,7 +2,9 @@ import { DataSource } from 'typeorm'
 import { Agent } from '../database/entities/Agent'
 import { AgentRuntimeType, AgentStatus } from '../Interface'
 import { getErrorMessage } from '../errors/utils'
-import logger from '../utils/logger'
+import { createModuleLogger } from '../utils/logger'
+
+const logger = createModuleLogger('AgentHealthPoller')
 
 const DEFAULT_POLL_INTERVAL_MS = 30000
 const DEFAULT_HEALTH_TIMEOUT_MS = 5000
@@ -38,7 +40,7 @@ export class AgentHealthPoller {
             ? parseInt(process.env.AGENT_HEALTH_POLL_INTERVAL_MS, 10)
             : DEFAULT_POLL_INTERVAL_MS
 
-        logger.info(`[AgentHealthPoller] Starting with ${pollIntervalMs}ms poll interval`)
+        logger.info(`Starting with ${pollIntervalMs}ms poll interval`)
 
         this.intervalId = setInterval(() => {
             this.poll()
@@ -51,7 +53,7 @@ export class AgentHealthPoller {
         if (this.intervalId) {
             clearInterval(this.intervalId)
             this.intervalId = null
-            logger.info('[AgentHealthPoller] Stopped')
+            logger.info('Stopped')
         }
     }
 
@@ -73,7 +75,7 @@ export class AgentHealthPoller {
                 await Promise.allSettled(batch.map((agent) => this.checkAgentHealth(agent)))
             }
         } catch (error) {
-            logger.error('[AgentHealthPoller] Poll failed:', { error })
+            logger.error('Poll failed:', { error })
         } finally {
             this.running = false
         }
