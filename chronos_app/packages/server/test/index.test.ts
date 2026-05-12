@@ -119,6 +119,7 @@ import { mcpGatewayServiceTest } from './services/mcp-gateway.service.test'
 import { mcpGatewayServerServiceTest } from './services/mcp-gateway-server.service.test'
 import { mcpGatewayPolicyServiceTest } from './services/mcp-gateway-policy.service.test'
 import { mcpServerChangeLogServiceTest } from './services/mcp-server-change-log.service.test'
+import { oauth2RefreshServiceTest } from './services/oauth2-refresh.service.test'
 import { auditServiceTest } from './services/audit.service.test'
 import { mcpGatewayAuthMiddlewareTest } from './middlewares/mcp-gateway-auth.test'
 import { mcpGatewayRouteTest } from './routes/v1/mcp-gateway.route.test'
@@ -287,6 +288,7 @@ describe('Services Test', () => {
     mcpGatewayServerServiceTest()
     mcpGatewayPolicyServiceTest()
     mcpServerChangeLogServiceTest()
+    oauth2RefreshServiceTest()
     auditServiceTest()
     nodesPoolTest()
 })

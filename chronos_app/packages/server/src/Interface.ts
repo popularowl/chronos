@@ -365,6 +365,35 @@ export enum PolicyOutcome {
 }
 
 /**
+ * Decrypted payload shape for an `oauth2-refresh` credential (added in v1.8.0).
+ *
+ * Lives inside `Credential.encryptedData` — no schema change. The platform
+ * keeps the `refreshToken` long-lived and rotates `accessToken` + `expiresAt`
+ * via the token endpoint as expiry approaches. `tokenType` is the RFC 6749
+ * § 5.1 `token_type` (typically `Bearer`); `scope` is informational and
+ * not enforced at refresh time.
+ */
+export interface OAuth2RefreshPayload {
+    type: 'oauth2-refresh'
+    tokenEndpoint: string
+    clientId: string
+    clientSecret: string
+    refreshToken: string
+    accessToken: string
+    expiresAt: string
+    tokenType?: string
+    scope?: string
+}
+
+/**
+ * Credential-access audit `source` label for the OAuth2 refresh path.
+ * Free-form string at the schema layer; this constant is the canonical label
+ * used by `services/credentials/oauth2-refresh.ts` so the `/audit-log` filter
+ * has a stable token to match on.
+ */
+export const CREDENTIAL_ACCESS_SOURCE_OAUTH2_REFRESH = 'oauth2-refresh'
+
+/**
  * Discriminator for `mcp_server_change_log.changeKind`. v1.8.0 Group A.
  */
 export enum MCPServerChangeKind {

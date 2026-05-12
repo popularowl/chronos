@@ -12,6 +12,8 @@ cd chronos/chronos_app
 node -v
 pnpm install # pnpm nuke && pnpm install --frozen-lockfile
 pnpm build # pnpm build --force
+rm -rf ~/.chronos # chronos dev data stores. see https://intelligex.com/chronos/how-chronos-agent-builder-stores-data
+# export ENABLE_AGENTS=true && export ENABLE_MCP_SERVERS=true
 pnpm dev
 # chronos is accessible on localhost:3000
 ```
