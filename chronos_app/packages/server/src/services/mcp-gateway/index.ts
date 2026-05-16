@@ -15,6 +15,14 @@ const logger = createModuleLogger('MCPGateway')
 import auditService from '../audit'
 import httpAgentRuntime from '../agent-runtime-http'
 import { PolicyState, resolvePolicies, runWithPolicy } from './policy'
+import {
+    StdioBackoffState,
+    StdioRuntimeEnv,
+    buildStdioTransportForServer,
+    closeStdioTransportWithGrace,
+    readStdioRuntimeEnv,
+    STDIO_UNHEALTHY_FAILURE_THRESHOLD
+} from './stdio'
 
 const DEFAULT_IDLE_TIMEOUT_MS = 300000
 const REAPER_INTERVAL_MS = 60000
@@ -25,6 +33,8 @@ interface PoolEntry {
     client: Client
     serverSlug: string
     lastUsedAt: number
+    /** For stdio transport: the underlying SDK transport so health probes can read `pid` and shutdown can run the graceful close path. */
+    stdioTransport?: import('@modelcontextprotocol/sdk/client/stdio.js').StdioClientTransport
 }
 
 interface MCPGatewayOptions {
@@ -76,12 +86,22 @@ export class MCPGateway {
      * consistent with locked decision #7's single-instance MVP for v1.8.0).
      */
     private policyState: PolicyState = new PolicyState()
+    /**
+     * Per-server consecutive-spawn-failure tracker for stdio transport.
+     * `recordSuccess` on first successful spawn resets the counter; repeated
+     * failures past `STDIO_UNHEALTHY_FAILURE_THRESHOLD` cause the gateway to
+     * flip the row to UNHEALTHY before respawning further. v1.8.0 Group C.
+     */
+    private stdioBackoff: StdioBackoffState = new StdioBackoffState()
+    /** Snapshot of MCP_STDIO_* env vars read at construction time. */
+    private stdioRuntimeEnv: StdioRuntimeEnv
 
     constructor(options: MCPGatewayOptions) {
         this.appDataSource = options.appDataSource
         this.idleTimeoutMs = process.env.MCP_CLIENT_IDLE_TIMEOUT_MS
             ? parseInt(process.env.MCP_CLIENT_IDLE_TIMEOUT_MS, 10)
             : DEFAULT_IDLE_TIMEOUT_MS
+        this.stdioRuntimeEnv = readStdioRuntimeEnv()
     }
 
     public start(): void {
@@ -99,12 +119,27 @@ export class MCPGateway {
         this.pool.clear()
         for (const [id, entry] of entries) {
             try {
-                await entry.client.close()
+                await this.closePoolEntry(entry)
             } catch (error) {
                 logger.warn(`Failed to close client for server ${id}: ${getErrorMessage(error)}`)
             }
         }
         logger.info('Stopped')
+    }
+
+    /**
+     * Closes a pool entry's underlying transport with the right shutdown
+     * semantics. Stdio entries run through `closeStdioTransportWithGrace` so
+     * `MCP_STDIO_SHUTDOWN_GRACE_MS` is honoured as an upper bound; HTTP/SSE
+     * entries fall through to `client.close()` since their network transport
+     * has no spawn lifecycle to negotiate.
+     */
+    private async closePoolEntry(entry: PoolEntry): Promise<void> {
+        if (entry.stdioTransport) {
+            await closeStdioTransportWithGrace(entry.stdioTransport, entry.serverSlug, this.stdioRuntimeEnv)
+            return
+        }
+        await entry.client.close()
     }
 
     /**
@@ -444,6 +479,45 @@ export class MCPGateway {
     }
 
     /**
+     * Routine health probe called by `MCPServerHealthPoller`. Cheaper than
+     * `healthCheck()` for stdio rows — a pooled child's pid is checked for
+     * liveness rather than paying a `tools/list` round-trip on every cycle.
+     * HTTP / SSE rows continue to use `tools/list` (no cheaper signal is
+     * available for network transports).
+     *
+     * `healthCheck()` keeps its existing semantics and is the Test Connection
+     * button's surface — a real protocol round-trip the user can act on.
+     * Locked decision #23.
+     */
+    public async routineHealthProbe(server: MCPServer): Promise<void> {
+        if (server.transport === MCPServerTransport.STDIO) {
+            await this.routineHealthProbeStdio(server)
+            return
+        }
+        await this.healthCheck(server)
+    }
+
+    private async routineHealthProbeStdio(server: MCPServer): Promise<void> {
+        const existing = this.pool.get(server.id)
+        if (existing?.stdioTransport) {
+            const pid = existing.stdioTransport.pid
+            if (typeof pid === 'number' && pid > 0 && isPidAlive(pid)) {
+                return
+            }
+            // Pool holds a stale handle — drop it so the next call respawns.
+            this.pool.delete(server.id)
+            this.closePoolEntry(existing).catch((error) => {
+                logger.warn(`Failed to close stale stdio entry for ${server.slug}: ${getErrorMessage(error)}`)
+            })
+            throw new Error(`stdio child for ${server.slug} is not alive`)
+        }
+        // No live pool entry — attempt a fresh spawn so an UNHEALTHY row can
+        // recover when the underlying issue is resolved. `openStdio` respects
+        // the backoff window and will throw if the window hasn't elapsed.
+        await this.openStdio(server)
+    }
+
+    /**
      * Calls `tools/list` against an unsaved MCP server using a transient
      * (non-pooled, immediately closed) client. Used by the registration UI's
      * Discover Tools button before the operator commits a new server. SSRF
@@ -459,7 +533,13 @@ export class MCPGateway {
         slug?: string
     }): Promise<LiveToolDescriptor[]> {
         if (input.transport === MCPServerTransport.STDIO) {
-            throw new InternalChronosError(StatusCodes.NOT_IMPLEMENTED, 'stdio transport is not supported in v1.6')
+            // PR-1 ships server-side stdio dispatch only. Pre-save preview for
+            // stdio is deferred — operators save the row and click Test
+            // Connection on the detail page to confirm the spawn works.
+            throw new InternalChronosError(
+                StatusCodes.NOT_IMPLEMENTED,
+                'stdio transport preview is not available — save the server and use Test Connection on the detail page'
+            )
         }
         if (!input.url) {
             throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'url is required to preview tools')
@@ -536,7 +616,7 @@ export class MCPGateway {
         for (const [id, entry] of this.pool.entries()) {
             if (entry.lastUsedAt < cutoff) {
                 this.pool.delete(id)
-                entry.client.close().catch((error) => {
+                this.closePoolEntry(entry).catch((error) => {
                     logger.warn(`Failed to close idle client for server ${id}: ${getErrorMessage(error)}`)
                 })
             }
@@ -557,11 +637,13 @@ export class MCPGateway {
             existing.lastUsedAt = Date.now()
             return existing
         }
+
+        if (server.transport === MCPServerTransport.STDIO) {
+            return this.openStdio(server)
+        }
+
         if (!server.url) {
             throw new InternalChronosError(StatusCodes.BAD_REQUEST, `MCP server ${server.slug} has no url configured`)
-        }
-        if (server.transport === MCPServerTransport.STDIO) {
-            throw new InternalChronosError(StatusCodes.NOT_IMPLEMENTED, `stdio transport is not supported in v1.6`)
         }
 
         const requestHeaders = parseHeaderMap(server.requestHeaders)
@@ -591,6 +673,99 @@ export class MCPGateway {
         const entry: PoolEntry = { client, serverSlug: server.slug, lastUsedAt: Date.now() }
         this.pool.set(server.id, entry)
         return entry
+    }
+
+    /**
+     * Lazy-spawn path for stdio transport. Respects the per-server backoff
+     * state — when consecutive failures land inside the backoff window, the
+     * call rejects with 503 until the window elapses. On spawn failure
+     * increments the failure counter; on the threshold-th consecutive
+     * failure flips `MCPServer.status` to UNHEALTHY so invocations short-
+     * circuit at the entry check in `invoke()`. On success resets the
+     * counter and (if the row was previously UNHEALTHY due to stdio
+     * failures) marks it HEALTHY again so the catalog re-emerges.
+     */
+    private async openStdio(server: MCPServer): Promise<PoolEntry> {
+        const backoffStatus = this.stdioBackoff.allowedNow(server.id)
+        if (!backoffStatus.allowed) {
+            throw new InternalChronosError(
+                StatusCodes.SERVICE_UNAVAILABLE,
+                `MCP server ${server.slug} stdio respawn backoff active — retry in ${backoffStatus.retryInMs}ms`
+            )
+        }
+
+        const client = new Client({ name: 'chronos-gateway', version: '1.0.0' }, { capabilities: {} })
+        let transport: import('@modelcontextprotocol/sdk/client/stdio.js').StdioClientTransport
+        try {
+            transport = await buildStdioTransportForServer(server, this.stdioRuntimeEnv)
+            await client.connect(transport)
+        } catch (error) {
+            const updated = this.stdioBackoff.recordFailure(server.id, this.stdioRuntimeEnv)
+            logger.warn({
+                event: 'mcp.stdio.spawn.error',
+                server: server.slug,
+                consecutiveFailures: updated.consecutiveFailures,
+                nextAllowedInMs: updated.nextAllowedAt - Date.now(),
+                error: getErrorMessage(error)
+            })
+            if (updated.consecutiveFailures >= STDIO_UNHEALTHY_FAILURE_THRESHOLD) {
+                await this.markStdioUnhealthy(server, updated.consecutiveFailures)
+            }
+            if (error instanceof InternalChronosError) throw error
+            throw new InternalChronosError(
+                StatusCodes.BAD_GATEWAY,
+                `Failed to spawn stdio MCP server ${server.slug}: ${getErrorMessage(error)}`
+            )
+        }
+
+        this.stdioBackoff.recordSuccess(server.id)
+        if (server.status === MCPServerStatus.UNHEALTHY) {
+            // Best-effort: re-mark HEALTHY on first successful respawn so the
+            // catalog re-emerges. Health poller would do the same on its
+            // next cycle; this just shortens the window.
+            try {
+                await this.appDataSource
+                    .getRepository(MCPServer)
+                    .update(server.id, { status: MCPServerStatus.HEALTHY, lastHealthError: null as any })
+            } catch (error) {
+                logger.warn(`Failed to clear UNHEALTHY status for stdio server ${server.slug}: ${getErrorMessage(error)}`)
+            }
+        }
+
+        const entry: PoolEntry = {
+            client,
+            serverSlug: server.slug,
+            lastUsedAt: Date.now(),
+            stdioTransport: transport
+        }
+        this.pool.set(server.id, entry)
+        return entry
+    }
+
+    private async markStdioUnhealthy(server: MCPServer, consecutiveFailures: number): Promise<void> {
+        try {
+            await this.appDataSource.getRepository(MCPServer).update(server.id, {
+                status: MCPServerStatus.UNHEALTHY,
+                lastHealthError: `stdio process failed to spawn ${consecutiveFailures} times consecutively`
+            })
+        } catch (error) {
+            logger.warn(`Failed to mark stdio server ${server.slug} UNHEALTHY: ${getErrorMessage(error)}`)
+        }
+    }
+}
+
+/**
+ * Cheap liveness check for a child process id. `process.kill(pid, 0)` is
+ * the Unix-portable "is this pid still running" probe — sends no signal,
+ * returns true if the process exists, throws if it doesn't or the caller
+ * lacks permission. v1.8.0 Group C, used by the routine stdio probe.
+ */
+const isPidAlive = (pid: number): boolean => {
+    try {
+        process.kill(pid, 0)
+        return true
+    } catch {
+        return false
     }
 }
 

@@ -14,6 +14,7 @@ import { RenameCallbackTokenToMcpGatewayToken1800000000012 } from './18000000000
 import { AddMCPServerPolicies1800000000013 } from './1800000000013-AddMCPServerPolicies'
 import { CreateMCPServerChangeLog1800000000014 } from './1800000000014-CreateMCPServerChangeLog'
 import { AddPolicyOutcomeToToolInvocationAudit1800000000015 } from './1800000000015-AddPolicyOutcomeToToolInvocationAudit'
+import { AddStdioFieldsToMCPServer1800000000016 } from './1800000000016-AddStdioFieldsToMCPServer'
 
 export const sqliteMigrations = [
     ConsolidatedBaseline1800000000000,
@@ -31,5 +32,6 @@ export const sqliteMigrations = [
     RenameCallbackTokenToMcpGatewayToken1800000000012,
     AddMCPServerPolicies1800000000013,
     CreateMCPServerChangeLog1800000000014,
-    AddPolicyOutcomeToToolInvocationAudit1800000000015
+    AddPolicyOutcomeToToolInvocationAudit1800000000015,
+    AddStdioFieldsToMCPServer1800000000016
 ]

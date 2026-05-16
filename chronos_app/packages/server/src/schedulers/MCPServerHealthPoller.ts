@@ -21,9 +21,12 @@ interface MCPServerHealthPollerOptions {
  * Polls registered MCP servers and updates `status` / `lastHealthCheckAt` /
  * `lastHealthError`. Same shape and atomic-claim model as AgentHealthPoller.
  *
- * Probe delegates to `MCPGateway.healthCheck()` — a real MCP `tools/list`
- * round-trip via the pooled client so liveness reflects what callbacks will
- * see. `stdio` transport is skipped (gateway does not support it yet).
+ * Probe delegates to `MCPGateway.routineHealthProbe()` — for HTTP / SSE that
+ * runs a real MCP `tools/list` round-trip via the pooled client (so liveness
+ * reflects what callbacks will see); for stdio it checks `child.pid` is
+ * alive in the pool or attempts a fresh spawn if the row is currently dark
+ * (locked decision #23). Test Connection on the detail page calls the
+ * heavier `healthCheck()` regardless of transport.
  *
  * Gated externally on `ENABLE_MCP_SERVERS=true`.
  */
@@ -70,12 +73,14 @@ export class MCPServerHealthPoller {
 
         try {
             const repo = this.appDataSource.getRepository(MCPServer)
+            // All transports (`streamable-http` / `sse` / `stdio`) are polled.
+            // Per-transport probe shape is owned by `MCPGateway.routineHealthProbe()`.
             const candidates = await repo
                 .createQueryBuilder('mcp_server')
                 .where('mcp_server.enabled = :enabled', { enabled: true })
                 .andWhere('mcp_server.status <> :status', { status: MCPServerStatus.DISABLED })
                 .andWhere('mcp_server.transport IN (:...transports)', {
-                    transports: [MCPServerTransport.STREAMABLE_HTTP, MCPServerTransport.SSE]
+                    transports: [MCPServerTransport.STREAMABLE_HTTP, MCPServerTransport.SSE, MCPServerTransport.STDIO]
                 })
                 .getMany()
 
@@ -116,12 +121,19 @@ export class MCPServerHealthPoller {
         const previousStatus = server.status
         let newStatus: MCPServerStatus
 
-        if (!server.url) {
-            await repo.update(server.id, { status: MCPServerStatus.UNHEALTHY, lastHealthError: 'No url configured' })
+        // Transport-specific minimum-config check. Network transports need a
+        // url; stdio needs a command. Either missing is an immediate UNHEALTHY
+        // — never reaches the gateway.
+        const isStdio = server.transport === MCPServerTransport.STDIO
+        const missingConfig = isStdio ? !server.command : !server.url
+        const missingConfigMessage = isStdio ? 'No command configured' : 'No url configured'
+
+        if (missingConfig) {
+            await repo.update(server.id, { status: MCPServerStatus.UNHEALTHY, lastHealthError: missingConfigMessage })
             newStatus = MCPServerStatus.UNHEALTHY
         } else {
             try {
-                await this.mcpGateway.healthCheck(server)
+                await this.mcpGateway.routineHealthProbe(server)
                 await repo.update(server.id, { status: MCPServerStatus.HEALTHY, lastHealthError: null as any })
                 newStatus = MCPServerStatus.HEALTHY
             } catch (error) {

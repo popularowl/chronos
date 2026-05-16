@@ -317,7 +317,9 @@ export enum MCPServerStatus {
  * the platform's MCP gateway. Agents address tools as `<slug>.<tool>`; the
  * gateway resolves the namespace, enforces the intersection of
  * `Agent.allowedTools` and `MCPServer.allowedTools`, and proxies the call.
- * v1.6.0 supports `streamable-http` and `sse`; `stdio` is reserved.
+ * Since the v1.6.0 `streamable-http` and `sse`support; sinve v1.8.0 `stdio`
+ * (spawn-and-pool child processes). For stdio rows, `command` is required
+ * and `args` / `env` carry the spawn-time config.
  */
 export interface IMCPServer {
     id: string
@@ -327,6 +329,21 @@ export interface IMCPServer {
     transport: MCPServerTransport
     url?: string
     command?: string
+    /**
+     * JSON-stringified array of argv strings passed to `child_process.spawn`
+     * for `stdio` transport. Strings may carry `{{credentialId:field}}`
+     * interpolation tokens resolved at spawn time against the credential
+     * vault — see `services/mcp-gateway/stdio.ts`.
+     */
+    args?: string
+    /**
+     * JSON-stringified `Record<string, string | StdioCredentialRef>` of env
+     * vars merged into the spawn-time env for `stdio` transport. Object
+     * values matching `{ credentialId, field }` are resolved against the
+     * credential vault at spawn time and never persisted in plaintext.
+     * 
+     */
+    env?: string
     outboundAuth?: string
     allowedTools?: string
     requestHeaders?: string
@@ -336,7 +353,7 @@ export interface IMCPServer {
      * applied by the MCP gateway on each `tools/call`. Each top-level key
      * is optional; absent keys fall back to platform defaults resolved at
      * the service layer from `MCP_DEFAULT_RETRY_MAX_ATTEMPTS` /
-     * `MCP_DEFAULT_RATE_LIMIT_RPS`. v1.8.0 Group A.
+     * `MCP_DEFAULT_RATE_LIMIT_RPS`.
      */
     policies?: string
     status: MCPServerStatus
@@ -347,6 +364,22 @@ export interface IMCPServer {
     createdDate: Date
     updatedDate: Date
 }
+
+/**
+ * Credential reference in `MCPServer.env` values (Option A secret-storage
+ * shape). The gateway's stdio pool resolves these at spawn time, decrypts
+ * the named field from the referenced credential, and substitutes the
+ * decrypted string into the spawn-time env. Plaintext secrets never land
+ * in the `MCPServer` row. `args` strings carry the same reference via the
+ * `{{credentialId:field}}` interpolation token syntax.
+ */
+export interface StdioCredentialRef {
+    credentialId: string
+    field: string
+}
+
+/** Single value in `MCPServer.env` — inline literal or credential ref. */
+export type StdioEnvValue = string | StdioCredentialRef
 
 /**
  * Reliability-policy verdict carried on each `tool_invocation_audit` row.

@@ -118,6 +118,7 @@ import { agentRuntimeHttpServiceTest } from './services/agent-runtime-http.servi
 import { mcpGatewayServiceTest } from './services/mcp-gateway.service.test'
 import { mcpGatewayServerServiceTest } from './services/mcp-gateway-server.service.test'
 import { mcpGatewayPolicyServiceTest } from './services/mcp-gateway-policy.service.test'
+import { mcpStdioServiceTest } from './services/mcp-stdio.service.test'
 import { mcpServerChangeLogServiceTest } from './services/mcp-server-change-log.service.test'
 import { oauth2RefreshServiceTest } from './services/oauth2-refresh.service.test'
 import { auditServiceTest } from './services/audit.service.test'
@@ -288,6 +289,7 @@ describe('Services Test', () => {
     mcpGatewayServiceTest()
     mcpGatewayServerServiceTest()
     mcpGatewayPolicyServiceTest()
+    mcpStdioServiceTest()
     mcpServerChangeLogServiceTest()
     oauth2RefreshServiceTest()
     auditServiceTest()

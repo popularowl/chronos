@@ -244,6 +244,12 @@ export const snapshotMCPServer = (server: Record<string, unknown>): Record<strin
         'transport',
         'url',
         'command',
+        // v1.8.0: stdio args + env. Credential references inside
+        // these fields are safe by construction (they reference, not embed,
+        // secrets). Inline plaintext values stay visible in diffs — operators
+        // are warned in the tutorial to use credential refs for any secret.
+        'args',
+        'env',
         'outboundAuth',
         'allowedTools',
         'requestHeaders',

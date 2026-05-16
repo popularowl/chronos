@@ -152,10 +152,13 @@ export function mcpGatewayServiceTest() {
                 await expect(gateway.invoke(baseAgent(), 'postgres.query', {})).rejects.toMatchObject({ statusCode: 400 })
             })
 
-            it('returns 501 for stdio transport', async () => {
-                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer({ transport: 'stdio' }))
+            it('returns 400 when an stdio row has no command', async () => {
+                // v1.8.0 — stdio transport is supported, but a row with no
+                // command (registration constraint) still cannot spawn. parseStdioConfig
+                // throws 400 which surfaces through the gateway invoke path.
+                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer({ transport: 'stdio', url: undefined, command: undefined }))
                 const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
-                await expect(gateway.invoke(baseAgent(), 'postgres.query', {})).rejects.toMatchObject({ statusCode: 501 })
+                await expect(gateway.invoke(baseAgent(), 'postgres.query', {})).rejects.toMatchObject({ statusCode: 400 })
             })
         })
 

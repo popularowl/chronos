@@ -21,10 +21,10 @@ function mockServer(overrides: Partial<MCPServer> = {}): MCPServer {
 
 /**
  * Test suite for MCPServerHealthPoller.
- * Verifies the poll cycle, transport filter (stdio excluded), atomic-claim
- * behaviour, state-transition writes, and the no-overlap guard. Gateway
- * health probe is stubbed — see mcp-gateway.service.test for the real
- * `tools/list` round-trip behaviour.
+ * Verifies the poll cycle, transport filter (all three transports included
+ * since v1.8.0), atomic-claim behaviour, state-transition writes,
+ * and the no-overlap guard. Gateway probe is stubbed — see
+ * mcp-gateway.service.test for the real `tools/list` round-trip behaviour.
  */
 export function mcpServerHealthPollerTest() {
     describe('MCPServerHealthPoller', () => {
@@ -56,7 +56,8 @@ export function mcpServerHealthPollerTest() {
                 getRepository: jest.fn().mockReturnValue(mockServerRepo)
             }
             mockGateway = {
-                healthCheck: jest.fn().mockResolvedValue(undefined)
+                healthCheck: jest.fn().mockResolvedValue(undefined),
+                routineHealthProbe: jest.fn().mockResolvedValue(undefined)
             }
         })
 
@@ -86,14 +87,14 @@ export function mcpServerHealthPollerTest() {
         // ─── poll ──────────────────────────────────────────────────────
 
         describe('poll', () => {
-            it('queries only enabled, non-DISABLED servers with streamable-http or sse transport', async () => {
+            it('queries enabled, non-DISABLED servers across all three transports (incl. stdio)', async () => {
                 const poller = createPoller()
                 await (poller as any).poll()
                 expect(mockServerRepo.createQueryBuilder).toHaveBeenCalledWith('mcp_server')
                 expect(mockQueryBuilder.where).toHaveBeenCalledWith('mcp_server.enabled = :enabled', { enabled: true })
                 expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('mcp_server.status <> :status', { status: 'DISABLED' })
                 expect(mockQueryBuilder.andWhere).toHaveBeenCalledWith('mcp_server.transport IN (:...transports)', {
-                    transports: ['streamable-http', 'sse']
+                    transports: ['streamable-http', 'sse', 'stdio']
                 })
             })
 
@@ -117,19 +118,19 @@ export function mcpServerHealthPollerTest() {
         // ─── checkServerHealth ─────────────────────────────────────────
 
         describe('checkServerHealth', () => {
-            it('marks HEALTHY when gateway.healthCheck resolves and clears lastHealthError', async () => {
+            it('marks HEALTHY when gateway.routineHealthProbe resolves and clears lastHealthError', async () => {
                 mockQueryBuilder.getMany.mockResolvedValue([mockServer()])
                 const poller = createPoller()
                 await (poller as any).poll()
-                expect(mockGateway.healthCheck).toHaveBeenCalledWith(expect.objectContaining({ id: 's1' }))
+                expect(mockGateway.routineHealthProbe).toHaveBeenCalledWith(expect.objectContaining({ id: 's1' }))
                 expect(mockServerRepo.update).toHaveBeenCalledWith(
                     's1',
                     expect.objectContaining({ status: 'HEALTHY', lastHealthError: null })
                 )
             })
 
-            it('marks UNHEALTHY with prefixed message when gateway.healthCheck throws', async () => {
-                mockGateway.healthCheck.mockRejectedValue(new Error('rpc broken'))
+            it('marks UNHEALTHY with prefixed message when gateway.routineHealthProbe throws', async () => {
+                mockGateway.routineHealthProbe.mockRejectedValue(new Error('rpc broken'))
                 mockQueryBuilder.getMany.mockResolvedValue([mockServer()])
                 const poller = createPoller()
                 await (poller as any).poll()
@@ -143,7 +144,7 @@ export function mcpServerHealthPollerTest() {
             })
 
             it('marks UNHEALTHY with the timeout message verbatim (no "Health check failed:" prefix)', async () => {
-                mockGateway.healthCheck.mockRejectedValue(new Error('Health check timed out after 5000ms'))
+                mockGateway.routineHealthProbe.mockRejectedValue(new Error('Health check timed out after 5000ms'))
                 mockQueryBuilder.getMany.mockResolvedValue([mockServer()])
                 const poller = createPoller()
                 await (poller as any).poll()
@@ -156,14 +157,25 @@ export function mcpServerHealthPollerTest() {
                 )
             })
 
-            it('marks UNHEALTHY when no url is configured (without invoking the gateway)', async () => {
+            it('marks UNHEALTHY when an HTTP / SSE row has no url (gateway not invoked)', async () => {
                 mockQueryBuilder.getMany.mockResolvedValue([mockServer({ url: undefined })])
                 const poller = createPoller()
                 await (poller as any).poll()
-                expect(mockGateway.healthCheck).not.toHaveBeenCalled()
+                expect(mockGateway.routineHealthProbe).not.toHaveBeenCalled()
                 expect(mockServerRepo.update).toHaveBeenCalledWith(
                     's1',
                     expect.objectContaining({ status: 'UNHEALTHY', lastHealthError: 'No url configured' })
+                )
+            })
+
+            it('marks UNHEALTHY when an stdio row has no command (gateway not invoked)', async () => {
+                mockQueryBuilder.getMany.mockResolvedValue([mockServer({ transport: 'stdio' as any, url: undefined, command: undefined })])
+                const poller = createPoller()
+                await (poller as any).poll()
+                expect(mockGateway.routineHealthProbe).not.toHaveBeenCalled()
+                expect(mockServerRepo.update).toHaveBeenCalledWith(
+                    's1',
+                    expect.objectContaining({ status: 'UNHEALTHY', lastHealthError: 'No command configured' })
                 )
             })
 
@@ -172,7 +184,7 @@ export function mcpServerHealthPollerTest() {
                 mockQueryBuilder.getMany.mockResolvedValue([mockServer()])
                 const poller = createPoller()
                 await (poller as any).poll()
-                expect(mockGateway.healthCheck).not.toHaveBeenCalled()
+                expect(mockGateway.routineHealthProbe).not.toHaveBeenCalled()
                 expect(mockServerRepo.update).not.toHaveBeenCalled()
             })
         })
