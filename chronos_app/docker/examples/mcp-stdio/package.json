@@ -1,0 +1,16 @@
+{
+    "name": "chronos-example-mcp-stdio",
+    "version": "1.8.0",
+    "private": true,
+    "type": "module",
+    "description": "Test fixture — tiny stdio MCP server used by the smoke runner to exercise the Chronos stdio spawn-and-pool path. Not a reference MCP server, not for use outside the smoke suite.",
+    "scripts": {
+        "start": "tsx src/index.ts"
+    },
+    "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.29.0",
+        "tsx": "^4.19.0",
+        "typescript": "^5.6.0",
+        "zod": "^4.4.3"
+    }
+}

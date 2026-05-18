@@ -43,8 +43,16 @@ import useNotifier from '@/utils/useNotifier'
 const TRANSPORTS = [
     { value: 'streamable-http', label: 'Streamable HTTP' },
     { value: 'sse', label: 'SSE' },
-    { value: 'stdio', label: 'stdio (v1.8)', disabled: true }
+    { value: 'stdio', label: 'stdio' }
 ]
+
+/**
+ * Env var name regex used to validate keys in the stdio `env` editor.
+ * Matches the shell convention — uppercase letters, digits, underscores;
+ * may not start with a digit. Case-insensitive at validation time so
+ * `path_extra` is accepted (Unix tools accept lowercase env vars).
+ */
+const ENV_KEY_REGEX = /^[A-Z_][A-Z0-9_]*$/i
 
 const AUTH_TYPES = [
     { value: 'none', label: 'None' },
@@ -83,6 +91,14 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const [description, setDescription] = useState('')
     const [transport, setTransport] = useState('streamable-http')
     const [url, setUrl] = useState('')
+    // stdio fields — only relevant when transport === 'stdio'. `argsList` is
+    // a plain string[] rendered one-input-per-row; `envEntries` is an array
+    // of `{ key, mode: 'inline'|'credential', value, credentialId, field }`
+    // rendered as a key-value grid. The persisted JSON shapes are built in
+    // `buildBody()` from these structures.
+    const [command, setCommand] = useState('')
+    const [argsList, setArgsList] = useState([])
+    const [envEntries, setEnvEntries] = useState([])
     const [timeoutMs, setTimeoutMs] = useState(30000)
     const [requestHeadersText, setRequestHeadersText] = useState('')
     const [authType, setAuthType] = useState('none')
@@ -143,6 +159,11 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const authCredentialOptions =
         authType === 'oauth2-refresh' ? credentials.filter((c) => c.credentialName === 'oauth2-refresh') : credentials
 
+    // The stdio `env` editor picks against the same vault, but excludes
+    // `oauth2-refresh` credentials: rotation would surprise an already-
+    // spawned child since the env was resolved once at spawn time.
+    const stdioCredentialOptions = credentials.filter((c) => c.credentialName !== 'oauth2-refresh')
+
     // Hydrate fields when transitioning between ADD / EDIT.
     useEffect(() => {
         if (!show) return
@@ -155,6 +176,9 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             setDescription(s.description || '')
             setTransport(s.transport || 'streamable-http')
             setUrl(s.url || '')
+            setCommand(s.command || '')
+            setArgsList(toStringArray(s.args))
+            setEnvEntries(parseStoredEnv(s.env))
             setTimeoutMs(s.timeoutMs ?? 30000)
             setRequestHeadersText(formatJson(s.requestHeaders))
 
@@ -201,6 +225,9 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             setDescription('')
             setTransport('streamable-http')
             setUrl('')
+            setCommand('')
+            setArgsList([])
+            setEnvEntries([])
             setTimeoutMs(30000)
             setRequestHeadersText('')
             setAuthType('none')
@@ -261,7 +288,28 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
         if (!name.trim()) errors.name = 'Name is required'
         if (!transport) errors.transport = 'Transport is required'
         if (transport !== 'stdio' && !url.trim()) errors.url = 'URL is required for HTTP transports'
-        if (transport === 'stdio') errors.transport = 'stdio transport ships in v1.8'
+        if (transport === 'stdio' && !command.trim()) errors.command = 'Command is required for stdio transport'
+        if (transport === 'stdio') {
+            const envKeyErrors = []
+            const seenKeys = new Set()
+            envEntries.forEach((entry, idx) => {
+                const trimmedKey = (entry.key || '').trim()
+                if (!trimmedKey) {
+                    envKeyErrors.push(`Row ${idx + 1}: env var name is required`)
+                } else if (!ENV_KEY_REGEX.test(trimmedKey)) {
+                    envKeyErrors.push(`Row ${idx + 1}: "${trimmedKey}" is not a valid env var name`)
+                } else if (seenKeys.has(trimmedKey)) {
+                    envKeyErrors.push(`Row ${idx + 1}: duplicate env var name "${trimmedKey}"`)
+                } else {
+                    seenKeys.add(trimmedKey)
+                }
+                if (entry.mode === 'credential') {
+                    if (!entry.credentialId) envKeyErrors.push(`Row ${idx + 1}: credential is required`)
+                    if (!(entry.field || '').trim()) envKeyErrors.push(`Row ${idx + 1}: credential field name is required`)
+                }
+            })
+            if (envKeyErrors.length > 0) errors.env = envKeyErrors.join(' · ')
+        }
         if (requestHeadersText && parseJson(requestHeadersText) === undefined) {
             errors.requestHeaders = 'Headers must be valid JSON object'
         }
@@ -284,12 +332,19 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
 
         const requestHeaders = requestHeadersText ? parseJson(requestHeadersText) : undefined
 
+        const isStdio = transport === 'stdio'
+        const argsForBody = isStdio ? argsList.filter((a) => typeof a === 'string' && a.length > 0) : undefined
+        const envForBody = isStdio ? buildStdioEnvBody(envEntries) : undefined
+
         const body = {
             name,
             slug: slug || undefined,
             description: description || undefined,
             transport,
-            url: url || undefined,
+            url: isStdio ? undefined : url || undefined,
+            command: isStdio ? command : undefined,
+            args: argsForBody && argsForBody.length > 0 ? argsForBody : undefined,
+            env: envForBody && Object.keys(envForBody).length > 0 ? envForBody : undefined,
             timeoutMs: Number(timeoutMs) || 30000,
             requestHeaders,
             outboundAuth: buildOutboundAuth(),
@@ -346,7 +401,12 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     }
 
     const onDiscoverTools = async () => {
-        if (!url.trim()) return
+        const isStdio = transport === 'stdio'
+        if (isStdio && !isEdit) {
+            showError('Save the server first — stdio preview is not available pre-save', false)
+            return
+        }
+        if (!isStdio && !url.trim()) return
         setDiscoverLoading(true)
         try {
             let res
@@ -473,6 +533,188 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                             {fieldErrors.url && <FormHelperText error>{fieldErrors.url}</FormHelperText>}
                         </Box>
                     )}
+                    {transport === 'stdio' && (
+                        <>
+                            <Box>
+                                <Typography variant='overline'>
+                                    Command <span style={{ color: 'red' }}>*</span>
+                                </Typography>
+                                <OutlinedInput
+                                    fullWidth
+                                    size='small'
+                                    value={command}
+                                    error={!!fieldErrors.command}
+                                    onChange={(e) => {
+                                        setCommand(e.target.value)
+                                        clearError('command')
+                                    }}
+                                    placeholder='npx'
+                                    sx={{ fontFamily: 'monospace' }}
+                                />
+                                <FormHelperText>
+                                    Executable to spawn. Runs as the same OS user as Chronos — only register binaries you trust.
+                                </FormHelperText>
+                                {fieldErrors.command && <FormHelperText error>{fieldErrors.command}</FormHelperText>}
+                            </Box>
+                            <Box>
+                                <Stack direction='row' alignItems='center' justifyContent='space-between' sx={{ mb: 0.5 }}>
+                                    <Typography variant='overline'>Args</Typography>
+                                    <Button size='small' onClick={() => setArgsList([...argsList, ''])}>
+                                        + Add arg
+                                    </Button>
+                                </Stack>
+                                <Stack spacing={1}>
+                                    {argsList.length === 0 && (
+                                        <FormHelperText>
+                                            No args. Click <b>+ Add arg</b> to pass one or more strings to the executable.
+                                        </FormHelperText>
+                                    )}
+                                    {argsList.map((arg, idx) => (
+                                        <Stack key={`arg-${idx}`} direction='row' spacing={1} alignItems='center'>
+                                            <OutlinedInput
+                                                fullWidth
+                                                size='small'
+                                                value={arg}
+                                                onChange={(e) => {
+                                                    const next = argsList.slice()
+                                                    next[idx] = e.target.value
+                                                    setArgsList(next)
+                                                }}
+                                                placeholder={
+                                                    idx === 0
+                                                        ? '-y'
+                                                        : idx === 1
+                                                        ? '@modelcontextprotocol/server-postgres'
+                                                        : 'postgresql://localhost/db'
+                                                }
+                                                sx={{ fontFamily: 'monospace', fontSize: '0.85rem' }}
+                                            />
+                                            <Button
+                                                size='small'
+                                                color='error'
+                                                onClick={() => setArgsList(argsList.filter((_, i) => i !== idx))}
+                                            >
+                                                Remove
+                                            </Button>
+                                        </Stack>
+                                    ))}
+                                </Stack>
+                                <FormHelperText>
+                                    Argv strings passed verbatim to <code>child_process.spawn</code>. Use{' '}
+                                    <code>{`{{credentialId:fieldName}}`}</code> inside a string to interpolate a decrypted credential field
+                                    at spawn time (e.g. inside a Postgres connection string).
+                                </FormHelperText>
+                            </Box>
+                            <Box>
+                                <Stack direction='row' alignItems='center' justifyContent='space-between' sx={{ mb: 0.5 }}>
+                                    <Typography variant='overline'>Env</Typography>
+                                    <Button
+                                        size='small'
+                                        onClick={() =>
+                                            setEnvEntries([
+                                                ...envEntries,
+                                                { key: '', mode: 'inline', value: '', credentialId: '', field: '' }
+                                            ])
+                                        }
+                                    >
+                                        + Add env var
+                                    </Button>
+                                </Stack>
+                                <Stack spacing={1}>
+                                    {envEntries.length === 0 && (
+                                        <FormHelperText>
+                                            No env vars. Click <b>+ Add env var</b> to set one or more environment variables on the spawned
+                                            child.
+                                        </FormHelperText>
+                                    )}
+                                    {envEntries.map((entry, idx) => (
+                                        <Stack key={`env-${idx}`} spacing={0.5}>
+                                            <Stack direction='row' spacing={1} alignItems='center'>
+                                                <OutlinedInput
+                                                    size='small'
+                                                    sx={{ minWidth: 220, fontFamily: 'monospace', fontSize: '0.85rem' }}
+                                                    value={entry.key}
+                                                    onChange={(e) =>
+                                                        updateEnvEntry(envEntries, setEnvEntries, idx, { key: e.target.value })
+                                                    }
+                                                    placeholder='GITHUB_PERSONAL_ACCESS_TOKEN'
+                                                />
+                                                <Select
+                                                    size='small'
+                                                    value={entry.mode}
+                                                    onChange={(e) =>
+                                                        updateEnvEntry(envEntries, setEnvEntries, idx, { mode: e.target.value })
+                                                    }
+                                                    sx={{ minWidth: 130 }}
+                                                >
+                                                    <MenuItem value='inline'>Inline value</MenuItem>
+                                                    <MenuItem value='credential'>From credential</MenuItem>
+                                                </Select>
+                                                <Button
+                                                    size='small'
+                                                    color='error'
+                                                    onClick={() => setEnvEntries(envEntries.filter((_, i) => i !== idx))}
+                                                >
+                                                    Remove
+                                                </Button>
+                                            </Stack>
+                                            {entry.mode === 'inline' ? (
+                                                <OutlinedInput
+                                                    size='small'
+                                                    type='password'
+                                                    fullWidth
+                                                    value={entry.value}
+                                                    onChange={(e) =>
+                                                        updateEnvEntry(envEntries, setEnvEntries, idx, { value: e.target.value })
+                                                    }
+                                                    placeholder='Inline value (visible in change-log diffs — prefer a credential)'
+                                                />
+                                            ) : (
+                                                <Stack direction='row' spacing={1}>
+                                                    <Select
+                                                        size='small'
+                                                        fullWidth
+                                                        value={entry.credentialId}
+                                                        onChange={(e) =>
+                                                            updateEnvEntry(envEntries, setEnvEntries, idx, {
+                                                                credentialId: e.target.value
+                                                            })
+                                                        }
+                                                        displayEmpty
+                                                    >
+                                                        <MenuItem value='' disabled>
+                                                            {stdioCredentialOptions.length === 0
+                                                                ? 'No credentials available'
+                                                                : 'Select a credential'}
+                                                        </MenuItem>
+                                                        {stdioCredentialOptions.map((c) => (
+                                                            <MenuItem key={c.id} value={c.id}>
+                                                                {c.name}
+                                                            </MenuItem>
+                                                        ))}
+                                                    </Select>
+                                                    <OutlinedInput
+                                                        size='small'
+                                                        sx={{ minWidth: 180, fontFamily: 'monospace', fontSize: '0.85rem' }}
+                                                        value={entry.field}
+                                                        onChange={(e) =>
+                                                            updateEnvEntry(envEntries, setEnvEntries, idx, { field: e.target.value })
+                                                        }
+                                                        placeholder='field name (e.g. token)'
+                                                    />
+                                                </Stack>
+                                            )}
+                                        </Stack>
+                                    ))}
+                                </Stack>
+                                <FormHelperText>
+                                    Env vars merged into the spawn-time env. Inline values land plaintext in change-log diffs — use{' '}
+                                    <b>From credential</b> for any secret so the value stays in the vault.
+                                </FormHelperText>
+                                {fieldErrors.env && <FormHelperText error>{fieldErrors.env}</FormHelperText>}
+                            </Box>
+                        </>
+                    )}
                     <Box>
                         <Typography variant='overline'>Timeout (ms)</Typography>
                         <OutlinedInput
@@ -584,7 +826,11 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                             <Typography variant='overline'>Allowed Tools</Typography>
                             <Tooltip
                                 title={
-                                    !url.trim()
+                                    transport === 'stdio'
+                                        ? isEdit
+                                            ? 'Spawn the stdio MCP server and call tools/list'
+                                            : 'Save the server first — stdio preview is not available pre-save'
+                                        : !url.trim()
                                         ? 'Enter a URL first'
                                         : isEdit
                                         ? 'Call tools/list on the live MCP server'
@@ -596,7 +842,7 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                                         size='small'
                                         variant='outlined'
                                         onClick={onDiscoverTools}
-                                        disabled={discoverLoading || !url.trim()}
+                                        disabled={discoverLoading || (transport === 'stdio' ? !isEdit || !command.trim() : !url.trim())}
                                         startIcon={<IconRefresh size={14} />}
                                     >
                                         {discoverLoading ? 'Discovering…' : 'Discover Tools'}
@@ -654,7 +900,7 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                 )}
                 <Box sx={{ flexGrow: 1 }} />
                 <Button onClick={onCancel}>{dialogProps.cancelButtonName || 'Cancel'}</Button>
-                <StyledButton variant='contained' onClick={onSave} disabled={!name || (transport !== 'stdio' && !url)}>
+                <StyledButton variant='contained' onClick={onSave} disabled={!name || (transport === 'stdio' ? !command : !url)}>
                     {dialogProps.confirmButtonName || 'Save'}
                 </StyledButton>
             </DialogActions>
@@ -700,6 +946,56 @@ const mergeUnique = (a, b) => {
         out.push(v)
     }
     return out
+}
+
+/**
+ * Parses the persisted `MCPServer.env` JSON object into the form's editor
+ * shape. Inline string values become `{mode:'inline', value}`; credential
+ * refs `{credentialId, field}` become `{mode:'credential', credentialId, field}`.
+ * Unrecognised shapes are dropped silently — the server enforces the
+ * canonical shape on write, so this is just hydration.
+ */
+const parseStoredEnv = (raw) => {
+    const parsed = parseJson(raw)
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return []
+    const entries = []
+    for (const [key, value] of Object.entries(parsed)) {
+        if (typeof value === 'string') {
+            entries.push({ key, mode: 'inline', value, credentialId: '', field: '' })
+        } else if (value && typeof value === 'object' && typeof value.credentialId === 'string' && typeof value.field === 'string') {
+            entries.push({ key, mode: 'credential', value: '', credentialId: value.credentialId, field: value.field })
+        }
+    }
+    return entries
+}
+
+/**
+ * Builds the body shape expected by `MCPServer.env` from the editor entries.
+ * Empty rows (no key) and rows with empty inline value or empty credential
+ * ref are dropped so a stray "+ Add" click without input doesn't persist a
+ * useless row.
+ */
+const buildStdioEnvBody = (entries) => {
+    const out = {}
+    for (const entry of entries) {
+        const key = (entry.key || '').trim()
+        if (!key) continue
+        if (entry.mode === 'credential') {
+            if (!entry.credentialId || !(entry.field || '').trim()) continue
+            out[key] = { credentialId: entry.credentialId, field: entry.field.trim() }
+        } else {
+            if (!entry.value) continue
+            out[key] = entry.value
+        }
+    }
+    return out
+}
+
+/** Immutable update of a single env-entry row by index. */
+const updateEnvEntry = (current, setter, idx, patch) => {
+    const next = current.slice()
+    next[idx] = { ...next[idx], ...patch }
+    setter(next)
 }
 
 MCPServerDialog.propTypes = {

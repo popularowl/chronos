@@ -81,16 +81,15 @@ export class MCPGateway {
     private idleTimeoutMs: number
     /**
      * In-memory rate-limit buckets + circuit-breaker state shared across all
-     * invocations of this gateway instance. Locked decision #11 — Redis-
-     * backed shared state is a v1.8.x patch (the in-memory model is
-     * consistent with locked decision #7's single-instance MVP for v1.8.0).
+     * invocations of this gateway instance. decision — Redis-
+     * backed shared state is a v1.8.x patch (the in-memory model for now)
      */
     private policyState: PolicyState = new PolicyState()
     /**
      * Per-server consecutive-spawn-failure tracker for stdio transport.
      * `recordSuccess` on first successful spawn resets the counter; repeated
      * failures past `STDIO_UNHEALTHY_FAILURE_THRESHOLD` cause the gateway to
-     * flip the row to UNHEALTHY before respawning further. v1.8.0 Group C.
+     * flip the row to UNHEALTHY before respawning further.
      */
     private stdioBackoff: StdioBackoffState = new StdioBackoffState()
     /** Snapshot of MCP_STDIO_* env vars read at construction time. */
@@ -758,7 +757,7 @@ export class MCPGateway {
  * Cheap liveness check for a child process id. `process.kill(pid, 0)` is
  * the Unix-portable "is this pid still running" probe — sends no signal,
  * returns true if the process exists, throws if it doesn't or the caller
- * lacks permission. v1.8.0 Group C, used by the routine stdio probe.
+ * lacks permission.
  */
 const isPidAlive = (pid: number): boolean => {
     try {

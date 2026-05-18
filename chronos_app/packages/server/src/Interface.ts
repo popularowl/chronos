@@ -341,7 +341,7 @@ export interface IMCPServer {
      * vars merged into the spawn-time env for `stdio` transport. Object
      * values matching `{ credentialId, field }` are resolved against the
      * credential vault at spawn time and never persisted in plaintext.
-     * 
+     *
      */
     env?: string
     outboundAuth?: string

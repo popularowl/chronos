@@ -7,7 +7,7 @@ import {
 } from '../../src/services/mcp-gateway/stdio'
 
 /**
- * Test suite for v1.8.0 Group C — stdio transport pure helpers.
+ * Test suite for stdio transport pure helpers.
  *
  * Covers `parseStdioConfig` (JSON validation), `resolveStdioConfig`
  * (credential reference resolution + argv `{{credentialId:field}}` token

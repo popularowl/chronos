@@ -1,5 +1,5 @@
 /**
- * Test suite for the MCP Gateway (v1.6.0 — Group D).
+ * Test suite for the MCP Gateway.
  * Covers tool-name parsing, the `Agent.allowedTools ∩ MCPServer.allowedTools`
  * intersection, error mapping, pool reuse, idle reaper, and lifecycle.
  *
@@ -154,9 +154,20 @@ export function mcpGatewayServiceTest() {
 
             it('returns 400 when an stdio row has no command', async () => {
                 // v1.8.0 — stdio transport is supported, but a row with no
-                // command (registration constraint) still cannot spawn. parseStdioConfig
-                // throws 400 which surfaces through the gateway invoke path.
-                mockMCPServerRepo.findOneBy.mockResolvedValue(baseServer({ transport: 'stdio', url: undefined, command: undefined }))
+                // command (registration constraint) still cannot spawn.
+                // parseStdioConfig throws 400 which surfaces through the gateway
+                // invoke path. Pin retry maxAttempts=1 on this row so the
+                // immediate parse failure is what the test observes — with the
+                // default 3-attempt retry policy the second attempt would hit
+                // the stdio respawn backoff window and surface 503 instead.
+                mockMCPServerRepo.findOneBy.mockResolvedValue(
+                    baseServer({
+                        transport: 'stdio',
+                        url: undefined,
+                        command: undefined,
+                        policies: JSON.stringify({ retry: { maxAttempts: 1 } })
+                    })
+                )
                 const gateway = new MCPGateway({ appDataSource: mockAppDataSource })
                 await expect(gateway.invoke(baseAgent(), 'postgres.query', {})).rejects.toMatchObject({ statusCode: 400 })
             })

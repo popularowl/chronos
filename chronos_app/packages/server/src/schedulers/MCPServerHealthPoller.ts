@@ -24,9 +24,9 @@ interface MCPServerHealthPollerOptions {
  * Probe delegates to `MCPGateway.routineHealthProbe()` — for HTTP / SSE that
  * runs a real MCP `tools/list` round-trip via the pooled client (so liveness
  * reflects what callbacks will see); for stdio it checks `child.pid` is
- * alive in the pool or attempts a fresh spawn if the row is currently dark
- * (locked decision #23). Test Connection on the detail page calls the
- * heavier `healthCheck()` regardless of transport.
+ * alive in the pool or attempts a fresh spawn if the row is currently dark.
+ * Test Connection on the detail page calls the heavier `healthCheck()`
+ * regardless of transport.
  *
  * Gated externally on `ENABLE_MCP_SERVERS=true`.
  */

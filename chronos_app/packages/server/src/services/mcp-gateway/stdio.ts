@@ -259,10 +259,9 @@ const defaultFetchCredential = async (credentialId: string): Promise<Record<stri
  * configured level. The transport's spawn happens during `client.connect()`
  * — this function only constructs the object.
  *
- * `cwd` inherits `process.cwd()` per locked decision #25. Env is the
- * resolved object merged with the SDK's default-inherited PATH/etc. (the
- * SDK passes our `env` straight to spawn, so any inheritance happens on the
- * caller side — we merge `process.env` ourselves for clarity).
+ * `cwd` inherits `process.cwd()`. Env is the resolved object merged with
+ * `process.env` so the child sees the parent's PATH and other safe inherits
+ * alongside the operator-provided overrides.
  */
 export const buildStdioTransport = (resolved: ResolvedStdioConfig, slug: string, runtimeEnv: StdioRuntimeEnv): StdioClientTransport => {
     const params: StdioServerParameters = {
