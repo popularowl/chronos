@@ -1,7 +1,7 @@
 {
     "name": "chronos-api",
-    "version": "1.7.0",
-    "description": "Chronos API documentation server",
+    "version": "1.8.0",
+    "description": "Intelligex Chronos API documentation service",
     "scripts": {
         "build": "tsc",
         "start": "node dist/index.js",

@@ -1,7 +1,7 @@
 {
     "name": "chronos-components",
-    "version": "1.7.0",
-    "description": "Chronos Components",
+    "version": "1.8.0",
+    "description": "Intelligex Chronos Components",
     "main": "dist/src/index",
     "types": "dist/src/index.d.ts",
     "scripts": {

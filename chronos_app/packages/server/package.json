@@ -1,7 +1,7 @@
 {
     "name": "chronos",
-    "version": "1.7.0",
-    "description": "Chronos Server",
+    "version": "1.8.0",
+    "description": "Intelligex Chronos Server",
     "scripts": {
         "build": "tsc",
         "start": "node --no-deprecation dist/index-server.js",

@@ -1,8 +1,8 @@
 {
     "name": "chronos",
-    "version": "1.7.0",
-    "releaseDate": "2026-05-08",
-    "description": "Chronos by Intelligex — self-hosted control plane for AI agents and MCP tools.",
+    "version": "1.8.0",
+    "releaseDate": "2026-05-19",
+    "description": "Intelligex Chronos — self-hosted control plane for AI agents and MCP tools.",
     "private": true,
     "homepage": "https://intelligex.com/chronos",
     "workspaces": [

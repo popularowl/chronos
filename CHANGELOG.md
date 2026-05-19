@@ -4,6 +4,40 @@ All notable changes to Chronos. Format follows [Keep a Changelog](https://keepac
 
 ---
 
+## [1.8.0] — 2026-05-19
+
+MCP Gateway depth + protocol standardization. Chronos now speaks MCP Streamable HTTP natively to registered HTTP agents, supports locally-spawned `stdio` MCP servers, carries per-server reliability policies, and rotates OAuth2 credentials in the background. The pre-v1.8 REST callback contract is retired with no backwards-compatibility window.
+
+### Added
+
+- **Agent-facing MCP server.** External HTTP agents connect over MCP Streamable HTTP at `/api/v1/mcp-gateway/:agentId`; `tools/list` and `tools/call` flow as JSON-RPC, with `notifications/tools/list_changed` fanout on catalog changes.
+- **`stdio` MCP transport.** Register community MCP servers as child processes Chronos spawns and pools; lazy spawn, idle reaper, restart-on-crash with exponential backoff. Credential references in `env` and `args` decrypt at spawn time and never persist plaintext.
+- **Per-server reliability policies.** Retry, rate-limit, and circuit-breaker config per MCP server. Outcomes (`PASSED` / `RETRIED` / `RATE_LIMITED` / `CIRCUIT_OPEN`) surface on every audit row and as a filter on `/audit-log`.
+- **MCP server change log.** Every create / update / delete / enable-disable captured with the acting user identity and a redacted diff; surfaced as a Policy Edits tab on the per-server detail page.
+- **OAuth2 refresh-token rotation for outbound MCP credentials.** Background scheduler refreshes access tokens before expiry; `invalid_grant` flips dependent servers to `UNHEALTHY` until re-authorized. Off by default — gate with `ENABLE_MCP_OAUTH2_REFRESH=true`. Every refresh attempt audited.
+- **MCP Server detail page.** New `/mcp-servers/:id` route with Overview / Tool catalog / Recent invocations / Policy Edits tabs.
+- **Audit-row drawer.** Right-anchored peek on `/audit-log` and the per-server Recent invocations tab surfaces outcome, agent, server, tool, policy, and a deep-link Call ID chip.
+
+### Changed
+
+- **Brand refresh.** New Intelligex Chronos logo, application favicons, and PWA manifest icons.
+- **List + detail page consistency pass.** Agents and MCP Servers list/detail pages re-aligned to the existing `/credentials` and `/apikey` patterns (shared table primitives, action dropdowns, status chips).
+- **Server log format.** Every `logger.info` / `warn` / `debug` / `http` line now emits `[INFO] [<Source>]: <message>` via `createModuleLogger`; the legacy double-prefix shape is gone.
+
+### Removed
+
+- **Pre-v1.8 REST callback contract.** `POST /api/v1/mcp-gateway/:agentId/tools/invoke`, `GET .../tools`, and `GET .../health` are removed. Agents now connect via MCP Streamable HTTP at the same path. No deprecation window — the retired endpoints return 404.
+
+### Documentation
+
+- New tutorials cover MCP agent integration, REST-to-MCP migration, per-server policy configuration, OAuth2 credential setup, and `stdio` integration with community Postgres, GitHub, Filesystem, and SQLite MCP servers.
+
+### Smoke test
+
+- HTTP-agent gateway round-trip ported to the MCP SDK client; canvas-side `Agent.allowedTools` aggregator assertion retained.
+
+---
+
 ## [1.7.0] — 2026-05-08
 
 UX parity + MCP Registry adoption. Built-in canvas agents now reach registered MCP servers through the same gateway HTTP agents use, and the HTTP-agent execution viewer reaches feature parity with the built-in agentflow view. Persistent audit tables land. Governance moves to v1.9; MCP gateway depth is v1.8.
