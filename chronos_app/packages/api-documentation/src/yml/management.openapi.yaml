@@ -1,0 +1,904 @@
+openapi: 3.1.0
+info:
+    title: Chronos Management & Enterprise API
+    version: 1.8.0
+    summary: Management and enterprise-license endpoints for Chronos.
+    description: |
+        Endpoints reserved for the Chronos Enterprise license.
+    license:
+        name: Apache 2.0
+        identifier: Apache-2.0
+        url: https://github.com/popularowl/chronos/blob/main/LICENSE.md
+    contact:
+        name: Chronos
+        email: saul@popularowl.com
+
+servers:
+    - url: http://localhost:3001/api/v1
+      description: Chronos server (default dev)
+
+tags:
+    - name: auth
+      description: Signup, login, logout and current-user lookup.
+    - name: users
+      description: User CRUD (admin only).
+    - name: oauth-clients
+      description: OAuth client registration for the Management Admin API.
+    - name: oauth2-credential
+      description: OAuth2 authorization-code flow for stored credentials.
+    - name: admin
+      description: Management Admin API. OAuth2 client-credentials authentication.
+    - name: audit
+      description: Tool-invocation and credential-access audit log.
+    - name: credentials
+      description: Encrypted credential storage used by nodes and agents.
+    - name: skills
+      description: Chronos Skills — reusable agent capabilities.
+    - name: evaluations
+      description: Test runs against datasets.
+    - name: evaluators
+      description: Evaluator definitions used by evaluations.
+    - name: dataset
+      description: Test datasets (rows + metadata).
+    - name: dashboard
+      description: Cost & performance dashboard data.
+    - name: stats
+      description: Per-agentflow stats (legacy summary view).
+    - name: templates
+      description: Marketplace and custom flow / tool templates.
+    - name: settings
+      description: System settings (read-only enumeration).
+    - name: agentflow-generator
+      description: AI-assisted agentflow generation.
+    - name: validation
+      description: Flow validation checks.
+    - name: export-import
+      description: Workspace export / import (backup and migration).
+    - name: files
+      description: File storage browse / delete.
+    - name: logs
+      description: Server log viewer.
+    - name: text-to-speech
+      description: TTS generation and voice listing.
+
+security:
+    - bearerAuth: []
+
+paths:
+    # ─────────────────────────────────────────────────────────────────────
+    # Auth
+    # ─────────────────────────────────────────────────────────────────────
+    /auth/signup:
+        post:
+            tags: [auth]
+            security: []
+            operationId: signup
+            summary: Create a new account
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required: [email, password]
+                            properties:
+                                email:
+                                    type: string
+                                password:
+                                    type: string
+                                name:
+                                    type: string
+            responses:
+                '200':
+                    description: Created. Returns user + bearer token.
+
+    /auth/login:
+        post:
+            tags: [auth]
+            security: []
+            operationId: login
+            summary: Log in with email + password
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            required: [email, password]
+                            properties:
+                                email:
+                                    type: string
+                                password:
+                                    type: string
+            responses:
+                '200':
+                    description: Authenticated. Returns user + bearer token.
+
+    /auth/logout:
+        post:
+            tags: [auth]
+            operationId: logout
+            summary: Invalidate the current session
+            responses:
+                '200':
+                    description: Logged out.
+
+    /auth/me:
+        get:
+            tags: [auth]
+            operationId: getCurrentUser
+            summary: Get the current authenticated user
+            responses:
+                '200':
+                    description: Current user.
+
+    /auth/token:
+        post:
+            tags: [auth]
+            security: []
+            operationId: exchangeToken
+            summary: Exchange credentials for a JWT (programmatic clients)
+            responses:
+                '200':
+                    description: Bearer token.
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Users (admin only)
+    # ─────────────────────────────────────────────────────────────────────
+    /users:
+        get:
+            tags: [users]
+            operationId: listUsers
+            responses:
+                '200': { description: Users. }
+        post:
+            tags: [users]
+            operationId: createUser
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses:
+                '200': { description: Created. }
+
+    /users/{id}:
+        get:
+            tags: [users]
+            operationId: getUser
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses:
+                '200': { description: User. }
+        delete:
+            tags: [users]
+            operationId: deleteUser
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses:
+                '200': { description: Deleted. }
+
+    /users/{id}/role:
+        put:
+            tags: [users]
+            operationId: updateUserRole
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                role:
+                                    type: string
+            responses:
+                '200': { description: Role updated. }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # OAuth clients (Management Admin API consumers)
+    # ─────────────────────────────────────────────────────────────────────
+    /oauth-clients:
+        get:
+            tags: [oauth-clients]
+            operationId: listOAuthClients
+            responses:
+                '200': { description: OAuth clients. }
+        post:
+            tags: [oauth-clients]
+            operationId: createOAuthClient
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses:
+                '200':
+                    description: Created. `client_secret` returned once.
+
+    /oauth-clients/{id}:
+        put:
+            tags: [oauth-clients]
+            operationId: updateOAuthClient
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses:
+                '200': { description: Updated. }
+        delete:
+            tags: [oauth-clients]
+            operationId: deleteOAuthClient
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses:
+                '200': { description: Deleted. }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # OAuth2 credential flow (per-credential authorization-code dance)
+    # ─────────────────────────────────────────────────────────────────────
+    /oauth2-credential/authorize/{credentialId}:
+        post:
+            tags: [oauth2-credential]
+            operationId: oauth2Authorize
+            summary: Start the OAuth2 authorization-code flow for a stored credential
+            parameters: [{ in: path, name: credentialId, required: true, schema: { type: string } }]
+            responses:
+                '200':
+                    description: Authorization URL.
+
+    /oauth2-credential/callback:
+        get:
+            tags: [oauth2-credential]
+            security: []
+            operationId: oauth2Callback
+            summary: OAuth2 redirect URI
+            description: Browser-driven callback. Persists the issued tokens against the originating credential.
+            responses:
+                '200': { description: Tokens stored. }
+
+    /oauth2-credential/refresh/{credentialId}:
+        post:
+            tags: [oauth2-credential]
+            operationId: oauth2Refresh
+            parameters: [{ in: path, name: credentialId, required: true, schema: { type: string } }]
+            responses:
+                '200': { description: Refreshed. }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Management Admin API (OAuth2 client-credentials)
+    # ─────────────────────────────────────────────────────────────────────
+    /admin/agentflows:
+        get:
+            tags: [admin]
+            security: [{ adminBearer: [] }]
+            operationId: adminListAgentflows
+            summary: Admin agentflow management
+            description: |
+                The Admin API mirrors core surfaces (`agentflows`, `credentials`,
+                `apikeys`, `oauth-clients`, `schedules`, `webhooks`, `agents`,
+                `mcp-servers`) under `/admin/*` but takes an OAuth2 client-credentials
+                bearer token issued via the `oauth-clients` registry.
+
+                This file enumerates the namespaces; the per-route surface matches
+                the public counterparts in `swagger.yml`.
+            responses:
+                '200': { description: Agentflows. }
+
+    /admin/credentials:
+        get:
+            tags: [admin]
+            security: [{ adminBearer: [] }]
+            operationId: adminListCredentials
+            responses:
+                '200': { description: Credentials. }
+
+    /admin/apikeys:
+        get:
+            tags: [admin]
+            security: [{ adminBearer: [] }]
+            operationId: adminListApiKeys
+            responses:
+                '200': { description: API keys. }
+
+    /admin/oauth-clients:
+        get:
+            tags: [admin]
+            security: [{ adminBearer: [] }]
+            operationId: adminListOAuthClients
+            responses:
+                '200': { description: OAuth clients. }
+
+    /admin/schedules:
+        get:
+            tags: [admin]
+            security: [{ adminBearer: [] }]
+            operationId: adminListSchedules
+            responses:
+                '200': { description: Schedules. }
+
+    /admin/webhooks:
+        get:
+            tags: [admin]
+            security: [{ adminBearer: [] }]
+            operationId: adminListWebhooks
+            responses:
+                '200': { description: Webhooks. }
+
+    /admin/agents:
+        get:
+            tags: [admin]
+            security: [{ adminBearer: [] }]
+            operationId: adminListAgents
+            responses:
+                '200': { description: Agents. }
+
+    /admin/mcp-servers:
+        get:
+            tags: [admin]
+            security: [{ adminBearer: [] }]
+            operationId: adminListMcpServers
+            responses:
+                '200': { description: MCP servers. }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Audit
+    # ─────────────────────────────────────────────────────────────────────
+    /audit/tool-invocations:
+        get:
+            tags: [audit]
+            operationId: listToolInvocations
+            summary: Audit log of MCP tool invocations
+            parameters:
+                - in: query
+                  name: startDate
+                  schema: { type: string, format: date-time }
+                - in: query
+                  name: endDate
+                  schema: { type: string, format: date-time }
+                - in: query
+                  name: agentId
+                  schema: { type: string }
+                - in: query
+                  name: mcpServerId
+                  schema: { type: string }
+            responses:
+                '200': { description: Invocation records. }
+
+    /audit/credential-access:
+        get:
+            tags: [audit]
+            operationId: listCredentialAccess
+            summary: Audit log of credential reads
+            responses:
+                '200': { description: Access records. }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Credentials
+    # ─────────────────────────────────────────────────────────────────────
+    /credentials:
+        get:
+            tags: [credentials]
+            operationId: listCredentials
+            responses: { '200': { description: Credentials. } }
+        post:
+            tags: [credentials]
+            operationId: createCredential
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { $ref: '#/components/schemas/Credential' }
+            responses: { '200': { description: Created. } }
+
+    /credentials/{id}:
+        get:
+            tags: [credentials]
+            operationId: getCredential
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Credential. } }
+        put:
+            tags: [credentials]
+            operationId: updateCredential
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { $ref: '#/components/schemas/Credential' }
+            responses: { '200': { description: Updated. } }
+        delete:
+            tags: [credentials]
+            operationId: deleteCredential
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Deleted. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Skills
+    # ─────────────────────────────────────────────────────────────────────
+    /skills:
+        get:
+            tags: [skills]
+            operationId: listSkills
+            responses: { '200': { description: Skills. } }
+        post:
+            tags: [skills]
+            operationId: createSkill
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Created. } }
+
+    /skills/{id}:
+        get:
+            tags: [skills]
+            operationId: getSkill
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Skill. } }
+        put:
+            tags: [skills]
+            operationId: updateSkill
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Updated. } }
+        delete:
+            tags: [skills]
+            operationId: deleteSkill
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Deleted. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Evaluations
+    # ─────────────────────────────────────────────────────────────────────
+    /evaluations:
+        get:
+            tags: [evaluations]
+            operationId: listEvaluations
+            responses: { '200': { description: Evaluations. } }
+        post:
+            tags: [evaluations]
+            operationId: createEvaluation
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Created. } }
+        patch:
+            tags: [evaluations]
+            operationId: bulkDeleteEvaluations
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                ids:
+                                    type: array
+                                    items: { type: string }
+            responses: { '200': { description: Deleted. } }
+
+    /evaluations/{id}:
+        get:
+            tags: [evaluations]
+            operationId: getEvaluation
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Evaluation. } }
+        delete:
+            tags: [evaluations]
+            operationId: deleteEvaluation
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Deleted. } }
+
+    /evaluations/is-outdated/{id}:
+        get:
+            tags: [evaluations]
+            operationId: isEvaluationOutdated
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Outdatedness flag. } }
+
+    /evaluations/run-again/{id}:
+        post:
+            tags: [evaluations]
+            operationId: runEvaluationAgain
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Re-run started. } }
+
+    /evaluations/versions/{id}:
+        get:
+            tags: [evaluations]
+            operationId: getEvaluationVersions
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Version list. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Evaluators
+    # ─────────────────────────────────────────────────────────────────────
+    /evaluators:
+        get:
+            tags: [evaluators]
+            operationId: listEvaluators
+            responses: { '200': { description: Evaluators. } }
+        post:
+            tags: [evaluators]
+            operationId: createEvaluator
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Created. } }
+
+    /evaluators/{id}:
+        get:
+            tags: [evaluators]
+            operationId: getEvaluator
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Evaluator. } }
+        put:
+            tags: [evaluators]
+            operationId: updateEvaluator
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Updated. } }
+        delete:
+            tags: [evaluators]
+            operationId: deleteEvaluator
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Deleted. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Dataset
+    # ─────────────────────────────────────────────────────────────────────
+    /datasets:
+        get:
+            tags: [dataset]
+            operationId: listDatasets
+            responses: { '200': { description: Datasets. } }
+
+    /datasets/set:
+        post:
+            tags: [dataset]
+            operationId: createDataset
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Created. } }
+
+    /datasets/set/{id}:
+        get:
+            tags: [dataset]
+            operationId: getDataset
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Dataset. } }
+        put:
+            tags: [dataset]
+            operationId: updateDataset
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Updated. } }
+        delete:
+            tags: [dataset]
+            operationId: deleteDataset
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Deleted. } }
+
+    /datasets/rows:
+        post:
+            tags: [dataset]
+            operationId: addDatasetRow
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Added. } }
+        put:
+            tags: [dataset]
+            operationId: updateDatasetRow
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Updated. } }
+        patch:
+            tags: [dataset]
+            operationId: bulkDeleteDatasetRows
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                ids:
+                                    type: array
+                                    items: { type: string }
+            responses: { '200': { description: Deleted. } }
+
+    /datasets/reorder:
+        post:
+            tags: [dataset]
+            operationId: reorderDatasetRows
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Reordered. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Dashboard (Cost & Performance)
+    # ─────────────────────────────────────────────────────────────────────
+    /dashboard/summary:
+        get:
+            tags: [dashboard]
+            operationId: dashboardSummary
+            summary: Aggregate cost / latency / volume cards
+            parameters:
+                - in: query
+                  name: startDate
+                  schema: { type: string, format: date-time }
+                - in: query
+                  name: endDate
+                  schema: { type: string, format: date-time }
+            responses: { '200': { description: Summary. } }
+
+    /dashboard/timeseries:
+        get:
+            tags: [dashboard]
+            operationId: dashboardTimeseries
+            summary: Per-bucket time-series for the dashboard charts
+            responses: { '200': { description: Timeseries. } }
+
+    /dashboard/agents:
+        get:
+            tags: [dashboard]
+            operationId: dashboardAgents
+            summary: Per-agent dashboard rollup
+            responses: { '200': { description: Per-agent rows. } }
+
+    /dashboard/export:
+        get:
+            tags: [dashboard]
+            operationId: dashboardExport
+            summary: CSV export of dashboard data
+            responses:
+                '200':
+                    description: CSV.
+                    content:
+                        text/csv:
+                            schema: { type: string }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Stats (legacy per-flow summary)
+    # ─────────────────────────────────────────────────────────────────────
+    /stats/{id}:
+        get:
+            tags: [stats]
+            operationId: getAgentflowStats
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Stats. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Templates
+    # ─────────────────────────────────────────────────────────────────────
+    /templates/templates:
+        get:
+            tags: [templates]
+            operationId: listMarketplaceTemplates
+            responses: { '200': { description: Marketplace templates. } }
+
+    /templates/custom:
+        get:
+            tags: [templates]
+            operationId: listCustomTemplates
+            responses: { '200': { description: Custom templates. } }
+        post:
+            tags: [templates]
+            operationId: createCustomTemplate
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Created. } }
+
+    /templates/custom/{id}:
+        delete:
+            tags: [templates]
+            operationId: deleteCustomTemplate
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Deleted. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Settings
+    # ─────────────────────────────────────────────────────────────────────
+    /settings:
+        get:
+            tags: [settings]
+            operationId: getSettings
+            summary: Enumerate server settings
+            responses: { '200': { description: Settings. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Agentflow generator (AI-assisted)
+    # ─────────────────────────────────────────────────────────────────────
+    /agentflow-generator/generate:
+        post:
+            tags: [agentflow-generator]
+            operationId: generateAgentflow
+            summary: Generate an agentflow from a natural-language prompt
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                prompt:
+                                    type: string
+            responses:
+                '200':
+                    description: Generated agentflow definition.
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Validation
+    # ─────────────────────────────────────────────────────────────────────
+    /validation/{id}:
+        get:
+            tags: [validation]
+            operationId: validateAgentflow
+            parameters: [{ in: path, name: id, required: true, schema: { type: string } }]
+            responses: { '200': { description: Validation result. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Export / Import (backup + migration)
+    # ─────────────────────────────────────────────────────────────────────
+    /export-import/export:
+        post:
+            tags: [export-import]
+            operationId: exportWorkspace
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses:
+                '200':
+                    description: Export bundle.
+                    content:
+                        application/json:
+                            schema: { type: object, additionalProperties: true }
+
+    /export-import/import:
+        post:
+            tags: [export-import]
+            operationId: importWorkspace
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema: { type: object, additionalProperties: true }
+            responses: { '200': { description: Imported. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Files
+    # ─────────────────────────────────────────────────────────────────────
+    /files:
+        get:
+            tags: [files]
+            operationId: listFiles
+            responses: { '200': { description: Files. } }
+        delete:
+            tags: [files]
+            operationId: deleteFile
+            parameters:
+                - in: query
+                  name: path
+                  required: true
+                  schema: { type: string }
+            responses: { '200': { description: Deleted. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Logs
+    # ─────────────────────────────────────────────────────────────────────
+    /logs:
+        get:
+            tags: [logs]
+            operationId: getLogs
+            parameters:
+                - in: query
+                  name: startDate
+                  schema: { type: string, format: date-time }
+                - in: query
+                  name: endDate
+                  schema: { type: string, format: date-time }
+            responses: { '200': { description: Log lines. } }
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Text-to-speech
+    # ─────────────────────────────────────────────────────────────────────
+    /text-to-speech/generate:
+        post:
+            tags: [text-to-speech]
+            operationId: generateSpeech
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                text:
+                                    type: string
+                                voice:
+                                    type: string
+            responses:
+                '200':
+                    description: Audio.
+                    content:
+                        audio/mpeg:
+                            schema: { type: string, format: binary }
+
+    /text-to-speech/abort:
+        post:
+            tags: [text-to-speech]
+            operationId: abortSpeech
+            responses: { '200': { description: Aborted. } }
+
+    /text-to-speech/voices:
+        get:
+            tags: [text-to-speech]
+            operationId: listVoices
+            responses: { '200': { description: Voices. } }
+
+components:
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+            description: Chronos user JWT issued by `/auth/login`.
+        adminBearer:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+            description: OAuth2 client-credentials JWT issued via the `/oauth-clients` registry. Required for all `/admin/*` endpoints.
+
+    schemas:
+        Credential:
+            type: object
+            properties:
+                id:
+                    type: string
+                name:
+                    type: string
+                credentialName:
+                    type: string
+                    description: Logical credential type (matches a node's `credentialNames`).
+                encryptedData:
+                    type: string
+                createdDate:
+                    type: string
+                    format: date-time
+                updatedDate:
+                    type: string
+                    format: date-time

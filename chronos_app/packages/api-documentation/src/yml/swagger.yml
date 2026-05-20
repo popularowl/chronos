@@ -1,1405 +1,467 @@
+# Intelligex Chronos Public API — community license surface.
+
 tags:
-    - name: agentflows
-    - name: attachments
-    - name: chatmessage
-    - name: document-store
-    - name: feedback
-    - name: leads
     - name: ping
+      description: Server liveness probe.
+    - name: version
+      description: Server build version.
+    - name: verify
+      description: API key verification.
+    - name: apikey
+      description: API key management for prediction authentication.
+    - name: agentflows
+      description: CRUD, publish/rollback and version history for agentflows.
     - name: prediction
-    - name: tools
-    - name: upsert-history
+      description: Invoke an agentflow with a message, form payload, files or human input.
+    - name: attachments
+      description: Upload binary attachments tied to a prediction session.
     - name: variables
-    - name: vector
+      description: Flow-scoped variables resolved at execution time.
+    - name: agents
+      description: Registered external HTTP agents (Agent Registry control plane).
+    - name: mcp-gateway
+      description: Chronos as an MCP server (Streamable HTTP transport). Tool discovery and invocation for external MCP clients.
+    - name: mcp-servers
+      description: Registered upstream MCP servers (Streamable HTTP / SSE transports).
+    - name: openai-compat
+      description: OpenAI-compatible surface — call Chronos with any OpenAI SDK. Agentflows and registered agents appear as `models`.
+    - name: schedules
+      description: Cron-driven scheduled invocations of agentflows / agents.
+    - name: webhooks
+      description: Inbound HTTP webhook triggers that invoke agentflows / agents.
+    - name: executions
+      description: Read execution history (private and public).
 
 paths:
-    /chatmessage/{id}:
+    # ─────────────────────────────────────────────────────────────────────
+    # Health / metadata
+    # ─────────────────────────────────────────────────────────────────────
+    /ping:
         get:
-            tags:
-                - chatmessage
-            security:
-                - bearerAuth: []
-            operationId: getAllChatMessages
-            summary: List all chat messages
-            description: Retrieve all chat messages for a specific agentflow.
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Agentflow ID
-                - in: query
-                  name: chatType
-                  schema:
-                      type: string
-                      enum: [INTERNAL, EXTERNAL]
-                  description: Filter by chat type
-                - in: query
-                  name: order
-                  schema:
-                      type: string
-                      enum: [ASC, DESC]
-                  description: Sort order
-                - in: query
-                  name: chatId
-                  schema:
-                      type: string
-                  description: Filter by chat ID
-                - in: query
-                  name: memoryType
-                  schema:
-                      type: string
-                      example: Buffer Memory
-                  description: Filter by memory type
-                - in: query
-                  name: sessionId
-                  schema:
-                      type: string
-                  description: Filter by session ID
-                - in: query
-                  name: startDate
-                  schema:
-                      type: string
-                      example: 2025-01-01T11:28:36.000Z
-                      format: date-time
-                  description: Filter by start date
-                - in: query
-                  name: endDate
-                  schema:
-                      type: string
-                      example: 2025-01-13T11:28:36.000Z
-                      format: date-time
-                  description: Filter by end date
-                - in: query
-                  name: feedback
-                  schema:
-                      type: boolean
-                  description: Filter by feedback
-                - in: query
-                  name: feedbackType
-                  schema:
-                      type: string
-                      enum: [THUMBS_UP, THUMBS_DOWN]
-                  description: Filter by feedback type. Only applicable if feedback is true
+            tags: [ping]
+            operationId: ping
+            summary: Server liveness probe
+            description: Returns `pong` when the Chronos server is reachable. No auth required.
             responses:
                 '200':
-                    description: A list of chat messages
+                    description: Server is up.
+                    content:
+                        text/plain:
+                            schema:
+                                type: string
+                                example: pong
+
+    /version:
+        get:
+            tags: [version]
+            operationId: getVersion
+            summary: Get server version
+            description: Returns the running Chronos server version.
+            responses:
+                '200':
+                    description: Version info.
                     content:
                         application/json:
                             schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/ChatMessage'
-                '500':
-                    description: Internal error
-
-        delete:
-            tags:
-                - chatmessage
-            security:
-                - bearerAuth: []
-            operationId: removeAllChatMessages
-            summary: Delete all chat messages
-            description: Delete all chat messages for a specific agentflow.
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Agentflow ID
-                - in: query
-                  name: chatId
-                  schema:
-                      type: string
-                  description: Filter by chat ID
-                - in: query
-                  name: memoryType
-                  schema:
-                      type: string
-                      example: Buffer Memory
-                  description: Filter by memory type
-                - in: query
-                  name: sessionId
-                  schema:
-                      type: string
-                  description: Filter by session ID
-                - in: query
-                  name: chatType
-                  schema:
-                      type: string
-                      enum: [INTERNAL, EXTERNAL]
-                  description: Filter by chat type
-                - in: query
-                  name: startDate
-                  schema:
-                      type: string
-                      example: 2025-01-01T11:28:36.000Z
-                  description: Filter by start date
-                - in: query
-                  name: endDate
-                  schema:
-                      type: string
-                      example: 2025-01-13T11:28:36.000Z
-                  description: Filter by end date
-                - in: query
-                  name: feedbackType
-                  schema:
-                      type: string
-                      enum: [THUMBS_UP, THUMBS_DOWN]
-                  description: Filter by feedback type
-                - in: query
-                  name: hardDelete
-                  schema:
-                      type: boolean
-                  description: If hardDelete is true, messages will be deleted from the third party service as well
-            responses:
-                '200':
-                    description: Chat messages deleted successfully
-                '400':
-                    description: Invalid parameters
-                '404':
-                    description: Chat messages not found
-                '500':
-                    description: Internal error
-
-    /chatmessage/abort/{agentflowId}/{chatId}:
-        put:
-            tags:
-                - chatmessage
-            security:
-                - bearerAuth: []
-            operationId: abortChatMessage
-            summary: Abort a running chat message
-            description: Abort a chat message that is currently being processed for a specific agentflow and chat session.
-            parameters:
-                - in: path
-                  name: agentflowId
-                  required: true
-                  schema:
-                      type: string
-                  description: Agentflow ID
-                - in: path
-                  name: chatId
-                  required: true
-                  schema:
-                      type: string
-                  description: Chat ID
-            responses:
-                '200':
-                    description: Chat message aborted successfully
-                '404':
-                    description: Chat message not found
-                '500':
-                    description: Internal error
-
-    /attachments/{agentflowId}/{chatId}:
-        post:
-            tags:
-                - attachments
-            security:
-                - bearerAuth: []
-            operationId: createAttachment
-            summary: Create attachments array
-            description: Return contents of the files in plain string format
-            parameters:
-                - in: path
-                  name: agentflowId
-                  required: true
-                  schema:
-                      type: string
-                  description: Agentflow ID
-                - in: path
-                  name: chatId
-                  required: true
-                  schema:
-                      type: string
-                  description: Chat ID
-            requestBody:
-                content:
-                    multipart/form-data:
-                        schema:
-                            type: object
-                            properties:
-                                files:
-                                    type: array
-                                    items:
+                                type: object
+                                properties:
+                                    version:
                                         type: string
-                                        format: binary
-                                    description: Files to be uploaded
-                                base64:
-                                    type: boolean
-                                    default: false
-                                    description: Return contents of the files in base64 format
-                            required:
-                                - files
-                required: true
-            responses:
-                '200':
-                    description: Attachments created successfully
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/CreateAttachmentResponse'
-                '400':
-                    description: Invalid input provided
-                '404':
-                    description: Agentflow or ChatId not found
-                '422':
-                    description: Validation error
-                '500':
-                    description: Internal server error
+                                        example: '1.8.0'
 
-    /agentflows:
-        post:
-            tags:
-                - agentflows
-            security:
-                - bearerAuth: []
-            operationId: createAgentflow
-            summary: Create a new agentflow
-            description: Create a new agentflow with the provided details
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Agentflow'
-                required: true
-            responses:
-                '200':
-                    description: Agentflow created successfully
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Agentflow'
-                '400':
-                    description: Invalid input provided
-                '422':
-                    description: Validation exception
+    /verify/apikey/{apikey}:
         get:
-            tags:
-                - agentflows
-            security:
-                - bearerAuth: []
-            summary: List all agentflows
-            description: Retrieve a list of all agentflows
-            operationId: listAgentflows
-            responses:
-                '200':
-                    description: Successful operation
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/Agentflow'
-                '500':
-                    description: Internal error
-    /agentflows/{id}:
-        get:
-            tags:
-                - agentflows
-            security:
-                - bearerAuth: []
-            summary: Get agentflow by ID
-            description: Retrieve a specific agentflow by ID
-            operationId: getAgentflowById
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Agentflow ID
-            responses:
-                '200':
-                    description: Successful operation
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Agentflow'
-                '400':
-                    description: The specified ID is invalid
-                '404':
-                    description: Agentflow not found
-                '500':
-                    description: Internal error
-        put:
-            tags:
-                - agentflows
-            security:
-                - bearerAuth: []
-            summary: Update agentflow details
-            description: Update the details of an existing agentflow
-            operationId: updateAgentflow
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Agentflow ID
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Agentflow'
-            responses:
-                '200':
-                    description: Agentflow updated successfully
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Agentflow'
-                '400':
-                    description: The specified ID is invalid or body is missing
-                '404':
-                    description: Agentflow not found
-                '500':
-                    description: Internal error
-        delete:
-            tags:
-                - agentflows
-            security:
-                - bearerAuth: []
-            summary: Delete an agentflow
-            description: Delete an agentflow by ID
-            operationId: deleteAgentflow
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Agentflow ID
-            responses:
-                '200':
-                    description: Agentflow deleted successfully
-                '400':
-                    description: The specified ID is invalid
-                '404':
-                    description: Agentflow not found
-                '500':
-                    description: Internal error
-    /agentflows/apikey/{apikey}:
-        get:
-            tags:
-                - agentflows
-            security:
-                - bearerAuth: []
-            summary: Get agentflow by API key
-            description: Retrieve an agentflow using an API key
-            operationId: getAgentflowByApiKey
+            tags: [verify]
+            operationId: verifyApiKey
+            summary: Verify an API key
+            description: Returns 200 if the supplied API key is valid. Used by external integrations to validate a token before invoking `/prediction/{id}`.
             parameters:
                 - in: path
                   name: apikey
                   required: true
                   schema:
                       type: string
-                  description: API key associated with the agentflow
             responses:
                 '200':
-                    description: Successful operation
+                    description: API key is valid.
+                '401':
+                    description: API key is invalid.
+
+    # ─────────────────────────────────────────────────────────────────────
+    # API keys (auth for /prediction)
+    # ─────────────────────────────────────────────────────────────────────
+    /apikey:
+        get:
+            tags: [apikey]
+            security:
+                - bearerAuth: []
+            operationId: listApiKeys
+            summary: List API keys
+            responses:
+                '200':
+                    description: API keys.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/ApiKey'
+                '401':
+                    $ref: '#/components/responses/UnauthorizedError'
+        post:
+            tags: [apikey]
+            security:
+                - bearerAuth: []
+            operationId: createApiKey
+            summary: Create an API key
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                keyName:
+                                    type: string
+                                    example: 'my-integration'
+            responses:
+                '200':
+                    description: Created API key.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiKey'
+
+    /apikey/{id}:
+        put:
+            tags: [apikey]
+            security:
+                - bearerAuth: []
+            operationId: updateApiKey
+            summary: Rename an API key
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                keyName:
+                                    type: string
+            responses:
+                '200':
+                    description: Updated API key.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ApiKey'
+        delete:
+            tags: [apikey]
+            security:
+                - bearerAuth: []
+            operationId: deleteApiKey
+            summary: Delete an API key
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: API key deleted.
+
+    /apikey/import:
+        post:
+            tags: [apikey]
+            security:
+                - bearerAuth: []
+            operationId: importApiKeys
+            summary: Bulk import API keys
+            description: Used by export/import workflows and migrations.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            properties:
+                                jsonFile:
+                                    type: string
+                                    description: Base64-encoded JSON file of API keys.
+            responses:
+                '200':
+                    description: Imported.
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Agentflows
+    # ─────────────────────────────────────────────────────────────────────
+    /agentflows:
+        get:
+            tags: [agentflows]
+            security:
+                - bearerAuth: []
+            operationId: listAgentflows
+            summary: List all agentflows
+            responses:
+                '200':
+                    description: Array of agentflows.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Agentflow'
+                '401':
+                    $ref: '#/components/responses/UnauthorizedError'
+        post:
+            tags: [agentflows]
+            security:
+                - bearerAuth: []
+            operationId: createAgentflow
+            summary: Create an agentflow
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Agentflow'
+            responses:
+                '200':
+                    description: Created agentflow.
                     content:
                         application/json:
                             schema:
                                 $ref: '#/components/schemas/Agentflow'
-                '400':
-                    description: The specified API key is invalid
-                '404':
-                    description: Agentflow not found
-                '500':
-                    description: Internal error
 
-    /document-store/store:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Create a new document store
-            description: Creates a new document store with the provided details
-            operationId: createDocumentStore
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DocumentStore'
-                required: true
-            responses:
-                '200':
-                    description: Successfully created document store
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DocumentStore'
-                '400':
-                    description: Invalid request body
-                '500':
-                    description: Internal server error
+    /agentflows/{id}:
         get:
-            tags:
-                - document-store
+            tags: [agentflows]
             security:
                 - bearerAuth: []
-            summary: List all document stores
-            description: Retrieves a list of all document stores
-            operationId: getAllDocumentStores
-            responses:
-                '200':
-                    description: A list of document stores
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/DocumentStore'
-                '500':
-                    description: Internal server error
-
-    /document-store/store/{id}:
-        get:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Get a specific document store
-            description: Retrieves details of a specific document store by its ID
-            operationId: getDocumentStoreById
+            operationId: getAgentflow
+            summary: Get an agentflow by id
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                      format: uuid
-                  description: Document Store ID
             responses:
                 '200':
-                    description: Successfully retrieved document store
+                    description: Agentflow.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/DocumentStore'
+                                $ref: '#/components/schemas/Agentflow'
                 '404':
-                    description: Document store not found
-                '500':
-                    description: Internal server error
+                    description: Not found.
         put:
-            tags:
-                - document-store
+            tags: [agentflows]
             security:
                 - bearerAuth: []
-            summary: Update a specific document store
-            description: Updates the details of a specific document store by its ID
-            operationId: updateDocumentStore
+            operationId: updateAgentflow
+            summary: Update an agentflow
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                      format: uuid
-                  description: Document Store ID
             requestBody:
+                required: true
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/DocumentStore'
-                required: true
+                            $ref: '#/components/schemas/Agentflow'
             responses:
                 '200':
-                    description: Successfully updated document store
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DocumentStore'
-                '404':
-                    description: Document store not found
-                '500':
-                    description: Internal server error
+                    description: Updated.
         delete:
-            tags:
-                - document-store
+            tags: [agentflows]
             security:
                 - bearerAuth: []
-            summary: Delete a specific document store
-            description: Deletes a document store by its ID
-            operationId: deleteDocumentStore
+            operationId: deleteAgentflow
+            summary: Delete an agentflow
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                      format: uuid
-                  description: Document Store ID
             responses:
                 '200':
-                    description: Successfully deleted document store
-                '404':
-                    description: Document store not found
-                '500':
-                    description: Internal server error
+                    description: Deleted.
 
-    /document-store/upsert/{id}:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Upsert document to document store
-            description: Upsert document to document store
-            operationId: upsertDocument
+    /agentflows/apikey/{apikey}:
+        get:
+            tags: [agentflows]
+            operationId: getAgentflowByApiKey
+            summary: Resolve an agentflow by API key
+            description: Returns the agentflow associated with the supplied API key. Used by external clients that hold only the API key and need to discover the flow id.
             parameters:
                 - in: path
-                  name: id
+                  name: apikey
                   required: true
                   schema:
                       type: string
-                      format: uuid
-                  description: Document Store ID
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DocumentStoreLoaderForUpsert'
-                    multipart/form-data:
-                        schema:
-                            type: object
-                            properties:
-                                files:
-                                    type: array
-                                    items:
-                                        type: string
-                                        format: binary
-                                    description: Files to be uploaded
-                                docId:
-                                    type: [string, "null"]
-                                    example: '603a7b51-ae7c-4b0a-8865-e454ed2f6766'
-                                    description: Document ID to use existing configuration
-                                loader:
-                                    type: [string, "null"]
-                                    example: '{"name":"plainText","config":{"text":"why the sky is blue"}}'
-                                    description: Loader configurations
-                                splitter:
-                                    type: [string, "null"]
-                                    example: '{"name":"recursiveCharacterTextSplitter","config":{"chunkSize":2000}}'
-                                    description: Splitter configurations
-                                embedding:
-                                    type: [string, "null"]
-                                    example: '{"name":"openAIEmbeddings","config":{"modelName":"text-embedding-ada-002"}}'
-                                    description: Embedding configurations
-                                vectorStore:
-                                    type: [string, "null"]
-                                    example: '{"name":"faiss"}'
-                                    description: Vector Store configurations
-                                recordManager:
-                                    type: [string, "null"]
-                                    example: '{"name":"postgresRecordManager"}'
-                                    description: Record Manager configurations
-                                metadata:
-                                    type: [object, "null"]
-                                    description: Metadata associated with the document
-                                    example: { 'foo': 'bar' }
-                                replaceExisting:
-                                    type: [boolean, "null"]
-                                    description: Whether to replace existing document loader with the new upserted chunks. However this does not delete the existing embeddings in the vector store
-                                createNewDocStore:
-                                    type: [boolean, "null"]
-                                    description: Whether to create a new document store
-                                docStore:
-                                    type: [object, "null"]
-                                    description: Only when createNewDocStore is true, pass in the new document store configuration
-                                    properties:
-                                        name:
-                                            type: string
-                                            example: plainText
-                                            description: Name of the new document store to be created
-                                        description:
-                                            type: string
-                                            example: plainText
-                                            description: Description of the new document store to be created
-                            required:
-                                - files
-                required: true
             responses:
                 '200':
-                    description: Successfully execute upsert operation
+                    description: Agentflow.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/VectorUpsertResponse'
+                                $ref: '#/components/schemas/Agentflow'
+                '404':
+                    description: No agentflow matches the supplied API key.
 
-                '400':
-                    description: Invalid request body
-                '500':
-                    description: Internal server error
-
-    /document-store/refresh/{id}:
+    /agentflows/{id}/publish:
         post:
-            tags:
-                - document-store
+            tags: [agentflows]
             security:
                 - bearerAuth: []
-            summary: Re-process and upsert all documents in document store
-            description: Re-process and upsert all existing documents in document store
-            operationId: refreshDocument
+            operationId: publishAgentflow
+            summary: Publish a new version of an agentflow
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                      format: uuid
-                  description: Document Store ID
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DocumentStoreLoaderForRefresh'
-                required: true
             responses:
                 '200':
-                    description: Successfully execute refresh operation
+                    description: Published version.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/AgentflowVersion'
+
+    /agentflows/{id}/rollback/{version}:
+        post:
+            tags: [agentflows]
+            security:
+                - bearerAuth: []
+            operationId: rollbackAgentflow
+            summary: Roll an agentflow back to a previous version
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+                - in: path
+                  name: version
+                  required: true
+                  schema:
+                      type: integer
+            responses:
+                '200':
+                    description: Rolled back.
+
+    /agentflows/{id}/versions:
+        get:
+            tags: [agentflows]
+            security:
+                - bearerAuth: []
+            operationId: listAgentflowVersions
+            summary: List published versions of an agentflow
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Array of versions.
                     content:
                         application/json:
                             schema:
                                 type: array
                                 items:
-                                    $ref: '#/components/schemas/VectorUpsertResponse'
+                                    $ref: '#/components/schemas/AgentflowVersion'
 
-                '400':
-                    description: Invalid request body
-                '500':
-                    description: Internal server error
-
-    /document-store/vectorstore/query:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Retrieval query
-            description: Retrieval query for the upserted chunks
-            operationId: queryVectorStore
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            required:
-                                - storeId
-                                - query
-                            properties:
-                                storeId:
-                                    type: string
-                                    description: Document Store ID
-                                    example: '603a7b51-ae7c-4b0a-8865-e454ed2f6766'
-                                query:
-                                    type: string
-                                    description: Query to search for
-                                    example: 'What is the capital of France?'
-                required: true
+    /agentflows-streaming/{id}:
+        get:
+            tags: [agentflows]
+            operationId: checkAgentflowStreaming
+            summary: Check whether an agentflow supports streaming responses
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
             responses:
                 '200':
-                    description: Successfully executed query on vector store
+                    description: Streaming capability.
                     content:
                         application/json:
                             schema:
                                 type: object
                                 properties:
-                                    timeTaken:
-                                        type: number
-                                        description: Time taken to execute the query (in milliseconds)
-                                    docs:
-                                        type: array
-                                        items:
-                                            $ref: '#/components/schemas/Document'
-                '400':
-                    description: Invalid request body
-                '500':
-                    description: Internal server error
+                                    isStreaming:
+                                        type: boolean
 
-    /document-store/loader/{storeId}/{loaderId}:
-        delete:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Delete specific document loader and associated chunks from document store
-            description: Delete specific document loader and associated chunks from document store. This does not delete data from vector store.
-            operationId: deleteLoaderFromDocumentStore
-            parameters:
-                - in: path
-                  name: storeId
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Store ID
-                - in: path
-                  name: loaderId
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Loader ID
-            responses:
-                '200':
-                    description: Successfully deleted loader from document store
-                '400':
-                    description: Invalid ID provided
-                '404':
-                    description: Document Store not found
-                '500':
-                    description: Internal server error
-
-    /document-store/vectorstore/{id}:
-        delete:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Delete data from vector store
-            description: Only data that were upserted with Record Manager will be deleted from vector store
-            operationId: deleteVectorStoreFromStore
+    /agentflows-uploads/{id}:
+        get:
+            tags: [agentflows]
+            operationId: checkAgentflowUploads
+            summary: Check whether an agentflow accepts file uploads
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                  description: Document Store ID
             responses:
                 '200':
-                    description: Successfully deleted data from vector store
-                '400':
-                    description: Invalid ID provided
-                '404':
-                    description: Document Store not found
-                '500':
-                    description: Internal server error
-
-    /document-store/chunks/{storeId}/{loaderId}/{pageNo}:
-        get:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Get chunks from a specific document loader
-            description: Get chunks from a specific document loader within a document store
-            operationId: getDocumentStoreFileChunks
-            parameters:
-                - in: path
-                  name: storeId
-                  required: true
-                  schema:
-                      type: string
-                      format: uuid
-                  description: Document Store ID
-                - in: path
-                  name: loaderId
-                  required: true
-                  schema:
-                      type: string
-                      format: uuid
-                  description: Document loader ID
-                - in: path
-                  name: pageNo
-                  required: true
-                  schema:
-                      type: string
-                  description: Pagination number
-            responses:
-                '200':
-                    description: Successfully retrieved chunks from document loader
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DocumentStoreFileChunkPagedResponse'
-                '404':
-                    description: Document store not found
-                '500':
-                    description: Internal server error
-
-    /document-store/chunks/{storeId}/{loaderId}/{chunkId}:
-        put:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Update a specific chunk
-            description: Updates a specific chunk from a document loader
-            operationId: editDocumentStoreFileChunk
-            parameters:
-                - in: path
-                  name: storeId
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Store ID
-                - in: path
-                  name: loaderId
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Loader ID
-                - in: path
-                  name: chunkId
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Chunk ID
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Document'
-                required: true
-            responses:
-                '200':
-                    description: Successfully updated chunk
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/DocumentStoreFileChunkPagedResponse'
-                '404':
-                    description: Document store not found
-                '500':
-                    description: Internal server error
-
-        delete:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Delete a specific chunk from a document loader
-            description: Delete a specific chunk from a document loader
-            operationId: deleteDocumentStoreFileChunk
-            parameters:
-                - in: path
-                  name: storeId
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Store ID
-                - in: path
-                  name: loaderId
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Loader ID
-                - in: path
-                  name: chunkId
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Chunk ID
-            responses:
-                '200':
-                    description: Successfully deleted chunk
-                '400':
-                    description: Invalid ID provided
-                '404':
-                    description: Document Store not found
-                '500':
-                    description: Internal server error
-
-    /document-store/store-configs/{id}/{loaderId}:
-        get:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Get document store configurations
-            description: Retrieve configurations for a specific document store and loader
-            operationId: getDocStoreConfigs
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Store ID
-                - in: path
-                  name: loaderId
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Loader ID
-            responses:
-                '200':
-                    description: Successfully retrieved document store configurations
-                '404':
-                    description: Document store not found
-                '500':
-                    description: Internal server error
-
-    /document-store/components/loaders:
-        get:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Get available document loaders
-            description: Retrieve a list of all available document loader components
-            operationId: getDocumentLoaders
-            responses:
-                '200':
-                    description: Successfully retrieved document loaders
-                '500':
-                    description: Internal server error
-
-    /document-store/components/embeddings:
-        get:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Get available embedding providers
-            description: Retrieve a list of all available embedding provider components
-            operationId: getEmbeddingProviders
-            responses:
-                '200':
-                    description: Successfully retrieved embedding providers
-                '500':
-                    description: Internal server error
-
-    /document-store/components/vectorstore:
-        get:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Get available vector store providers
-            description: Retrieve a list of all available vector store provider components
-            operationId: getVectorStoreProviders
-            responses:
-                '200':
-                    description: Successfully retrieved vector store providers
-                '500':
-                    description: Internal server error
-
-    /document-store/components/recordmanager:
-        get:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Get available record manager providers
-            description: Retrieve a list of all available record manager provider components
-            operationId: getRecordManagerProviders
-            responses:
-                '200':
-                    description: Successfully retrieved record manager providers
-                '500':
-                    description: Internal server error
-
-    /document-store/loader/preview:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Preview file chunks
-            description: Preview how a file will be split into chunks before processing
-            operationId: previewFileChunks
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DocumentStoreLoaderForPreview'
-                required: true
-            responses:
-                '200':
-                    description: Successfully generated chunk preview
-                '400':
-                    description: Invalid request body
-                '500':
-                    description: Internal server error
-
-    /document-store/loader/save:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Save document loader configuration
-            description: Save a document loader configuration to a document store
-            operationId: saveProcessingLoader
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/DocumentStoreLoaderForPreview'
-                required: true
-            responses:
-                '200':
-                    description: Successfully saved loader configuration
-                '400':
-                    description: Invalid request body
-                '500':
-                    description: Internal server error
-
-    /document-store/loader/process/{loaderId}:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Process a document loader
-            description: Process and generate chunks from a document loader
-            operationId: processLoader
-            parameters:
-                - in: path
-                  name: loaderId
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Loader ID
-            responses:
-                '200':
-                    description: Successfully processed loader
-                '404':
-                    description: Loader not found
-                '500':
-                    description: Internal server error
-
-    /document-store/vectorstore/test-connection:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Test vector store connection
-            description: Test the connection to a vector store configuration
-            operationId: testVectorStoreConnection
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                required: true
-            responses:
-                '200':
-                    description: Connection test successful
-                '400':
-                    description: Connection test failed
-                '500':
-                    description: Internal server error
-
-    /document-store/vectorstore/insert:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Insert documents into vector store
-            description: Insert processed documents into the configured vector store
-            operationId: insertIntoVectorStore
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                required: true
-            responses:
-                '200':
-                    description: Successfully inserted into vector store
-                '400':
-                    description: Invalid request body
-                '500':
-                    description: Internal server error
-
-    /document-store/vectorstore/save:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Save vector store configuration
-            description: Save vector store configuration for a document store
-            operationId: saveVectorStoreConfig
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                required: true
-            responses:
-                '200':
-                    description: Successfully saved vector store configuration
-                '400':
-                    description: Invalid request body
-                '500':
-                    description: Internal server error
-
-    /document-store/vectorstore/update:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Update vector store configuration
-            description: Update vector store configuration without re-upserting documents
-            operationId: updateVectorStoreConfigOnly
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                required: true
-            responses:
-                '200':
-                    description: Successfully updated vector store configuration
-                '400':
-                    description: Invalid request body
-                '500':
-                    description: Internal server error
-
-    /document-store/generate-tool-desc/{id}:
-        post:
-            tags:
-                - document-store
-            security:
-                - bearerAuth: []
-            summary: Generate tool description
-            description: Generate a tool description for a document store using AI
-            operationId: generateDocStoreToolDesc
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Document Store ID
-            responses:
-                '200':
-                    description: Successfully generated tool description
+                    description: Upload capability.
                     content:
                         application/json:
                             schema:
                                 type: object
                                 properties:
-                                    description:
-                                        type: string
-                '404':
-                    description: Document store not found
-                '500':
-                    description: Internal server error
+                                    isImageUploadAllowed:
+                                        type: boolean
+                                    isSpeechToTextEnabled:
+                                        type: boolean
+                                    isRAGFileUploadAllowed:
+                                        type: boolean
+                                    isFullFileUpload:
+                                        type: boolean
 
-    /feedback:
-        post:
-            tags:
-                - feedback
-            security:
-                - bearerAuth: []
-            operationId: createChatMessageFeedbackForAgentflow
-            summary: Create new chat message feedback
-            description: Create new feedback for a specific chat flow.
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ChatMessageFeedback'
-                required: true
-            responses:
-                '200':
-                    description: Feedback successfully created
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ChatMessageFeedback'
-                '400':
-                    description: Invalid input provided
-                '500':
-                    description: Internal server error
-    /feedback/{id}:
-        get:
-            tags:
-                - feedback
-            security:
-                - bearerAuth: []
-            summary: List all chat message feedbacks for an agentflow
-            description: Retrieve all feedbacks for an agentflow
-            operationId: getAllChatMessageFeedback
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Agentflow ID
-                - in: query
-                  name: chatId
-                  schema:
-                      type: string
-                  description: Chat ID to filter feedbacks (optional)
-                - in: query
-                  name: sortOrder
-                  schema:
-                      type: string
-                      enum: [asc, desc]
-                      default: asc
-                  description: Sort order of feedbacks (optional)
-                - in: query
-                  name: startDate
-                  schema:
-                      type: string
-                      format: date-time
-                  description: Filter feedbacks starting from this date (optional)
-                - in: query
-                  name: endDate
-                  schema:
-                      type: string
-                      format: date-time
-                  description: Filter feedbacks up to this date (optional)
-            responses:
-                '200':
-                    description: Successful operation
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/ChatMessageFeedback'
-                '500':
-                    description: Internal server error
-        put:
-            tags:
-                - feedback
-            security:
-                - bearerAuth: []
-            summary: Update chat message feedback
-            description: Update a specific feedback
-            operationId: updateChatMessageFeedbackForAgentflow
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Chat Message Feedback ID
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/ChatMessageFeedback'
-            responses:
-                '200':
-                    description: Feedback successfully updated
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/ChatMessageFeedback'
-                '400':
-                    description: Invalid input provided
-                '404':
-                    description: Feedback with the specified ID was not found
-                '500':
-                    description: Internal server error
-
-    /leads:
-        post:
-            tags:
-                - leads
-            security:
-                - bearerAuth: []
-            operationId: createLead
-            summary: Create a new lead in an agentflow
-            description: Create a new lead associated with a specific agentflow
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Lead'
-                required: true
-            responses:
-                '200':
-                    description: Lead created successfully
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Lead'
-                '400':
-                    description: Invalid request body
-                '422':
-                    description: Validation error
-                '500':
-                    description: Internal server error
-
-    /leads/{id}:
-        get:
-            tags:
-                - leads
-            security:
-                - bearerAuth: []
-            summary: Get all leads for a specific agentflow
-            description: Retrieve all leads associated with a specific agentflow
-            operationId: getAllLeadsForAgentflow
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Agentflow ID
-            responses:
-                '200':
-                    description: Successful operation
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/Lead'
-                '400':
-                    description: Invalid ID provided
-                '404':
-                    description: Leads not found
-                '500':
-                    description: Internal server error
-
-    /ping:
-        get:
-            tags:
-                - ping
-            summary: Ping the server
-            description: Ping the server to check if it is running
-            operationId: pingServer
-            responses:
-                '200':
-                    description: Server is running
-                    content:
-                        text/plain:
-                            schema:
-                                type: string
-                                example: pong
-                '500':
-                    description: Internal server error
-
+    # ─────────────────────────────────────────────────────────────────────
+    # Prediction — invoke an agentflow
+    # ─────────────────────────────────────────────────────────────────────
     /prediction/{id}:
         post:
-            tags:
-                - prediction
-            security:
-                - bearerAuth: []
+            tags: [prediction]
             operationId: createPrediction
-            summary: Send message to flow and get AI response
+            summary: Send a message to an agentflow and get a response
             description: |
-                Send a message to your flow and receive an AI-generated response. This is the primary endpoint for interacting with your flows and assistants.
-                **Authentication**: API key may be required depending on flow settings.
+                Primary invocation endpoint. Accepts text (`question`), structured form
+                input (`form`), file uploads (multipart `files`), conversation `history`
+                and runtime overrides (`overrideConfig`). Supports streaming when
+                `streaming: true`.
+
+                Authentication: bearer JWT *or* per-flow API key configured on the
+                agentflow.
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                  description: Flow ID - the unique identifier of your flow
-                  example: 'your-flow-id'
+                  description: Agentflow id.
             requestBody:
+                required: true
                 content:
                     application/json:
                         schema:
@@ -1408,338 +470,1101 @@ paths:
                         schema:
                             type: object
                             properties:
-                                question:
-                                    type: string
-                                    description: Question/message to send to the flow
-                                    example: 'Analyze this uploaded file and summarize its contents'
                                 files:
                                     type: array
                                     items:
                                         type: string
                                         format: binary
-                                    description: Files to be uploaded (images, audio, documents, etc.)
+                                question:
+                                    type: string
                                 streaming:
                                     type: boolean
-                                    description: Enable streaming responses
-                                    default: false
                                 overrideConfig:
                                     type: string
-                                    description: JSON string of configuration overrides
-                                    example: '{"sessionId":"user-123","temperature":0.7}'
-                                history:
-                                    type: string
-                                    description: JSON string of conversation history
-                                    example: '[{"role":"userMessage","content":"Hello"},{"role":"apiMessage","content":"Hi there!"}]'
-                                humanInput:
-                                    type: string
-                                    description: JSON string of human input for resuming execution
-                                    example: '{"type":"proceed","feedback":"Continue with the plan"}'
-                            required:
-                                - question
-                required: true
+                                    description: JSON-encoded override config.
             responses:
                 '200':
-                    description: Successful prediction response
+                    description: 'Prediction result. When `streaming: true`, response is a Server-Sent Event stream of `text/event-stream` chunks.'
                     content:
                         application/json:
                             schema:
                                 type: object
-                                properties:
-                                    text:
-                                        type: string
-                                        description: The AI-generated response text
-                                        example: 'Artificial intelligence (AI) is a branch of computer science that focuses on creating systems capable of performing tasks that typically require human intelligence.'
-                                    json:
-                                        type: [object, "null"]
-                                        description: The result in JSON format if available (for structured outputs)
-                                    question:
-                                        type: string
-                                        description: The original question/message sent to the flow
-                                        example: 'What is artificial intelligence?'
-                                    chatId:
-                                        type: string
-                                        description: Unique identifier for the chat session
-                                        example: 'chat-12345'
-                                    chatMessageId:
-                                        type: string
-                                        description: Unique identifier for this specific message
-                                        example: 'msg-67890'
-                                    sessionId:
-                                        type: [string, "null"]
-                                        description: Session identifier for conversation continuity
-                                        example: 'user-session-123'
-                                    memoryType:
-                                        type: [string, "null"]
-                                        description: Type of memory used for conversation context
-                                        example: 'Buffer Memory'
-                                    sourceDocuments:
-                                        oneOf:
-                                            - type: array
-                                              description: Documents retrieved from vector store (if RAG is enabled)
-                                              items:
-                                                  $ref: '#/components/schemas/Document'
-                                            - type: "null"
-                                    usedTools:
-                                        oneOf:
-                                            - type: array
-                                              description: Tools that were invoked during the response generation
-                                              items:
-                                                  $ref: '#/components/schemas/UsedTool'
-                                            - type: "null"
+                                additionalProperties: true
+                        text/event-stream:
+                            schema:
+                                type: string
                 '400':
-                    description: Bad Request - Invalid input provided or request format is incorrect
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: 'Invalid request format. Check required fields and parameter types.'
+                    description: Invalid request.
                 '401':
-                    description: Unauthorized - API key required or invalid
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: 'Unauthorized access. Please verify your API key.'
-                '404':
-                    description: Not Found - Agentflow with specified ID does not exist
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: 'Agentflow not found. Please verify the agentflow ID.'
-                '413':
-                    description: Payload Too Large - Request payload exceeds size limits
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: 'Request payload too large. Please reduce file sizes or split large requests.'
-                '422':
-                    description: Validation Error - Request validation failed
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: 'Validation failed. Check parameter requirements and data types.'
-                '500':
-                    description: Internal Server Error - Flow configuration or execution error
-                    content:
-                        application/json:
-                            schema:
-                                type: object
-                                properties:
-                                    error:
-                                        type: string
-                                        example: 'Internal server error. Check flow configuration and node settings.'
-    /tools:
+                    $ref: '#/components/responses/UnauthorizedError'
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Attachments — multipart uploads tied to a chat session
+    # ─────────────────────────────────────────────────────────────────────
+    /attachments/{agentflowId}/{chatId}:
         post:
-            tags:
-                - tools
-            security:
-                - bearerAuth: []
-            operationId: createTool
-            summary: Create a new tool
-            description: Create a new tool
+            tags: [attachments]
+            operationId: createAttachment
+            summary: Upload files to a prediction session
+            description: Multipart upload tied to a specific agentflow and chat id. Returns metadata describing each stored file for use in subsequent `/prediction/{id}` calls.
+            parameters:
+                - in: path
+                  name: agentflowId
+                  required: true
+                  schema:
+                      type: string
+                - in: path
+                  name: chatId
+                  required: true
+                  schema:
+                      type: string
             requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Tool'
                 required: true
+                content:
+                    multipart/form-data:
+                        schema:
+                            type: object
+                            properties:
+                                files:
+                                    type: array
+                                    items:
+                                        type: string
+                                        format: binary
+                            required: [files]
             responses:
                 '200':
-                    description: Tool created successfully
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Tool'
-                '400':
-                    description: Invalid request body
-                '422':
-                    description: Validation error
-                '500':
-                    description: Internal server error
-        get:
-            tags:
-                - tools
-            security:
-                - bearerAuth: []
-            summary: List all tools
-            description: Retrieve a list of all tools
-            operationId: getAllTools
-            responses:
-                '200':
-                    description: Successful operation
+                    description: Array of stored attachments.
                     content:
                         application/json:
                             schema:
                                 type: array
                                 items:
-                                    $ref: '#/components/schemas/Tool'
-                '500':
-                    description: Internal server error
+                                    $ref: '#/components/schemas/CreateAttachmentResponse'
 
-    /tools/{id}:
+    # ─────────────────────────────────────────────────────────────────────
+    # Variables
+    # ─────────────────────────────────────────────────────────────────────
+    /variables:
         get:
-            tags:
-                - tools
+            tags: [variables]
             security:
                 - bearerAuth: []
-            summary: Get a tool by ID
-            description: Retrieve a specific tool by ID
-            operationId: getToolById
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Tool ID
+            operationId: listVariables
+            summary: List variables
             responses:
                 '200':
-                    description: Successful operation
+                    description: Array of variables.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Tool'
-                '400':
-                    description: Invalid ID provided
-                '404':
-                    description: Tool not found
-                '500':
-                    description: Internal server error
-        put:
-            tags:
-                - tools
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Variable'
+        post:
+            tags: [variables]
             security:
                 - bearerAuth: []
-            summary: Update a tool by ID
-            description: Update a specific tool by ID
-            operationId: updateTool
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Tool ID
+            operationId: createVariable
+            summary: Create a variable
             requestBody:
+                required: true
                 content:
                     application/json:
                         schema:
-                            $ref: '#/components/schemas/Tool'
-                required: true
+                            $ref: '#/components/schemas/Variable'
             responses:
                 '200':
-                    description: Tool updated successfully
+                    description: Created.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Tool'
-                '400':
-                    description: Invalid ID or request body provided
-                '404':
-                    description: Tool not found
-                '500':
-                    description: Internal server error
-        delete:
-            tags:
-                - tools
+                                $ref: '#/components/schemas/Variable'
+
+    /variables/{id}:
+        put:
+            tags: [variables]
             security:
                 - bearerAuth: []
-            summary: Delete a tool by ID
-            description: Delete a specific tool by ID
-            operationId: deleteTool
+            operationId: updateVariable
+            summary: Update a variable
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                  description: Tool ID
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Variable'
             responses:
                 '200':
-                    description: Tool deleted successfully
-                '400':
-                    description: Invalid ID provided
-                '404':
-                    description: Tool not found
-                '500':
-                    description: Internal server error
-
-    /upsert-history/{id}:
-        get:
-            tags:
-                - upsert-history
+                    description: Updated.
+        delete:
+            tags: [variables]
             security:
                 - bearerAuth: []
-            summary: Get all upsert history records
-            description: Retrieve all upsert history records with optional filters
-            operationId: getAllUpsertHistory
+            operationId: deleteVariable
+            summary: Delete a variable
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                  description: Agentflow ID to filter records by
-                - in: query
-                  name: order
-                  required: false
+            responses:
+                '200':
+                    description: Deleted.
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Agents (Agent Registry)
+    # ─────────────────────────────────────────────────────────────────────
+    /agents:
+        get:
+            tags: [agents]
+            security:
+                - bearerAuth: []
+            operationId: listAgents
+            summary: List registered external agents
+            responses:
+                '200':
+                    description: Array of agents.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Agent'
+        post:
+            tags: [agents]
+            security:
+                - bearerAuth: []
+            operationId: createAgent
+            summary: Register a new external HTTP agent
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Agent'
+            responses:
+                '200':
+                    description: Registered agent.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Agent'
+
+    /agents/{id}:
+        get:
+            tags: [agents]
+            security:
+                - bearerAuth: []
+            operationId: getAgent
+            parameters:
+                - in: path
+                  name: id
+                  required: true
                   schema:
                       type: string
-                      enum: [ASC, DESC]
-                      default: ASC
-                  description: Sort order of the results (ascending or descending)
+            responses:
+                '200':
+                    description: Agent.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Agent'
+        put:
+            tags: [agents]
+            security:
+                - bearerAuth: []
+            operationId: updateAgent
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Agent'
+            responses:
+                '200':
+                    description: Updated.
+        delete:
+            tags: [agents]
+            security:
+                - bearerAuth: []
+            operationId: deleteAgent
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Deleted.
+
+    /agents/{id}/toggle:
+        patch:
+            tags: [agents]
+            security:
+                - bearerAuth: []
+            operationId: toggleAgent
+            summary: Enable or disable an agent
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Toggled.
+
+    /agents/{id}/test-connection:
+        post:
+            tags: [agents]
+            security:
+                - bearerAuth: []
+            operationId: testAgentConnection
+            summary: Probe the agent's `/health` endpoint
+            description: Hits the agent's configured health endpoint and returns the outcome. Used by the UI before persisting agent config.
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Probe outcome.
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    healthy:
+                                        type: boolean
+                                    statusCode:
+                                        type: integer
+                                    error:
+                                        type: string
+
+    /agents/{id}/regenerate-mcp-gateway-token:
+        post:
+            tags: [agents]
+            security:
+                - bearerAuth: []
+            operationId: regenerateMcpGatewayToken
+            summary: Rotate the MCP gateway bearer token for an agent
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: New token returned once. Store it; it cannot be retrieved again.
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    token:
+                                        type: string
+
+    /agents/{id}/invoke:
+        post:
+            tags: [agents]
+            security:
+                - bearerAuth: []
+            operationId: invokeAgent
+            summary: Invoke an external agent via Chronos
+            description: Native Chronos invocation surface (not OpenAI-shaped). For OpenAI-shaped calls use `/agents/{id}/chat/completions` (see `openai-compat` tag).
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            additionalProperties: true
+            responses:
+                '200':
+                    description: Agent response (passthrough).
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+
+    /agents/{id}/chat/completions:
+        post:
+            tags: [agents, openai-compat]
+            security:
+                - bearerAuth: []
+            operationId: agentChatCompletions
+            summary: OpenAI-compatible chat completions against a registered agent
+            description: |
+                Wire-compatible with `POST /v1/chat/completions` from the OpenAI API.
+                Set `base_url` in any OpenAI SDK to `<chronos>/api/v1/agents/{id}` and
+                send standard chat-completions requests. Supports streaming via SSE
+                when `stream: true`.
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+                  description: Registered agent id.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ChatCompletionRequest'
+            responses:
+                '200':
+                    description: 'Chat completion response. SSE stream when `stream: true`.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ChatCompletionResponse'
+                        text/event-stream:
+                            schema:
+                                type: string
+
+    # ─────────────────────────────────────────────────────────────────────
+    # MCP gateway (Chronos as MCP server)
+    # ─────────────────────────────────────────────────────────────────────
+    /mcp-gateway/{agentId}:
+        post:
+            tags: [mcp-gateway]
+            operationId: mcpGatewayInvoke
+            summary: MCP request (JSON-RPC)
+            description: |
+                Chronos exposes a real MCP server over Streamable HTTP. Tool discovery
+                via `tools/list`, invocation via `tools/call`, change propagation via
+                `notifications/tools/list_changed`. See `agent-protocol.openapi.yaml`
+                for the full wire contract.
+            security:
+                - mcpGatewayToken: []
+            parameters:
+                - in: path
+                  name: agentId
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            additionalProperties: true
+                            description: JSON-RPC 2.0 request body.
+            responses:
+                '200':
+                    description: JSON-RPC response (single response) or SSE stream (multi-message).
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+                        text/event-stream:
+                            schema:
+                                type: string
+                '401':
+                    description: Missing or invalid MCP gateway bearer token.
+        get:
+            tags: [mcp-gateway]
+            operationId: mcpGatewayStream
+            summary: Open an MCP server-to-client stream
+            security:
+                - mcpGatewayToken: []
+            parameters:
+                - in: path
+                  name: agentId
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: SSE stream.
+                    content:
+                        text/event-stream:
+                            schema:
+                                type: string
+        delete:
+            tags: [mcp-gateway]
+            operationId: mcpGatewayClose
+            summary: Close an MCP session
+            security:
+                - mcpGatewayToken: []
+            parameters:
+                - in: path
+                  name: agentId
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Session closed.
+
+    # ─────────────────────────────────────────────────────────────────────
+    # MCP servers (registered upstream)
+    # ─────────────────────────────────────────────────────────────────────
+    /mcp-servers:
+        get:
+            tags: [mcp-servers]
+            security:
+                - bearerAuth: []
+            operationId: listMcpServers
+            summary: List registered upstream MCP servers
+            responses:
+                '200':
+                    description: Array of MCP servers.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/McpServer'
+        post:
+            tags: [mcp-servers]
+            security:
+                - bearerAuth: []
+            operationId: createMcpServer
+            summary: Register an upstream MCP server
+            description: Supports `streamable-http` and `sse` transports. `stdio` is reserved.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/McpServer'
+            responses:
+                '200':
+                    description: Registered.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/McpServer'
+
+    /mcp-servers/{id}:
+        get:
+            tags: [mcp-servers]
+            security:
+                - bearerAuth: []
+            operationId: getMcpServer
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: MCP server.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/McpServer'
+        put:
+            tags: [mcp-servers]
+            security:
+                - bearerAuth: []
+            operationId: updateMcpServer
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/McpServer'
+            responses:
+                '200':
+                    description: Updated.
+        delete:
+            tags: [mcp-servers]
+            security:
+                - bearerAuth: []
+            operationId: deleteMcpServer
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Deleted.
+
+    /mcp-servers/{id}/toggle:
+        patch:
+            tags: [mcp-servers]
+            security:
+                - bearerAuth: []
+            operationId: toggleMcpServer
+            summary: Enable or disable an MCP server
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Toggled.
+
+    /mcp-servers/{id}/test-connection:
+        post:
+            tags: [mcp-servers]
+            security:
+                - bearerAuth: []
+            operationId: testMcpServerConnection
+            summary: Probe an MCP server
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Connection outcome.
+
+    /mcp-servers/{id}/tools:
+        get:
+            tags: [mcp-servers]
+            security:
+                - bearerAuth: []
+            operationId: listMcpServerTools
+            summary: List tools exposed by an MCP server
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Tools array (raw `tools/list` payload from the upstream server).
+
+    /mcp-servers/{id}/change-log:
+        get:
+            tags: [mcp-servers]
+            security:
+                - bearerAuth: []
+            operationId: getMcpServerChangeLog
+            summary: List recent `tools/list_changed` events from an MCP server
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Change log entries.
+
+    /mcp-servers/preview-tools:
+        post:
+            tags: [mcp-servers]
+            security:
+                - bearerAuth: []
+            operationId: previewMcpServerTools
+            summary: Preview tools for an unsaved MCP server config
+            description: Used by the UI to surface a `tools/list` response before persisting an MCP server registration.
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/McpServer'
+            responses:
+                '200':
+                    description: Tools array.
+
+    # ─────────────────────────────────────────────────────────────────────
+    # OpenAI compatibility surface
+    # ─────────────────────────────────────────────────────────────────────
+    /openai/chat/completions:
+        post:
+            tags: [openai-compat]
+            operationId: openaiChatCompletions
+            summary: OpenAI-compatible chat completions
+            description: |
+                Wire-compatible with `POST /v1/chat/completions`. Agentflows and
+                registered agents are exposed as `model` ids — pass either an
+                agentflow id or `agent:<agentId>` as `model`. SSE streaming when
+                `stream: true`.
+
+                Auth: standard OpenAI `Authorization: Bearer <api-key>` header,
+                using either a Chronos API key (for agentflow models) or the
+                agent's outbound token (for `agent:<id>` models).
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/ChatCompletionRequest'
+            responses:
+                '200':
+                    description: 'Chat completion response, SSE stream when `stream: true`.'
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/ChatCompletionResponse'
+                        text/event-stream:
+                            schema:
+                                type: string
+
+    /openai/models:
+        get:
+            tags: [openai-compat]
+            operationId: openaiListModels
+            summary: List models (agentflows + agents)
+            description: "Returns OpenAI-shaped `{ object: 'list', data: [...] }` enumerating every agentflow and registered agent as a model."
+            responses:
+                '200':
+                    description: Model list.
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                properties:
+                                    object:
+                                        type: string
+                                        example: list
+                                    data:
+                                        type: array
+                                        items:
+                                            $ref: '#/components/schemas/OpenAIModel'
+
+    /openai/models/{id}:
+        get:
+            tags: [openai-compat]
+            operationId: openaiGetModel
+            summary: Get a single model
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+                  description: Agentflow id or `agent:<agentId>`.
+            responses:
+                '200':
+                    description: Model.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/OpenAIModel'
+
+    /openai-realtime:
+        get:
+            tags: [openai-compat]
+            operationId: openaiRealtimeListTools
+            summary: List tools available to an OpenAI Realtime session
+            description: Returns a tools array shaped for the OpenAI Realtime API's `session.update.tools`. Each tool is backed by an agentflow node.
+            responses:
+                '200':
+                    description: Tools array.
+        post:
+            tags: [openai-compat]
+            operationId: openaiRealtimeExecuteTool
+            summary: Execute a tool from an OpenAI Realtime session
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            additionalProperties: true
+                            description: OpenAI Realtime `response.function_call_arguments.done` payload.
+            responses:
+                '200':
+                    description: Tool result.
+                    content:
+                        application/json:
+                            schema:
+                                type: object
+                                additionalProperties: true
+
+    /openai-realtime/{id}:
+        get:
+            tags: [openai-compat]
+            operationId: openaiRealtimeListToolsForFlow
+            summary: List tools for a specific agentflow
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Tools array.
+        post:
+            tags: [openai-compat]
+            operationId: openaiRealtimeExecuteToolForFlow
+            summary: Execute a tool against a specific agentflow
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            type: object
+                            additionalProperties: true
+            responses:
+                '200':
+                    description: Tool result.
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Schedules
+    # ─────────────────────────────────────────────────────────────────────
+    /schedules:
+        get:
+            tags: [schedules]
+            security:
+                - bearerAuth: []
+            operationId: listSchedules
+            responses:
+                '200':
+                    description: Schedules.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Schedule'
+        post:
+            tags: [schedules]
+            security:
+                - bearerAuth: []
+            operationId: createSchedule
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Schedule'
+            responses:
+                '200':
+                    description: Created.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Schedule'
+
+    /schedules/{id}:
+        get:
+            tags: [schedules]
+            security:
+                - bearerAuth: []
+            operationId: getSchedule
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Schedule.
+                    content:
+                        application/json:
+                            schema:
+                                $ref: '#/components/schemas/Schedule'
+        put:
+            tags: [schedules]
+            security:
+                - bearerAuth: []
+            operationId: updateSchedule
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Schedule'
+            responses:
+                '200':
+                    description: Updated.
+        delete:
+            tags: [schedules]
+            security:
+                - bearerAuth: []
+            operationId: deleteSchedule
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Deleted.
+
+    /schedules/{id}/toggle:
+        patch:
+            tags: [schedules]
+            security:
+                - bearerAuth: []
+            operationId: toggleSchedule
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Toggled.
+
+    /schedules/{id}/executions:
+        get:
+            tags: [schedules]
+            security:
+                - bearerAuth: []
+            operationId: getScheduleExecutions
+            summary: List recent executions for a schedule
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Executions.
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Webhooks
+    # ─────────────────────────────────────────────────────────────────────
+    /webhooks:
+        get:
+            tags: [webhooks]
+            security:
+                - bearerAuth: []
+            operationId: listWebhooks
+            responses:
+                '200':
+                    description: Webhooks.
+                    content:
+                        application/json:
+                            schema:
+                                type: array
+                                items:
+                                    $ref: '#/components/schemas/Webhook'
+        post:
+            tags: [webhooks]
+            security:
+                - bearerAuth: []
+            operationId: createWebhook
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Webhook'
+            responses:
+                '200':
+                    description: Created.
+
+    /webhooks/{id}:
+        get:
+            tags: [webhooks]
+            security:
+                - bearerAuth: []
+            operationId: getWebhook
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Webhook.
+        put:
+            tags: [webhooks]
+            security:
+                - bearerAuth: []
+            operationId: updateWebhook
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            requestBody:
+                required: true
+                content:
+                    application/json:
+                        schema:
+                            $ref: '#/components/schemas/Webhook'
+            responses:
+                '200':
+                    description: Updated.
+        delete:
+            tags: [webhooks]
+            security:
+                - bearerAuth: []
+            operationId: deleteWebhook
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Deleted.
+
+    /webhooks/{id}/toggle:
+        patch:
+            tags: [webhooks]
+            security:
+                - bearerAuth: []
+            operationId: toggleWebhook
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Toggled.
+
+    /webhooks/{id}/deliveries:
+        get:
+            tags: [webhooks]
+            security:
+                - bearerAuth: []
+            operationId: listWebhookDeliveries
+            summary: Recent delivery attempts (for debugging)
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Deliveries.
+
+    /webhooks/{id}/regenerate-secret:
+        post:
+            tags: [webhooks]
+            security:
+                - bearerAuth: []
+            operationId: regenerateWebhookSecret
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: New secret. Returned once.
+
+    /webhooks/{id}/test:
+        post:
+            tags: [webhooks]
+            security:
+                - bearerAuth: []
+            operationId: testWebhook
+            summary: Fire a synthetic webhook request to exercise the target flow
+            parameters:
+                - in: path
+                  name: id
+                  required: true
+                  schema:
+                      type: string
+            responses:
+                '200':
+                    description: Test outcome.
+
+    # ─────────────────────────────────────────────────────────────────────
+    # Executions
+    # ─────────────────────────────────────────────────────────────────────
+    /executions:
+        get:
+            tags: [executions]
+            security:
+                - bearerAuth: []
+            operationId: listExecutions
+            summary: List executions
+            parameters:
+                - in: query
+                  name: agentflowId
+                  schema:
+                      type: string
+                - in: query
+                  name: state
+                  schema:
+                      type: string
+                      enum: [INPROGRESS, FINISHED, ERROR, STOPPED, TIMEOUT]
                 - in: query
                   name: startDate
-                  required: false
                   schema:
                       type: string
                       format: date-time
-                  description: Filter records from this start date (inclusive)
                 - in: query
                   name: endDate
-                  required: false
                   schema:
                       type: string
                       format: date-time
-                  description: Filter records until this end date (inclusive)
             responses:
                 '200':
-                    description: Successful operation
+                    description: Executions.
                     content:
                         application/json:
                             schema:
                                 type: array
                                 items:
-                                    $ref: '#/components/schemas/UpsertHistoryResponse'
-                '500':
-                    description: Internal server error
-        patch:
-            tags:
-                - upsert-history
+                                    $ref: '#/components/schemas/Execution'
+        delete:
+            tags: [executions]
             security:
                 - bearerAuth: []
-            summary: Delete upsert history records
-            description: Soft delete upsert history records by IDs
-            operationId: patchDeleteUpsertHistory
+            operationId: bulkDeleteExecutions
+            summary: Bulk delete executions
             requestBody:
+                required: true
                 content:
                     application/json:
                         schema:
@@ -1749,326 +1574,100 @@ paths:
                                     type: array
                                     items:
                                         type: string
-                                        format: uuid
-                                    description: List of upsert history record IDs to delete
             responses:
                 '200':
-                    description: Successfully deleted records
-                '400':
-                    description: Invalid request body
-                '500':
-                    description: Internal server error
-    /variables:
-        post:
-            tags:
-                - variables
-            security:
-                - bearerAuth: []
-            operationId: createVariable
-            summary: Create a new variable
-            description: Create a new variable
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Variable'
-                required: true
-            responses:
-                '200':
-                    description: Variable created successfully
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/Variable'
-                '400':
-                    description: Invalid request body
-                '422':
-                    description: Validation error
-                '500':
-                    description: Internal server error
+                    description: Deleted.
+
+    /executions/{id}:
         get:
-            tags:
-                - variables
+            tags: [executions]
             security:
                 - bearerAuth: []
-            summary: List all variables
-            description: Retrieve a list of all variables
-            operationId: getAllVariables
-            responses:
-                '200':
-                    description: Successful operation
-                    content:
-                        application/json:
-                            schema:
-                                type: array
-                                items:
-                                    $ref: '#/components/schemas/Variable'
-                '500':
-                    description: Internal server error
-
-    /variables/{id}:
-        put:
-            tags:
-                - variables
-            security:
-                - bearerAuth: []
-            summary: Update a variable by ID
-            description: Update a specific variable by ID
-            operationId: updateVariable
+            operationId: getExecution
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                  description: Variable ID
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            $ref: '#/components/schemas/Variable'
-                required: true
             responses:
                 '200':
-                    description: Variable updated successfully
+                    description: Execution.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/Variable'
-                '400':
-                    description: Invalid ID or request body provided
-                '404':
-                    description: Variable not found
-                '500':
-                    description: Internal server error
+                                $ref: '#/components/schemas/Execution'
         delete:
-            tags:
-                - variables
+            tags: [executions]
             security:
                 - bearerAuth: []
-            summary: Delete a variable by ID
-            description: Delete a specific variable by ID
-            operationId: deleteVariable
+            operationId: deleteExecution
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                  description: Variable ID
             responses:
                 '200':
-                    description: Variable deleted successfully
-                '400':
-                    description: Invalid ID provided
-                '404':
-                    description: Variable not found
-                '500':
-                    description: Internal server error
-    /vector/upsert/{id}:
-        post:
-            tags:
-                - vector
-            security:
-                - bearerAuth: []
-            operationId: vectorUpsert
-            summary: Upsert vector embeddings
-            description: Upsert vector embeddings of documents in an agentflow
-            parameters:
-                - in: path
-                  name: id
-                  required: true
-                  schema:
-                      type: string
-                  description: Agentflow ID
-            requestBody:
-                content:
-                    application/json:
-                        schema:
-                            type: object
-                            properties:
-                                stopNodeId:
-                                    type: string
-                                    description: In cases when you have multiple vector store nodes, you can specify the node ID to store the vectors
-                                    example: 'node_1'
-                                overrideConfig:
-                                    type: object
-                                    description: The configuration to override the default vector upsert settings (optional)
-                    multipart/form-data:
-                        schema:
-                            type: object
-                            properties:
-                                files:
-                                    type: array
-                                    items:
-                                        type: string
-                                        format: binary
-                                    description: Files to be uploaded
-                                modelName:
-                                    type: [string, "null"]
-                                    example: ''
-                                    description: Other override configurations
-                            required:
-                                - files
-                required: true
-            responses:
-                '200':
-                    description: Vector embeddings upserted successfully
-                    content:
-                        application/json:
-                            schema:
-                                $ref: '#/components/schemas/VectorUpsertResponse'
-                '400':
-                    description: Invalid input provided
-                '404':
-                    description: Agentflow not found
-                '422':
-                    description: Validation error
-                '500':
-                    description: Internal server error
+                    description: Deleted.
 
-    /vector/internal-upsert/{id}:
-        post:
-            tags:
-                - vector
-            security:
-                - bearerAuth: []
-            operationId: internalVectorUpsert
-            summary: Internal vector upsert
-            description: Upsert vector embeddings for internal use (used by document store processing)
+    /public-executions/{id}:
+        get:
+            tags: [executions]
+            operationId: getPublicExecution
+            summary: Get a publicly shared execution
+            description: Public execution links bypass authentication. Returns the execution if it has been marked public on its agentflow.
             parameters:
                 - in: path
                   name: id
                   required: true
                   schema:
                       type: string
-                  description: Agentflow ID
-            requestBody:
-                content:
-                    multipart/form-data:
-                        schema:
-                            type: object
-                            properties:
-                                files:
-                                    type: array
-                                    items:
-                                        type: string
-                                        format: binary
-                                    description: Files to be uploaded
-                            required:
-                                - files
-                required: true
             responses:
                 '200':
-                    description: Vector embeddings upserted successfully
+                    description: Execution.
                     content:
                         application/json:
                             schema:
-                                $ref: '#/components/schemas/VectorUpsertResponse'
-                '400':
-                    description: Invalid input provided
-                '500':
-                    description: Internal server error
+                                $ref: '#/components/schemas/Execution'
+                '404':
+                    description: Not found or not public.
 
 components:
     responses:
         UnauthorizedError:
-            description: Access token is missing or invalid
+            description: Access token is missing or invalid.
+
+    securitySchemes:
+        bearerAuth:
+            type: http
+            scheme: bearer
+            bearerFormat: JWT
+            description: Chronos JWT issued by `/auth/login` (or an API key for `/prediction` and `/agents/*/chat/completions`).
+        mcpGatewayToken:
+            type: http
+            scheme: bearer
+            description: Per-agent MCP gateway bearer token. Obtained at agent registration; rotated via `/agents/{id}/regenerate-mcp-gateway-token`.
+
     schemas:
         ApiKey:
             type: object
             properties:
-                apiKey:
-                    type: string
-                    example: 'vYV8OdUMRzRQbzpp2JzY5DvriBnuVHo3pYpPQ7IJWyw='
-                apiSecret:
-                    type: string
-                    example: '50e19a35ee1df775c09628dade1c00f0f680c6e15256e34a6eab350b38b31352df35c4db7925a3e5dd41cc773a0e2529e6c6da18408a8bbeeb0ae4b0f0ab9486.a96478a9225ed6ab'
-                chatFlows:
-                    type: array
-                    example: []
-                createdAt:
-                    type: string
-                    example: '10-Mar-24'
                 id:
                     type: string
                     example: '525e4daa2104f06ffdea5c1af37009be'
                 keyName:
                     type: string
-                    example: 'someKeyName'
-
-        ChatMessage:
-            type: object
-            properties:
-                id:
+                    example: 'my-integration'
+                apiKey:
                     type: string
-                    format: uuid
-                    example: 'd290f1ee-6c54-4b01-90e6-d701748f0851'
-                role:
+                    example: 'vYV8OdUMRzRQbzpp2JzY5DvriBnuVHo3pYpPQ7IJWyw='
+                apiSecret:
                     type: string
-                    enum: [apiMessage, userMessage]
-                    example: 'apiMessage'
-                chatflowid:
-                    type: string
-                    format: uuid
-                    example: 'd290f1ee-6c54-4b01-90e6-d701748f0852'
-                content:
-                    type: string
-                    example: 'Hello, how can I help you today?'
-                sourceDocuments:
-                    oneOf:
-                        - type: array
-                          items:
-                              $ref: '#/components/schemas/Document'
-                        - type: "null"
-                usedTools:
-                    oneOf:
-                        - type: array
-                          items:
-                              $ref: '#/components/schemas/UsedTool'
-                        - type: "null"
-                fileAnnotations:
-                    oneOf:
-                        - type: array
-                          items:
-                              $ref: '#/components/schemas/FileAnnotation'
-                        - type: "null"
-                agentReasoning:
-                    oneOf:
-                        - type: array
-                          items:
-                              $ref: '#/components/schemas/AgentReasoning'
-                        - type: "null"
-                fileUploads:
-                    oneOf:
-                        - type: array
-                          items:
-                              $ref: '#/components/schemas/FileUpload'
-                        - type: "null"
-                action:
-                    oneOf:
-                        - type: array
-                          items:
-                              $ref: '#/components/schemas/Action'
-                        - type: "null"
-                chatType:
-                    type: string
-                    enum: [INTERNAL, EXTERNAL]
-                    example: 'INTERNAL'
-                chatId:
-                    type: string
-                    example: 'chat12345'
-                memoryType:
-                    type: [string, "null"]
-                sessionId:
-                    type: [string, "null"]
-                createdDate:
+                createdAt:
                     type: string
                     format: date-time
-                    example: '2024-08-24T14:15:22Z'
-                leadEmail:
-                    type: [string, "null"]
-                    example: 'user@example.com'
 
         Agentflow:
             type: object
@@ -2078,10 +1677,10 @@ components:
                     example: 'd290f1ee-6c54-4b01-90e6-d701748f0851'
                 name:
                     type: string
-                    example: 'MyAgentFlow'
+                    example: 'Support Triage'
                 flowData:
                     type: string
-                    example: '{}'
+                    description: JSON-encoded flow graph.
                 deployed:
                     type: boolean
                 isPublic:
@@ -2090,723 +1689,379 @@ components:
                     type: string
                 chatbotConfig:
                     type: string
-                    example: '{}'
                 apiConfig:
                     type: string
-                    example: '{}'
                 analytic:
                     type: string
-                    example: '{}'
                 speechToText:
                     type: string
-                    example: '{}'
                 category:
                     type: string
-                    example: 'category1;category2'
+                    example: 'support;triage'
                 type:
                     type: string
-                    enum: [CHATFLOW, MULTIAGENT]
+                    enum: [CHATFLOW, MULTIAGENT, AGENTFLOW]
                 createdDate:
                     type: string
                     format: date-time
-                    example: '2024-08-24T14:15:22Z'
                 updatedDate:
                     type: string
                     format: date-time
-                    example: '2024-08-24T14:15:22Z'
 
-        Document:
-            type: object
-            properties:
-                pageContent:
-                    type: string
-                    example: 'This is the content of the page.'
-                metadata:
-                    type: object
-                    additionalProperties:
-                        type: string
-                    example:
-                        author: 'John Doe'
-                        date: '2024-08-24'
-
-        UsedTool:
-            type: object
-            properties:
-                tool:
-                    type: string
-                    example: 'Name of the tool'
-                toolInput:
-                    type: object
-                    additionalProperties:
-                        type: string
-                    example:
-                        input: 'search query'
-                toolOutput:
-                    type: string
-
-        FileAnnotation:
-            type: object
-            properties:
-                filePath:
-                    type: string
-                    example: 'path/to/file'
-                fileName:
-                    type: string
-                    example: 'file.txt'
-
-        FileUpload:
-            type: object
-            properties:
-                data:
-                    type: string
-                    example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABjElEQVRIS+2Vv0oDQRDG'
-                type:
-                    type: string
-                    example: 'image'
-                name:
-                    type: string
-                    example: 'image.png'
-                mime:
-                    type: string
-                    example: 'image/png'
-        Action:
+        AgentflowVersion:
             type: object
             properties:
                 id:
                     type: string
-                    format: uuid
-                    example: '61beeb58-6ebe-4d51-aa0b-41d4c546ff08'
-                mapping:
-                    type: object
-                    properties:
-                        approve:
-                            type: string
-                            example: 'Yes'
-                        reject:
-                            type: string
-                            example: 'No'
-                        toolCalls:
-                            type: array
-                            example: []
-                elements:
-                    type: array
-
-        AgentReasoning:
-            type: object
-            properties:
-                agentName:
+                agentflowId:
                     type: string
-                    example: 'agent'
-                messages:
-                    type: array
-                    items:
-                        type: string
-                    example: ['hello']
-                nodeName:
+                version:
+                    type: integer
+                    example: 3
+                flowData:
                     type: string
-                    example: 'seqAgent'
-                nodeId:
-                    type: string
-                    example: 'seqAgent_0'
-                usedTools:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/UsedTool'
-                sourceDocuments:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Document'
-                state:
-                    type: object
-                    additionalProperties:
-                        type: string
-
-        Credential:
-            type: object
-            properties:
-                id:
-                    type: string
-                    example: 'cfd531e0-82fc-11e9-bc42-526af7764f64'
-                name:
-                    type: string
-                    example: 'My Credential'
-                credentialName:
-                    type: string
-                    example: 'openAIAPI'
-                encryptedData:
-                    type: string
-                    example: 'U2FsdGVkX1/3T2gnnsEtX6FJi1DbnYx0VVdS3XWZ5ro='
-                createdDate:
+                publishedAt:
                     type: string
                     format: date-time
-                    example: '2024-08-24T14:15:22Z'
-                updatedDate:
-                    type: string
-                    format: date-time
-                    example: '2024-08-24T14:15:22Z'
+
         Prediction:
             type: object
             properties:
                 question:
                     type: string
-                    description: The question/message to send to the flow
-                    example: 'What is artificial intelligence?'
+                    description: Message to send to the flow.
+                    example: 'What is the status of order #42?'
                 form:
                     type: object
-                    description: The form object to send to the flow (alternative to question for Agentflow V2)
+                    description: Structured form input (alternative to `question`, used by Agentflow V2).
                     additionalProperties: true
-                    example:
-                        title: 'Example'
-                        count: 1
                 streaming:
                     type: boolean
-                    description: Enable streaming responses for real-time output
                     default: false
-                    example: false
                 overrideConfig:
                     type: object
-                    description: Override flow configuration and pass variables at runtime
                     additionalProperties: true
-                    example:
-                        sessionId: 'user-session-123'
-                        temperature: 0.7
-                        maxTokens: 500
-                        vars:
-                            user_name: 'Alice'
+                    description: Runtime overrides (sessionId, model params, variables, etc).
                 history:
                     type: array
-                    description: Previous conversation messages for context
                     items:
                         type: object
                         properties:
                             role:
                                 type: string
                                 enum: [apiMessage, userMessage]
-                                description: The role of the message
-                                example: apiMessage
                             content:
                                 type: string
-                                description: The content of the message
-                                example: 'Hello, how can I help you?'
-                    example:
-                        - role: 'apiMessage'
-                          content: "Hello! I'm an AI assistant. How can I help you today?"
-                        - role: 'userMessage'
-                          content: "Hi, my name is Sarah and I'm learning about AI"
                 uploads:
                     type: array
-                    description: Files to upload (images, audio, documents, etc.)
                     items:
-                        type: object
-                        properties:
-                            type:
-                                type: string
-                                enum: [audio, url, file, 'file:rag', 'file:full']
-                                description: The type of file upload
-                                example: file
-                            name:
-                                type: string
-                                description: The name of the file or resource
-                                example: 'image.png'
-                            data:
-                                type: string
-                                description: The base64-encoded data or URL for the resource
-                                example: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABjElEQVRIS+2Vv0oDQRDG'
-                            mime:
-                                type: string
-                                description: The MIME type of the file or resource
-                                enum:
-                                    [
-                                        'image/png',
-                                        'image/jpeg',
-                                        'image/jpg',
-                                        'image/gif',
-                                        'image/webp',
-                                        'audio/mp4',
-                                        'audio/webm',
-                                        'audio/wav',
-                                        'audio/mpeg',
-                                        'audio/ogg',
-                                        'audio/aac'
-                                    ]
-                                example: 'image/png'
-                    example:
-                        - type: 'file'
-                          name: 'example.png'
-                          data: 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAAAYCAYAAADgdz34AAABjElEQVRIS+2Vv0oDQRDG'
-                          mime: 'image/png'
+                        $ref: '#/components/schemas/FileUpload'
                 humanInput:
                     type: object
-                    description: Return human feedback and resume execution from a stopped checkpoint
+                    description: Resume execution from a stopped checkpoint.
                     properties:
                         type:
                             type: string
                             enum: [proceed, reject]
-                            description: Type of human input response
-                            example: 'reject'
                         feedback:
                             type: string
-                            description: Feedback to the last output
-                            example: 'Include more emoji'
-                    example:
-                        type: 'reject'
-                        feedback: 'Include more emoji'
 
-        Tool:
+        FileUpload:
             type: object
             properties:
-                id:
-                    type: string
-                    format: uuid
-                    description: Unique identifier for the tool
-                    example: 'cfd531e0-82fc-11e9-bc42-526af7764f64'
-                name:
-                    type: string
-                    description: Name of the tool
-                    example: 'date_time_tool'
-                description:
-                    type: string
-                    description: Description of the tool
-                    example: 'A tool used for date and time operations'
-                color:
-                    type: string
-                    description: Color associated with the tool
-                    example: '#FF5733'
-                iconSrc:
-                    type: [string, "null"]
-                    description: Source URL for the tool's icon
-                    example: 'https://example.com/icons/date.png'
-                schema:
-                    type: [string, "null"]
-                    description: JSON schema associated with the tool
-                func:
-                    type: [string, "null"]
-                    description: Functionality description or code associated with the tool
-                createdDate:
-                    type: string
-                    format: date-time
-                    description: Date and time when the tool was created
-                    example: '2024-08-24T14:15:22Z'
-                updatedDate:
-                    type: string
-                    format: date-time
-                    description: Date and time when the tool was last updated
-                    example: '2024-08-24T14:15:22Z'
-        Variable:
-            type: object
-            properties:
-                id:
-                    type: string
-                    format: uuid
-                    description: Unique identifier for the variable
-                    example: 'cfd531e0-82fc-11e9-bc42-526af7764f64'
-                name:
-                    type: string
-                    description: Name of the variable
-                    example: 'API_KEY'
-                value:
-                    type: [string, "null"]
-                    description: Value of the variable
-                    example: 'my-secret-key'
                 type:
                     type: string
-                    description: Type of the variable (e.g., string, number)
-                    example: 'string'
-                createdDate:
-                    type: string
-                    format: date-time
-                    description: Date and time when the variable was created
-                    example: '2024-08-24T14:15:22Z'
-                updatedDate:
-                    type: string
-                    format: date-time
-                    description: Date and time when the variable was last updated
-                    example: '2024-08-24T14:15:22Z'
-        VectorUpsertResponse:
-            type: object
-            properties:
-                numAdded:
-                    type: number
-                    description: Number of vectors added
-                    example: 1
-                numDeleted:
-                    type: number
-                    description: Number of vectors deleted
-                    example: 1
-                numUpdated:
-                    type: number
-                    description: Number of vectors updated
-                    example: 1
-                numSkipped:
-                    type: number
-                    description: Number of vectors skipped (not added, deleted, or updated)
-                    example: 1
-                addedDocs:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/Document'
-        Lead:
-            type: object
-            properties:
-                id:
-                    type: string
-                    format: uuid
-                    description: Unique identifier for the lead
-                    example: 'cfd531e0-82fc-11e9-bc42-526af7764f64'
+                    enum: [audio, url, file, 'file:rag', 'file:full']
                 name:
                     type: string
-                    description: Name of the lead
-                    example: 'John Doe'
-                email:
+                    example: 'invoice.pdf'
+                data:
                     type: string
-                    description: Email address of the lead
-                    example: 'john.doe@example.com'
-                phone:
+                    description: Base64-encoded data or URL.
+                mime:
                     type: string
-                    description: Phone number of the lead
-                    example: '+1234567890'
-                chatflowid:
-                    type: string
-                    description: ID of the agentflow the lead is associated with
-                    example: '7c4e8b7a-7b9a-4b4d-9f3e-2d28f1ebea02'
-                chatId:
-                    type: string
-                    description: ID of the chat session the lead is associated with
-                    example: 'd7b0b5d8-85e6-4f2a-9c1f-9d9a0e2ebf6b'
-                createdDate:
-                    type: string
-                    format: date-time
-                    description: Date and time when the lead was created
-                    example: '2024-08-24T14:15:22Z'
-        UpsertHistoryResponse:
-            type: object
-            properties:
-                id:
-                    type: string
-                    format: uuid
-                    description: Unique identifier for the upsert history record
-                    example: 'cfd531e0-82fc-11e9-bc42-526af7764f64'
-                chatflowid:
-                    type: string
-                    description: ID of the agentflow associated with the upsert history
-                    example: '7c4e8b7a-7b9a-4b4d-9f3e-2d28f1ebea02'
-                result:
-                    type: string
-                    description: Result of the upsert operation, stored as a JSON string
-                    example: '{"status":"success","data":{"key":"value"}}'
-                flowData:
-                    type: string
-                    description: Flow data associated with the upsert operation, stored as a JSON string
-                    example: '{"nodes":[],"edges":[]}'
-                date:
-                    type: string
-                    format: date-time
-                    description: Date and time when the upsert operation was performed
-                    example: '2024-08-24T14:15:22Z'
-        DocumentStore:
-            type: object
-            properties:
-                id:
-                    type: string
-                    format: uuid
-                    description: Unique identifier for the document store
-                name:
-                    type: string
-                    description: Name of the document store
-                description:
-                    type: string
-                    description: Description of the document store
-                loaders:
-                    type: string
-                    description: Loaders associated with the document store, stored as JSON string
-                whereUsed:
-                    type: string
-                    description: Places where the document store is used, stored as JSON string
-                status:
-                    type: string
-                    enum: [EMPTY, SYNC, SYNCING, STALE, NEW, UPSERTING, UPSERTED]
-                    description: Status of the document store
-                vectorStoreConfig:
-                    type: string
-                    description: Configuration for the vector store, stored as JSON string
-                embeddingConfig:
-                    type: string
-                    description: Configuration for the embedding, stored as JSON string
-                recordManagerConfig:
-                    type: string
-                    description: Configuration for the record manager, stored as JSON string
-                createdDate:
-                    type: string
-                    format: date-time
-                    description: Date and time when the document store was created
-                updatedDate:
-                    type: string
-                    format: date-time
-                    description: Date and time when the document store was last updated
-
-        DocumentStoreFileChunk:
-            type: object
-            properties:
-                id:
-                    type: string
-                    format: uuid
-                    description: Unique identifier for the file chunk
-                docId:
-                    type: string
-                    format: uuid
-                    description: Document ID within the store
-                storeId:
-                    type: string
-                    format: uuid
-                    description: Document Store ID
-                chunkNo:
-                    type: integer
-                    description: Chunk number within the document
-                pageContent:
-                    type: string
-                    description: Content of the chunk
-                metadata:
-                    type: string
-                    description: Metadata associated with the chunk
-
-        DocumentStoreLoaderForPreview:
-            type: object
-            properties:
-                id:
-                    type: string
-                    format: uuid
-                    description: Unique identifier for the document store loader
-                loaderId:
-                    type: string
-                    description: ID of the loader
-                loaderName:
-                    type: string
-                    description: Name of the loader
-                loaderConfig:
-                    type: object
-                    description: Configuration for the loader
-                splitterId:
-                    type: string
-                    description: ID of the text splitter
-                splitterName:
-                    type: string
-                    description: Name of the text splitter
-                splitterConfig:
-                    type: object
-                    description: Configuration for the text splitter
-                totalChunks:
-                    type: number
-                    description: Total number of chunks
-                totalChars:
-                    type: number
-                    description: Total number of characters
-                status:
-                    type: string
-                    enum: [EMPTY, SYNC, SYNCING, STALE, NEW, UPSERTING, UPSERTED]
-                    description: Status of the document store loader
-                storeId:
-                    type: string
-                    description: ID of the document store
-                files:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/DocumentStoreLoaderFile'
-                source:
-                    type: string
-                    description: Source of the document store loader
-                credential:
-                    type: string
-                    description: Credential associated with the document store loader
-                rehydrated:
-                    type: boolean
-                    description: Whether the loader has been rehydrated
-                preview:
-                    type: boolean
-                    description: Whether the loader is in preview mode
-                previewChunkCount:
-                    type: number
-                    description: Number of chunks in preview mode
-
-        DocumentStoreLoaderFile:
-            type: object
-            properties:
-                id:
-                    type: string
-                    format: uuid
-                    description: Unique identifier for the file
-                name:
-                    type: string
-                    description: Name of the file
-                mimePrefix:
-                    type: string
-                    description: MIME prefix of the file
-                size:
-                    type: number
-                    description: Size of the file
-                status:
-                    type: string
-                    enum: [EMPTY, SYNC, SYNCING, STALE, NEW, UPSERTING, UPSERTED]
-                    description: Status of the file
-                uploaded:
-                    type: string
-                    format: date-time
-                    description: Date and time when the file was uploaded
-
-        DocumentStoreFileChunkPagedResponse:
-            type: object
-            properties:
-                chunks:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/DocumentStoreFileChunk'
-                count:
-                    type: number
-                    example: 1
-                file:
-                    $ref: '#/components/schemas/DocumentStoreLoaderForPreview'
-                currentPage:
-                    type: number
-                storeName:
-                    type: string
-                description:
-                    type: string
-
-        DocumentStoreLoaderForUpsert:
-            type: object
-            properties:
-                docId:
-                    type: [string, "null"]
-                    format: uuid
-                    description: Document ID within the store. If provided, existing configuration from the document will be used for the new document
-                metadata:
-                    type: [object, "null"]
-                    description: Metadata associated with the document
-                    example: { 'foo': 'bar' }
-                replaceExisting:
-                    type: [boolean, "null"]
-                    description: Whether to replace existing document loader with the new upserted chunks. However this does not delete the existing embeddings in the vector store
-                createNewDocStore:
-                    type: [boolean, "null"]
-                    description: Whether to create a new document store
-                docStore:
-                    type: [object, "null"]
-                    description: Only when createNewDocStore is true, pass in the new document store configuration
-                    properties:
-                        name:
-                            type: string
-                            example: plainText
-                            description: Name of the new document store to be created
-                        description:
-                            type: string
-                            example: plainText
-                            description: Description of the new document store to be created
-                loader:
-                    type: [object, "null"]
-                    properties:
-                        name:
-                            type: string
-                            example: plainText
-                            description: Name of the loader (camelCase)
-                        config:
-                            type: object
-                            description: Configuration for the loader
-                splitter:
-                    type: [object, "null"]
-                    properties:
-                        name:
-                            type: string
-                            example: recursiveCharacterTextSplitter
-                            description: Name of the text splitter (camelCase)
-                        config:
-                            type: object
-                            description: Configuration for the text splitter
-                embedding:
-                    type: [object, "null"]
-                    properties:
-                        name:
-                            type: string
-                            example: openAIEmbeddings
-                            description: Name of the embedding generator (camelCase)
-                        config:
-                            type: object
-                            description: Configuration for the embedding generator
-                vectorStore:
-                    type: [object, "null"]
-                    properties:
-                        name:
-                            type: string
-                            example: faiss
-                            description: Name of the vector store (camelCase)
-                        config:
-                            type: object
-                            description: Configuration for the vector store
-                recordManager:
-                    type: [object, "null"]
-                    properties:
-                        name:
-                            type: string
-                            example: postgresRecordManager
-                            description: Name of the record manager (camelCase)
-                        config:
-                            type: object
-                            description: Configuration for the record manager
-
-        DocumentStoreLoaderForRefresh:
-            type: object
-            properties:
-                items:
-                    type: array
-                    items:
-                        $ref: '#/components/schemas/DocumentStoreLoaderForUpsert'
-
-        ChatMessageFeedback:
-            type: object
-            properties:
-                id:
-                    type: string
-                    format: uuid
-                    description: Unique identifier for the feedback
-                chatflowid:
-                    type: string
-                    format: uuid
-                    description: Identifier for the chat flow
-                chatId:
-                    type: string
-                    description: Identifier for the chat
-                messageId:
-                    type: string
-                    format: uuid
-                    description: Identifier for the message
-                rating:
-                    type: string
-                    enum: [THUMBS_UP, THUMBS_DOWN]
-                    description: Rating for the message
-                content:
-                    type: string
-                    description: Feedback content
-                createdDate:
-                    type: string
-                    format: date-time
-                    description: Date and time when the feedback was created
+                    example: 'application/pdf'
 
         CreateAttachmentResponse:
             type: object
             properties:
                 name:
                     type: string
-                    description: Name of the file
                 mimeType:
                     type: string
-                    description: Mime type of the file
                 size:
                     type: string
-                    description: Size of the file
                 content:
                     type: string
-                    description: Content of the file in string format
 
-    securitySchemes:
-        bearerAuth:
-            type: http
-            scheme: bearer
-            bearerFormat: JWT # optional, for documentation purposes only
+        Variable:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                    example: 'API_KEY'
+                value:
+                    type: [string, 'null']
+                type:
+                    type: string
+                    example: 'string'
+                createdDate:
+                    type: string
+                    format: date-time
+                updatedDate:
+                    type: string
+                    format: date-time
+
+        Agent:
+            type: object
+            description: An external HTTP agent registered with the Agent Registry. Chronos invokes it over HTTP; the agent connects back to Chronos via the MCP gateway for tool access.
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                    example: 'support-bot'
+                description:
+                    type: string
+                serviceEndpoint:
+                    type: string
+                    description: Base URL of the external agent (must implement the contract in `agent-protocol.openapi.yaml`).
+                    example: 'https://support-bot.example.com'
+                enabled:
+                    type: boolean
+                status:
+                    type: string
+                    enum: [HEALTHY, UNHEALTHY, UNKNOWN]
+                lastHealthError:
+                    type: [string, 'null']
+                runtimeConfig:
+                    type: object
+                    additionalProperties: true
+                    description: Health endpoint path, request shape (openai vs raw), etc.
+                outboundAuth:
+                    type: object
+                    description: Auth Chronos sends with each request to the agent (Bearer or named header).
+                    additionalProperties: true
+                createdDate:
+                    type: string
+                    format: date-time
+                updatedDate:
+                    type: string
+                    format: date-time
+
+        McpServer:
+            type: object
+            description: A registered upstream MCP server. Tools surface in Chronos agentflows.
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                    example: 'company-knowledge'
+                transport:
+                    type: string
+                    enum: [streamable-http, sse]
+                    description: '`stdio` is reserved for future versions.'
+                serverUrl:
+                    type: string
+                    example: 'https://mcp.example.com'
+                authConfig:
+                    type: object
+                    additionalProperties: true
+                enabled:
+                    type: boolean
+                status:
+                    type: string
+                    enum: [CONNECTED, DISCONNECTED, ERROR]
+                lastError:
+                    type: [string, 'null']
+                createdDate:
+                    type: string
+                    format: date-time
+                updatedDate:
+                    type: string
+                    format: date-time
+
+        Schedule:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                    example: 'Nightly digest'
+                cron:
+                    type: string
+                    example: '0 2 * * *'
+                timezone:
+                    type: string
+                    example: 'UTC'
+                target:
+                    type: object
+                    description: What to invoke when the schedule fires.
+                    properties:
+                        type:
+                            type: string
+                            enum: [agentflow, agent]
+                        id:
+                            type: string
+                payload:
+                    type: object
+                    additionalProperties: true
+                enabled:
+                    type: boolean
+                lastRunAt:
+                    type: [string, 'null']
+                    format: date-time
+                nextRunAt:
+                    type: [string, 'null']
+                    format: date-time
+                createdDate:
+                    type: string
+                    format: date-time
+
+        Webhook:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                name:
+                    type: string
+                path:
+                    type: string
+                    description: Public path under `/webhooks/in/...` that triggers this webhook.
+                target:
+                    type: object
+                    properties:
+                        type:
+                            type: string
+                            enum: [agentflow, agent]
+                        id:
+                            type: string
+                secret:
+                    type: string
+                    description: Shared signing secret. Returned in full only at creation / regeneration.
+                enabled:
+                    type: boolean
+                lastDeliveredAt:
+                    type: [string, 'null']
+                    format: date-time
+
+        Execution:
+            type: object
+            properties:
+                id:
+                    type: string
+                    format: uuid
+                agentflowId:
+                    type: string
+                state:
+                    type: string
+                    enum: [INPROGRESS, FINISHED, ERROR, STOPPED, TIMEOUT]
+                input:
+                    type: object
+                    additionalProperties: true
+                output:
+                    type: object
+                    additionalProperties: true
+                error:
+                    type: [string, 'null']
+                isPublic:
+                    type: boolean
+                startedAt:
+                    type: string
+                    format: date-time
+                finishedAt:
+                    type: [string, 'null']
+                    format: date-time
+
+        OpenAIModel:
+            type: object
+            properties:
+                id:
+                    type: string
+                    description: Agentflow id, or `agent:<agentId>` for registered agents.
+                object:
+                    type: string
+                    example: 'model'
+                created:
+                    type: integer
+                owned_by:
+                    type: string
+                    example: 'chronos'
+
+        ChatCompletionMessage:
+            type: object
+            properties:
+                role:
+                    type: string
+                    enum: [system, user, assistant, tool]
+                content:
+                    type: string
+                name:
+                    type: string
+
+        ChatCompletionRequest:
+            type: object
+            required: [model, messages]
+            properties:
+                model:
+                    type: string
+                    description: Agentflow id or `agent:<agentId>`. Ignored when posting to `/agents/{id}/chat/completions`.
+                    example: 'd290f1ee-6c54-4b01-90e6-d701748f0851'
+                messages:
+                    type: array
+                    items:
+                        $ref: '#/components/schemas/ChatCompletionMessage'
+                stream:
+                    type: boolean
+                    default: false
+                temperature:
+                    type: number
+                max_tokens:
+                    type: integer
+                x_chronos_override_config:
+                    type: object
+                    additionalProperties: true
+                    description: Chronos-specific extension. Forwarded into `overrideConfig` on the underlying prediction.
+
+        ChatCompletionResponse:
+            type: object
+            properties:
+                id:
+                    type: string
+                    example: 'chatcmpl-abc123'
+                object:
+                    type: string
+                    example: 'chat.completion'
+                created:
+                    type: integer
+                model:
+                    type: string
+                choices:
+                    type: array
+                    items:
+                        type: object
+                        properties:
+                            index:
+                                type: integer
+                            message:
+                                $ref: '#/components/schemas/ChatCompletionMessage'
+                            finish_reason:
+                                type: string
+                usage:
+                    type: object
+                    properties:
+                        prompt_tokens:
+                            type: integer
+                        completion_tokens:
+                            type: integer
+                        total_tokens:
+                            type: integer
