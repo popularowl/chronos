@@ -14,6 +14,7 @@ import {
     DialogTitle,
     FormControlLabel,
     FormHelperText,
+    Link,
     MenuItem,
     OutlinedInput,
     RadioGroup,
@@ -31,6 +32,8 @@ import { StyledButton } from '@/ui-component/button/StyledButton'
 
 import mcpServersApi from '@/api/mcp-servers'
 import credentialsApi from '@/api/credentials'
+
+import AddEditCredentialDialog from '@/views/credentials/AddEditCredentialDialog'
 
 import {
     enqueueSnackbar as enqueueSnackbarAction,
@@ -114,6 +117,20 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const [fieldErrors, setFieldErrors] = useState({})
     const [testLoading, setTestLoading] = useState(false)
     const [discoverLoading, setDiscoverLoading] = useState(false)
+    // When the Chronos user opened this dialog from a preset, we keep the
+    // preset around so the form can constrain the credential picker to the
+    // preset's `requiredCredentialSchema` and so the placeholder copy can
+    // mention which credential to create. EDIT mode never carries a preset.
+    const [activePreset, setActivePreset] = useState(null)
+    // Single credential id bound to every credential-field marker in the
+    // preset's args + env. Empty until the Chronos user picks one — at
+    // which point the args / env editor rows are re-derived so the marker
+    // placeholders flip to real `{{credentialId:field}}` tokens.
+    const [presetCredentialId, setPresetCredentialId] = useState('')
+    // Inline "Create credential" affordance: opens AddEditCredentialDialog
+    // with the preset's required schema preloaded so the Chronos user
+    // doesn't have to navigate away to make the credential first.
+    const [credentialDialogProps, setCredentialDialogProps] = useState(null)
 
     const showSuccess = (message) =>
         enqueueSnackbar({
@@ -164,7 +181,11 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     // spawned child since the env was resolved once at spawn time.
     const stdioCredentialOptions = credentials.filter((c) => c.credentialName !== 'oauth2-refresh')
 
-    // Hydrate fields when transitioning between ADD / EDIT.
+    // Hydrate fields when transitioning between ADD / EDIT. ADD mode
+    // accepts an optional `presetData` to pre-fill from the bundled
+    // preset catalogue; the preset's credential-field markers become
+    // credential-mode env rows (or `{{credentialId:field}}` arg tokens)
+    // once a credential is picked at save time.
     useEffect(() => {
         if (!show) return
         if (isEdit && dialogProps.data) {
@@ -216,6 +237,33 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             setEnabled(Boolean(s.enabled))
             setDiscoveredTools([])
             setFieldErrors({})
+            setActivePreset(null)
+            setPresetCredentialId('')
+        } else if (dialogProps?.presetData) {
+            const preset = dialogProps.presetData
+            setActivePreset(preset)
+            setPresetCredentialId('')
+            setServerId('')
+            setName(preset.displayName || '')
+            setSlug(preset.suggestedSlug || '')
+            setSlugDirty(false)
+            setDescription(preset.description || '')
+            setTransport(preset.transport || 'stdio')
+            setUrl('')
+            setCommand(preset.command || '')
+            setArgsList(presetArgsToEditorList(preset.args, ''))
+            setEnvEntries(presetEnvToEditorEntries(preset.env, ''))
+            setTimeoutMs(preset.defaultTimeoutMs || 30000)
+            setRequestHeadersText('')
+            setAuthType('none')
+            setAuthMode('inline')
+            setAuthToken('')
+            setAuthHeaderName('')
+            setAuthCredentialId('')
+            setAllowedTools(Array.isArray(preset.defaultAllowedTools) ? [...preset.defaultAllowedTools] : [])
+            setDiscoveredTools([])
+            setEnabled(true)
+            setFieldErrors({})
         } else {
             // ADD mode reset
             setServerId('')
@@ -239,8 +287,21 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             setDiscoveredTools([])
             setEnabled(true)
             setFieldErrors({})
+            setActivePreset(null)
+            setPresetCredentialId('')
         }
     }, [show, dialogProps, isEdit])
+
+    // Re-derive args / env editor rows whenever the preset credential
+    // picker changes so the credential-field markers flip to live
+    // `{{credentialId:field}}` tokens (args) or populated credential rows
+    // (env). No-op outside preset mode.
+    useEffect(() => {
+        if (!activePreset) return
+        setArgsList(presetArgsToEditorList(activePreset.args, presetCredentialId))
+        setEnvEntries(presetEnvToEditorEntries(activePreset.env, presetCredentialId))
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [presetCredentialId])
 
     useEffect(() => {
         if (show) dispatch({ type: SHOW_CANVAS_DIALOG })
@@ -289,6 +350,9 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
         if (!transport) errors.transport = 'Transport is required'
         if (transport !== 'stdio' && !url.trim()) errors.url = 'URL is required for HTTP transports'
         if (transport === 'stdio' && !command.trim()) errors.command = 'Command is required for stdio transport'
+        if (activePreset && activePreset.requiredCredentialSchema && !presetCredentialId) {
+            errors.presetCredential = `This preset needs a ${activePreset.requiredCredentialSchema} credential`
+        }
         if (transport === 'stdio') {
             const envKeyErrors = []
             const seenKeys = new Set()
@@ -450,6 +514,65 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
 
     const allowedToolsOptions = mergeUnique(allowedTools, discoveredTools)
 
+    // Credentials matching the active preset's required schema. Empty
+    // when no preset is active (the picker isn't shown in that case).
+    const presetCredentialOptions = activePreset?.requiredCredentialSchema
+        ? credentials.filter((c) => c.credentialName === activePreset.requiredCredentialSchema)
+        : []
+
+    const openInlineCredentialCreate = async () => {
+        if (!activePreset?.requiredCredentialSchema) return
+        try {
+            const res = await credentialsApi.getSpecificComponentCredential(activePreset.requiredCredentialSchema)
+            const credentialComponent = res?.data
+            if (!credentialComponent) {
+                showError(`Credential type "${activePreset.requiredCredentialSchema}" is not registered on this server`, true)
+                return
+            }
+            setCredentialDialogProps({
+                type: 'ADD',
+                cancelButtonName: 'Cancel',
+                confirmButtonName: 'Add',
+                credentialComponent
+            })
+        } catch (err) {
+            showError(err?.response?.data?.message || 'Failed to load credential schema', true)
+        }
+    }
+
+    const onCredentialCreated = async () => {
+        setCredentialDialogProps(null)
+        try {
+            const res = await credentialsApi.getAllCredentials()
+            const all = Array.isArray(res.data) ? res.data : []
+            setCredentials(all)
+            // Auto-select the newest credential matching the preset's
+            // schema so the Chronos user doesn't have to scroll the picker.
+            if (activePreset?.requiredCredentialSchema) {
+                const matching = all.filter((c) => c.credentialName === activePreset.requiredCredentialSchema)
+                if (matching.length > 0) {
+                    const newest = matching.reduce((latest, c) =>
+                        (c.updatedDate || c.createdDate || '') > (latest.updatedDate || latest.createdDate || '') ? c : latest
+                    )
+                    setPresetCredentialId(newest.id)
+                }
+            }
+        } catch {
+            // List refresh failure is non-fatal — the dialog still shows
+            // the previous credentials list and the Chronos user can
+            // retry by closing/reopening.
+        }
+    }
+
+    const credentialAddDialog = credentialDialogProps ? (
+        <AddEditCredentialDialog
+            show={Boolean(credentialDialogProps)}
+            dialogProps={credentialDialogProps}
+            onCancel={() => setCredentialDialogProps(null)}
+            onConfirm={onCredentialCreated}
+        />
+    ) : null
+
     const component = show ? (
         <Dialog fullWidth maxWidth='md' open={show} onClose={onCancel} aria-labelledby='mcp-server-dialog-title'>
             <DialogTitle sx={{ fontSize: '1rem' }} id='mcp-server-dialog-title'>
@@ -457,6 +580,66 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             </DialogTitle>
             <DialogContent>
                 <Stack spacing={2} sx={{ mt: 1 }}>
+                    {activePreset && (
+                        <Box
+                            sx={{
+                                p: 1.5,
+                                border: 1,
+                                borderRadius: 1.5,
+                                borderColor: 'divider',
+                                bgcolor: 'action.hover'
+                            }}
+                        >
+                            <Typography variant='subtitle2'>Registering from preset: {activePreset.displayName}</Typography>
+                            <Typography variant='caption' sx={{ color: 'text.secondary', display: 'block' }}>
+                                Fields below are pre-filled from the preset. Edit any of them before saving.
+                            </Typography>
+                            {activePreset.requiredCredentialSchema && (
+                                <Box sx={{ mt: 1.5 }}>
+                                    <Typography variant='caption'>
+                                        Credential ({activePreset.requiredCredentialSchema}) <span style={{ color: 'red' }}>*</span>
+                                    </Typography>
+                                    <Stack direction='row' spacing={1} alignItems='center' sx={{ mt: 0.5 }}>
+                                        <Select
+                                            fullWidth
+                                            size='small'
+                                            value={presetCredentialId}
+                                            error={!!fieldErrors.presetCredential}
+                                            onChange={(e) => {
+                                                setPresetCredentialId(e.target.value)
+                                                clearError('presetCredential')
+                                            }}
+                                            displayEmpty
+                                        >
+                                            <MenuItem value='' disabled>
+                                                {presetCredentialOptions.length === 0
+                                                    ? `No ${activePreset.requiredCredentialSchema} credentials yet`
+                                                    : 'Select a credential'}
+                                            </MenuItem>
+                                            {presetCredentialOptions.map((c) => (
+                                                <MenuItem key={c.id} value={c.id}>
+                                                    {c.name}
+                                                </MenuItem>
+                                            ))}
+                                        </Select>
+                                        <Link
+                                            component='button'
+                                            type='button'
+                                            variant='caption'
+                                            onClick={openInlineCredentialCreate}
+                                            sx={{ whiteSpace: 'nowrap' }}
+                                        >
+                                            + Create new
+                                        </Link>
+                                    </Stack>
+                                    {fieldErrors.presetCredential && <FormHelperText error>{fieldErrors.presetCredential}</FormHelperText>}
+                                    <FormHelperText>
+                                        Bound to every credential-field marker in this preset&apos;s args and env at save time.
+                                    </FormHelperText>
+                                </Box>
+                            )}
+                        </Box>
+                    )}
                     <Box>
                         <Typography variant='overline'>
                             Name <span style={{ color: 'red' }}>*</span>
@@ -900,14 +1083,28 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                 )}
                 <Box sx={{ flexGrow: 1 }} />
                 <Button onClick={onCancel}>{dialogProps.cancelButtonName || 'Cancel'}</Button>
-                <StyledButton variant='contained' onClick={onSave} disabled={!name || (transport === 'stdio' ? !command : !url)}>
+                <StyledButton
+                    variant='contained'
+                    onClick={onSave}
+                    disabled={
+                        !name ||
+                        (transport === 'stdio' ? !command : !url) ||
+                        Boolean(activePreset?.requiredCredentialSchema && !presetCredentialId)
+                    }
+                >
                     {dialogProps.confirmButtonName || 'Save'}
                 </StyledButton>
             </DialogActions>
         </Dialog>
     ) : null
 
-    return createPortal(component, portalElement)
+    return createPortal(
+        <>
+            {component}
+            {credentialAddDialog}
+        </>,
+        portalElement
+    )
 }
 
 const parseJson = (raw) => {
@@ -996,6 +1193,46 @@ const updateEnvEntry = (current, setter, idx, patch) => {
     const next = current.slice()
     next[idx] = { ...next[idx], ...patch }
     setter(next)
+}
+
+/**
+ * Converts a preset's `args` array (mix of literal strings and
+ * `{credentialField}` markers) into the dialog's plain `string[]` editor
+ * shape. Once a credential id is supplied, marker objects are rendered
+ * as `{{credentialId:field}}` tokens — the same interpolation syntax the
+ * stdio resolver understands at spawn time. With no credential picked,
+ * markers render as a human-readable placeholder so the row is visible
+ * but obviously incomplete.
+ */
+const presetArgsToEditorList = (args, credentialId) => {
+    if (!Array.isArray(args)) return []
+    return args.map((item) => {
+        if (typeof item === 'string') return item
+        if (item && typeof item === 'object' && typeof item.credentialField === 'string') {
+            return credentialId ? `{{${credentialId}:${item.credentialField}}}` : `<pick credential> · ${item.credentialField}`
+        }
+        return ''
+    })
+}
+
+/**
+ * Converts a preset's `env` map (string values + `{credentialField}`
+ * markers) into the dialog's `envEntries` editor shape. Marker entries
+ * land in credential-picker mode with the preset's chosen credentialId
+ * (or empty when none picked yet) and the literal field name from the
+ * marker.
+ */
+const presetEnvToEditorEntries = (env, credentialId) => {
+    if (!env || typeof env !== 'object') return []
+    return Object.entries(env).map(([key, value]) => {
+        if (typeof value === 'string') {
+            return { key, mode: 'inline', value, credentialId: '', field: '' }
+        }
+        if (value && typeof value === 'object' && typeof value.credentialField === 'string') {
+            return { key, mode: 'credential', value: '', credentialId: credentialId || '', field: value.credentialField }
+        }
+        return { key, mode: 'inline', value: '', credentialId: '', field: '' }
+    })
 }
 
 MCPServerDialog.propTypes = {

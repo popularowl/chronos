@@ -113,6 +113,7 @@ import { webhookDispatcherServiceTest } from './services/webhook-dispatcher.serv
 import { agentflowVersionsServiceTest } from './services/agentflow-versions.service.test'
 import { agentsServiceTest } from './services/agents.service.test'
 import { mcpServersServiceTest } from './services/mcp-servers.service.test'
+import { mcpPresetsServiceTest } from './services/mcp-presets.service.test'
 import { agentDispatcherServiceTest } from './services/agent-dispatcher.service.test'
 import { agentRuntimeHttpServiceTest } from './services/agent-runtime-http.service.test'
 import { mcpGatewayServiceTest } from './services/mcp-gateway.service.test'
@@ -284,6 +285,7 @@ describe('Services Test', () => {
     agentflowVersionsServiceTest()
     agentsServiceTest()
     mcpServersServiceTest()
+    mcpPresetsServiceTest()
     agentDispatcherServiceTest()
     agentRuntimeHttpServiceTest()
     mcpGatewayServiceTest()

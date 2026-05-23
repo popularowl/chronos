@@ -2,14 +2,12 @@ import { useState } from 'react'
 import PropTypes from 'prop-types'
 import { useSelector } from 'react-redux'
 import moment from 'moment'
-import { styled } from '@mui/material/styles'
 import {
     Box,
     Paper,
     Skeleton,
     Table,
     TableBody,
-    TableCell,
     TableContainer,
     TableHead,
     TableRow,
@@ -17,30 +15,12 @@ import {
     useTheme,
     Checkbox
 } from '@mui/material'
-import { tableCellClasses } from '@mui/material/TableCell'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import StopCircleIcon from '@mui/icons-material/StopCircle'
 import ErrorIcon from '@mui/icons-material/Error'
 import { IconLoader, IconCircleXFilled } from '@tabler/icons-react'
 
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
-    borderColor: theme.palette.grey[900] + 25,
-
-    [`&.${tableCellClasses.head}`]: {
-        color: theme.palette.grey[900]
-    },
-    [`&.${tableCellClasses.body}`]: {
-        fontSize: 14,
-        height: 64
-    }
-}))
-
-const StyledTableRow = styled(TableRow)(() => ({
-    // hide last border
-    '&:last-child td, &:last-child th': {
-        border: 0
-    }
-}))
+import { StyledTableCell, StyledTableRow } from './TableStyles'
 
 const getIconFromStatus = (state, theme) => {
     switch (state) {
@@ -160,7 +140,7 @@ export const ExecutionsListTable = ({ data, isLoading, onExecutionRowClick, onSe
     return (
         <>
             <TableContainer sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }} component={Paper}>
-                <Table sx={{ minWidth: 650 }} size='small' aria-label='a dense table'>
+                <Table sx={{ minWidth: 650 }} aria-label='a dense table'>
                     <TableHead
                         sx={{
                             backgroundColor: customization.isDarkMode ? theme.palette.common.black : theme.palette.grey[100],

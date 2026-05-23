@@ -1,6 +1,7 @@
 import {
     StdioBackoffState,
     STDIO_UNHEALTHY_FAILURE_THRESHOLD,
+    __sanitizeChildEnvForTest,
     parseStdioConfig,
     readStdioRuntimeEnv,
     resolveStdioConfig
@@ -373,6 +374,64 @@ export function mcpStdioServiceTest() {
             it('is case-insensitive for the log level', () => {
                 process.env.MCP_STDIO_STDERR_LOG_LEVEL = 'DEBUG'
                 expect(readStdioRuntimeEnv().stderrLogLevel).toBe('debug')
+            })
+        })
+
+        // ─── sanitizeChildEnv ──────────────────────────────────────────
+
+        describe('sanitizeChildEnv', () => {
+            it('strips npm_config_* keys (pnpm-injected when Chronos is launched via pnpm)', () => {
+                const env = {
+                    PATH: '/usr/bin',
+                    npm_config_verify_deps_before_run: 'true',
+                    npm_config__jsr_registry: 'https://npm.jsr.io/',
+                    npm_config_recursive: 'true',
+                    npm_config_registry: 'https://registry.npmjs.org/'
+                }
+                const sanitized = __sanitizeChildEnvForTest(env)
+                expect(sanitized.PATH).toBe('/usr/bin')
+                expect(sanitized.npm_config_verify_deps_before_run).toBeUndefined()
+                expect(sanitized.npm_config__jsr_registry).toBeUndefined()
+                expect(sanitized.npm_config_recursive).toBeUndefined()
+                expect(sanitized.npm_config_registry).toBeUndefined()
+            })
+
+            it('strips PNPM_* keys (pnpm-injected coordination state)', () => {
+                const env = {
+                    PATH: '/usr/bin',
+                    PNPM_HOME: '/root/.local/share/pnpm',
+                    PNPM_SCRIPT_SRC_DIR: '/app/packages/server'
+                }
+                const sanitized = __sanitizeChildEnvForTest(env)
+                expect(sanitized.PATH).toBe('/usr/bin')
+                expect(sanitized.PNPM_HOME).toBeUndefined()
+                expect(sanitized.PNPM_SCRIPT_SRC_DIR).toBeUndefined()
+            })
+
+            it('strips INIT_CWD', () => {
+                const env = { PATH: '/usr/bin', INIT_CWD: '/app' }
+                const sanitized = __sanitizeChildEnvForTest(env)
+                expect(sanitized.INIT_CWD).toBeUndefined()
+            })
+
+            it('preserves PATH, HOME, NODE_OPTIONS, and other non-runner keys', () => {
+                const env = {
+                    PATH: '/usr/bin:/bin',
+                    HOME: '/root',
+                    NODE_OPTIONS: '--max-old-space-size=8192',
+                    NODE_ENV: 'production',
+                    LANG: 'en_US.UTF-8',
+                    HTTP_PROXY: 'http://proxy.example:8080'
+                }
+                const sanitized = __sanitizeChildEnvForTest(env)
+                expect(sanitized).toEqual(env)
+            })
+
+            it('drops non-string values', () => {
+                const env = { PATH: '/usr/bin', UNDEFINED_KEY: undefined as unknown as string }
+                const sanitized = __sanitizeChildEnvForTest(env)
+                expect(sanitized.PATH).toBe('/usr/bin')
+                expect(sanitized.UNDEFINED_KEY).toBeUndefined()
             })
         })
     })

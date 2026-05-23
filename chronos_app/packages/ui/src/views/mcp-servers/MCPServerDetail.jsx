@@ -32,7 +32,7 @@ import RefreshIcon from '@mui/icons-material/Refresh'
 import BoltIcon from '@mui/icons-material/Bolt'
 import PolicyIcon from '@mui/icons-material/Policy'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
-import { IconArrowLeft, IconExternalLink, IconPlug, IconX } from '@tabler/icons-react'
+import { IconArrowLeft, IconExternalLink, IconLoader, IconPlug, IconX } from '@tabler/icons-react'
 
 import MainCard from '@/ui-component/cards/MainCard'
 import ErrorBoundary from '@/ErrorBoundary'
@@ -187,6 +187,16 @@ const MCPServerDetail = () => {
 
     const refresh = () => id && getApi.request(id)
 
+    // Auto-poll while this row is in `UNKNOWN` — same rationale as the
+    // list page. Stops as soon as the gateway's first probe resolves and
+    // the status flips, so steady-state detail views don't poll.
+    useEffect(() => {
+        if (!server || server.status !== 'UNKNOWN') return undefined
+        const handle = setInterval(refresh, 3000)
+        return () => clearInterval(handle)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [server?.status, id])
+
     const onEdit = () => {
         setDialogProps({
             title: 'Edit MCP Server',
@@ -331,18 +341,29 @@ const MCPServerDetail = () => {
                                 <StyledTableRow>
                                     <StyledTableCell sx={{ fontFamily: 'monospace' }}>{server.slug}</StyledTableCell>
                                     <StyledTableCell>
-                                        <Chip
-                                            size='small'
-                                            label={(server.status || '').toLowerCase()}
-                                            color={server.status === 'HEALTHY' ? undefined : STATUS_CHIP_COLOR[server.status] || 'default'}
-                                            sx={{
-                                                ...(server.status === 'HEALTHY' && {
-                                                    backgroundColor: theme.palette.success.dark,
-                                                    color: theme.palette.common.white
-                                                }),
-                                                ...(server.status === 'DISABLED' && { opacity: 0.6 })
-                                            }}
-                                        />
+                                        {server.status === 'UNKNOWN' ? (
+                                            <Chip
+                                                size='small'
+                                                variant='outlined'
+                                                icon={<IconLoader size={14} className='spin-animation' />}
+                                                label='probing…'
+                                            />
+                                        ) : (
+                                            <Chip
+                                                size='small'
+                                                label={(server.status || '').toLowerCase()}
+                                                color={
+                                                    server.status === 'HEALTHY' ? undefined : STATUS_CHIP_COLOR[server.status] || 'default'
+                                                }
+                                                sx={{
+                                                    ...(server.status === 'HEALTHY' && {
+                                                        backgroundColor: theme.palette.success.dark,
+                                                        color: theme.palette.common.white
+                                                    }),
+                                                    ...(server.status === 'DISABLED' && { opacity: 0.6 })
+                                                }}
+                                            />
+                                        )}
                                     </StyledTableCell>
                                     <StyledTableCell>
                                         {allowedTools.length === 0 ? (

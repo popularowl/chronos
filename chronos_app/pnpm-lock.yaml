@@ -230,7 +230,7 @@ importers:
         version: 1.0.4(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3))
       '@langchain/community':
         specifier: ^1.1.23
-        version: 1.1.23(220389ad94f5637b84c44c2493ee6d1b)
+        version: 1.1.23(35423ee74cbe9f1834804cc62a7ff237)
       '@langchain/core':
         specifier: ^1.1.32
         version: 1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3)
@@ -278,7 +278,7 @@ importers:
         version: 1.3.9(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3))(encoding@0.1.13)(ws@8.18.3)
       '@mem0/community':
         specifier: ^0.0.1
-        version: 0.0.1(9168d77e684af710f4a63535728000da)
+        version: 0.0.1(170e03e7b992ef1e85eeb0aabf1e394b)
       '@mendable/firecrawl-js':
         specifier: ^1.18.2
         version: 1.29.3
@@ -288,21 +288,6 @@ importers:
       '@modelcontextprotocol/sdk':
         specifier: ^1.29.0
         version: 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
-      '@modelcontextprotocol/server-brave-search':
-        specifier: ^0.6.2
-        version: 0.6.2
-      '@modelcontextprotocol/server-github':
-        specifier: ^2025.1.23
-        version: 2025.4.8
-      '@modelcontextprotocol/server-postgres':
-        specifier: ^0.6.2
-        version: 0.6.2
-      '@modelcontextprotocol/server-sequential-thinking':
-        specifier: ^0.6.2
-        version: 0.6.2
-      '@modelcontextprotocol/server-slack':
-        specifier: ^2025.1.17
-        version: 2025.4.25
       '@notionhq/client':
         specifier: ^2.2.8
         version: 2.3.0(encoding@0.1.13)
@@ -555,9 +540,6 @@ importers:
       srt-parser-2:
         specifier: ^1.2.3
         version: 1.2.3
-      supergateway:
-        specifier: 3.0.1
-        version: 3.0.1(@cfworker/json-schema@4.1.1)
       typeorm:
         specifier: ^0.3.6
         version: 0.3.28(babel-plugin-macros@3.1.0)(ioredis@5.9.2)(mongodb@6.3.0(@aws-sdk/credential-providers@3.970.0)(socks@2.8.7))(mysql2@3.16.0)(pg@8.17.1)(redis@4.7.1)(sqlite3@5.1.7)(ts-node@10.9.2(@swc/core@1.15.8(@swc/helpers@0.5.18))(@types/node@25.0.9)(typescript@5.9.3))
@@ -4393,12 +4375,6 @@ packages:
   '@mixmark-io/domino@2.2.0':
     resolution: {integrity: sha512-Y28PR25bHXUg88kCV7nivXrP2Nj2RueZ3/l/jdx6J9f8J4nsEGcgX0Qe6lt7Pa+J79+kPiJU3LguR6O/6zrLOw==}
 
-  '@modelcontextprotocol/sdk@0.5.0':
-    resolution: {integrity: sha512-RXgulUX6ewvxjAG0kOpLMEdXXWkzWgaoCGaA2CwNW7cQCIphjpJhjpHSiaPdVCnisjRF/0Cm9KWHUuIoeiAblQ==}
-
-  '@modelcontextprotocol/sdk@1.0.1':
-    resolution: {integrity: sha512-slLdFaxQJ9AlRg+hw28iiTtGvShAOgOKXcD0F91nUcRYiOMuS9ZBYjcdNZRXW9G5JQ511GRTdUy1zQVZDpJ+4w==}
-
   '@modelcontextprotocol/sdk@1.29.0':
     resolution: {integrity: sha512-zo37mZA9hJWpULgkRpowewez1y6ML5GsXJPY8FI0tBBCd77HEvza4jDqRKOXgHNn867PVGCyTdzqpz0izu5ZjQ==}
     engines: {node: '>=18'}
@@ -4408,30 +4384,6 @@ packages:
     peerDependenciesMeta:
       '@cfworker/json-schema':
         optional: true
-
-  '@modelcontextprotocol/server-brave-search@0.6.2':
-    resolution: {integrity: sha512-AtdnPh8zVsEooXWZD21Negz3JL6iRmKf4sUtwCrLe0e83QBJD6Hf5B3rOFkwsrnTew/6xL7oyRkhc6YuXhuuhQ==}
-    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
-    hasBin: true
-
-  '@modelcontextprotocol/server-github@2025.4.8':
-    resolution: {integrity: sha512-8N43bQw9MlUB0piTZHK2JMh8kYPKxH57d4Z7Wb8PS4by2MkZ0FzI5xPImg3xumpev82VZw2VWHQJJJYp+WkwEw==}
-    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
-    hasBin: true
-
-  '@modelcontextprotocol/server-postgres@0.6.2':
-    resolution: {integrity: sha512-ukbVmVxLAsdZ5pTVWbhf9fc7lqkSf7XqizNH8XAotI21GnRPtkqO+WLWpeBFU+/2Fyv63uXS7/9NnR8Y8wOP1Q==}
-    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
-    hasBin: true
-
-  '@modelcontextprotocol/server-sequential-thinking@0.6.2':
-    resolution: {integrity: sha512-CgYRG6PPPldPk60Oi/jmPNKQ8hUg1V2rqlBRWsRvB5/QIgb+kyd6dySh0WfEoWC5kT+7avM2qDD8SKEBBHRkOQ==}
-    hasBin: true
-
-  '@modelcontextprotocol/server-slack@2025.4.25':
-    resolution: {integrity: sha512-9WBjnxl4OgYZ1kKBqUmHbd2XVoqtnO9u8kaxSaGb4NAWf2Q4D/LV6FoJUAHPPcvKcB7AQLNJa8KO3yNOcU6fvQ==}
-    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
-    hasBin: true
 
   '@mongodb-js/saslprep@1.4.4':
     resolution: {integrity: sha512-p7X/ytJDIdwUfFL/CLOhKgdfJe1Fa8uw9seJYvdOmnP9JBWGWHW69HkOixXS6Wy9yvGf1MbhcS6lVmrhy4jm2g==}
@@ -7073,9 +7025,6 @@ packages:
   '@types/node@18.19.130':
     resolution: {integrity: sha512-GRaXQx6jGfL8sKfaIDD6OupbIHBr9jv7Jnaml9tB7l4v068PAOXqfcujMMo5PhbIs6ggR1XODELqahT2R8v0fg==}
 
-  '@types/node@22.19.7':
-    resolution: {integrity: sha512-MciR4AKGHWl7xwxkBa6xUGxQJ4VBOmPTF7sL+iGzuahOFaO0jHCsuEfS80pan1ef4gWId1oWOweIhrDEYLuaOw==}
-
   '@types/node@24.10.9':
     resolution: {integrity: sha512-ne4A0IpG3+2ETuREInjPNhUGis1SFjv1d5asp8MzEAGtOZeTeHVDOYqOgqfhvseqg/iXty2hjBf1zAOb7RNiNw==}
 
@@ -8073,6 +8022,9 @@ packages:
   bare-url@2.3.2:
     resolution: {integrity: sha512-ZMq4gd9ngV5aTMa5p9+UfY0b3skwhHELaDkhEHetMdX0LRkW9kzaym4oo/Eh+Ghm0CCDuMTsRIGM/ytUc1ZYmw==}
 
+  base-64@0.1.0:
+    resolution: {integrity: sha512-Y5gU45svrR5tI2Vt/X9GPd3L0HNIKzGu202EjxrXMpuc2V2CiKgemAbUUsqYmZJvPtCXoUKjNZwBJzsNScUbXA==}
+
   base16@1.0.0:
     resolution: {integrity: sha512-pNdYkNPiJUnEhnfXV56+sQy8+AaPcG3POZAUnwr4EeqCUZFz4u2PePbo3e5Gj4ziYPCWGUZT9RHisvJKnwFuBQ==}
 
@@ -8352,6 +8304,9 @@ packages:
 
   character-reference-invalid@1.1.4:
     resolution: {integrity: sha512-mKKUkUbhPpQlCOfIuZkvSEgktjPFIsZKRRbC6KWVEMvlzblj3i3asQv5ODsrwt0N3pHAEvjP8KTQPHkp0+6jOg==}
+
+  charenc@0.0.2:
+    resolution: {integrity: sha512-yrLQ/yVUFXkzg7EDQsPieE/53+0RlaWTs+wBrvW36cyilJ2SaDWfl4Yj7MtLTXleV9uEKefbAGUPv2/iWSooRA==}
 
   check-more-types@2.24.0:
     resolution: {integrity: sha512-Pj779qHxV2tuapviy1bSZNEL1maXr13bPYpsvSDB68HlYcYuhlDrmGd63i0JHMCLKzc7rUSNIrpdJlhVlNwrxA==}
@@ -8828,6 +8783,9 @@ packages:
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
+
+  crypt@0.0.2:
+    resolution: {integrity: sha512-mCxBlsHFYh9C+HVpiEacem8FEBnMXgU9gy4zmNC+SXAZNB/1idgp/aulFJ4FgCi7GPEVbfyng092GqL2k2rmow==}
 
   crypto-js@4.2.0:
     resolution: {integrity: sha512-KALDyEYgpY+Rlob/iriUtjV6d5Eq+Y191A5g4UqLAi8CyGP9N1+FdVbkc1SxKc2r4YAYqG8JzO2KGL+AizD70Q==}
@@ -9345,6 +9303,9 @@ packages:
   diff@5.2.0:
     resolution: {integrity: sha512-uIFDxqpRZGZ6ThOk84hEfqWoHx2devRFvpTZcTHur85vImfaxUbTW9Ryh4CpCuDnToOP1CEtXKIgytHBPVff5A==}
     engines: {node: '>=0.3.1'}
+
+  digest-fetch@1.3.0:
+    resolution: {integrity: sha512-CGJuv6iKNM7QyZlM2T3sPAdZWd/p9zQiRNS9G+9COUCwzWFTs0Xp8NF5iePx7wtvhDykReiRRrSeNb4oMmB8lA==}
 
   dingbat-to-unicode@1.0.1:
     resolution: {integrity: sha512-98l0sW87ZT58pU4i61wa2OHwxbiYSbuxsCBozaVnYX2iCnr3bLM3fIes1/ej7h1YdOKuKt/MLs706TVnALA65w==}
@@ -10634,6 +10595,9 @@ packages:
   graphql@16.12.0:
     resolution: {integrity: sha512-DKKrynuQRne0PNpEbzuEdHlYOMksHSUI8Zc9Unei5gTsMNA2/vMpoMz/yKba50pejK56qj98qM0SjYxAKi13gQ==}
     engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
+
+  groq-sdk@0.3.0:
+    resolution: {integrity: sha512-Cdgjh4YoSBE2X4S9sxPGXaAy1dlN4bRtAaDZ3cnq+XsxhhN9WSBeHF64l7LWwuD5ntmw7YC5Vf4Ff1oHCg1LOg==}
 
   groq-sdk@0.37.0:
     resolution: {integrity: sha512-lT72pcT8b/X5XrzdKf+rWVzUGW1OQSKESmL8fFN5cTbsf02gq6oFam4SVeNtzELt9cYE2Pt3pdGgSImuTbHFDg==}
@@ -12434,6 +12398,9 @@ packages:
   mathjax-full@3.2.2:
     resolution: {integrity: sha512-+LfG9Fik+OuI8SLwsiR02IVdjcnRCy5MufYLi0C3TdMT56L/pjB0alMVGgoWJF8pN9Rc7FESycZB9BMNWIid5w==}
     deprecated: Version 4 replaces this package with the scoped package @mathjax/src
+
+  md5@2.3.0:
+    resolution: {integrity: sha512-T1GITYmFaKuO91vxyoQMFETst+O71VUPEU3ze5GNzDm0OWdP8v1ziTaAEPUr/3kLsY3Sftgz242A1SetQiDL7g==}
 
   mdast-util-definitions@5.1.2:
     resolution: {integrity: sha512-8SVPMuHqlPME/z3gqVwWY4zVXn8lqKv/pAhC57FuJ40ImXyBpmO5ukh98zB2v7Blql2FiHjHv9LVztSIqjY+MA==}
@@ -15677,10 +15644,6 @@ packages:
     resolution: {integrity: sha512-B+4Ik7ROgVKrQsXTV0Jwp2u+PXYLSlqtDAhYnkkD+zn3yg8s/zjA2MeGayPoY/KICrbitwneDHrjSotxKL+0XQ==}
     engines: {node: '>=14.18.0'}
 
-  supergateway@3.0.1:
-    resolution: {integrity: sha512-QCoN4/0tOmYaEf5F9rfohq8AFksO6W9d0KQey6oV2HFMotEyw2T2znsDA6xGWcMexaIsm294jbEsh6AAmG/vXQ==}
-    hasBin: true
-
   supertest@7.2.2:
     resolution: {integrity: sha512-oK8WG9diS3DlhdUkcFn4tkNIiIbBx9lI2ClF8K+b2/m8Eyv47LSawxUzZQSNKUrVb2KsqeTDCcjAAVPYaSLVTA==}
     engines: {node: '>=14.18.0'}
@@ -16324,9 +16287,6 @@ packages:
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
 
-  undici-types@6.21.0:
-    resolution: {integrity: sha512-iwDZqg0QAGrg9Rav5H4n0M64c3mkR59cJ6wQp+7C4nI0gsmExaedaYLNO44eT4AtBBwjbTiGPMlt2Md0T9H9JQ==}
-
   undici-types@7.16.0:
     resolution: {integrity: sha512-Zz+aZWSj8LE6zoxD+xrjh4VfkIG8Ya6LvYkZqtUQGJPZjYl53ypCaUwWqo7eI0x66KBGeRo+mlBEkMSeSZ38Nw==}
 
@@ -16408,9 +16368,6 @@ packages:
 
   unist-util-visit@5.0.0:
     resolution: {integrity: sha512-MR04uvD+07cwl/yhVuVWAtw+3GOR/knlL55Nd/wAdblk27GCVt3lqpTivy/tkJcZoNPzTwS1Y+KMojlLDhoTzg==}
-
-  universal-user-agent@7.0.3:
-    resolution: {integrity: sha512-TmnEAEAsBJVZM/AADELsK76llnwcf9vMKuPz8JflO1frO8Lchitr0fNaN9d+Ap0BjKtqWqd/J17qeDnXh8CL2A==}
 
   universalify@0.2.0:
     resolution: {integrity: sha512-CJ1QgKmNg3CwvAv/kOFmtnEN05f0D/cn9QntgNOQlQF9dgvVTHj3t+8JPdjqawCHk7V/KA+fbUqzZ9XWhcqPUg==}
@@ -21223,7 +21180,7 @@ snapshots:
     transitivePeerDependencies:
       - aws-crt
 
-  '@langchain/community@0.3.59(b28c6af60ac197e61a0d15165a699c4d)':
+  '@langchain/community@0.3.59(df4e5e1b9d6073778c18ca196d3629cc)':
     dependencies:
       '@browserbasehq/stagehand': 1.14.0(@playwright/test@1.57.0)(deepmerge@4.3.1)(dotenv@16.6.1)(encoding@0.1.13)(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(zod@4.4.3)
       '@ibm-cloud/watsonx-ai': 1.7.6
@@ -21286,7 +21243,7 @@ snapshots:
       lodash: 4.17.21
       lunary: 0.7.15(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(react@18.3.1)
       mammoth: 1.11.0
-      mem0ai: 2.2.1(@anthropic-ai/sdk@0.74.0(zod@4.4.3))(@azure/identity@4.13.0)(@azure/search-documents@12.2.0)(@cloudflare/workers-types@4.20260115.0)(@google/genai@1.37.0(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)))(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3))(@mistralai/mistralai@0.1.3(encoding@0.1.13))(@qdrant/js-client-rest@1.16.2(typescript@5.9.3))(@supabase/supabase-js@2.90.1)(@types/jest@29.5.14)(@types/pg@8.16.0)(@types/sqlite3@3.1.11)(cloudflare@4.5.0(encoding@0.1.13))(encoding@0.1.13)(groq-sdk@0.37.0(encoding@0.1.13))(neo4j-driver@5.28.2)(ollama@0.5.18)(pg@8.17.1)(redis@4.7.1)(sqlite3@5.1.7)(ws@8.18.3)
+      mem0ai: 2.2.1(@anthropic-ai/sdk@0.74.0(zod@4.4.3))(@azure/identity@4.13.0)(@azure/search-documents@12.2.0)(@cloudflare/workers-types@4.20260115.0)(@google/genai@1.37.0(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)))(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3))(@mistralai/mistralai@0.1.3(encoding@0.1.13))(@qdrant/js-client-rest@1.16.2(typescript@5.9.3))(@supabase/supabase-js@2.90.1)(@types/jest@29.5.14)(@types/pg@8.16.0)(@types/sqlite3@3.1.11)(cloudflare@4.5.0(encoding@0.1.13))(encoding@0.1.13)(groq-sdk@0.3.0(encoding@0.1.13))(neo4j-driver@5.28.2)(ollama@0.5.18)(pg@8.17.1)(redis@4.7.1)(sqlite3@5.1.7)(ws@8.18.3)
       mongodb: 6.3.0(@aws-sdk/credential-providers@3.970.0)(socks@2.8.7)
       mysql2: 3.16.0
       neo4j-driver: 5.28.2
@@ -21323,7 +21280,7 @@ snapshots:
       - handlebars
       - peggy
 
-  '@langchain/community@1.1.23(220389ad94f5637b84c44c2493ee6d1b)':
+  '@langchain/community@1.1.23(35423ee74cbe9f1834804cc62a7ff237)':
     dependencies:
       '@browserbasehq/stagehand': 1.14.0(@playwright/test@1.57.0)(deepmerge@4.3.1)(dotenv@16.6.1)(encoding@0.1.13)(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(zod@4.4.3)
       '@ibm-cloud/watsonx-ai': 1.7.6
@@ -21382,7 +21339,7 @@ snapshots:
       lodash: 4.17.21
       lunary: 0.7.15(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(react@18.3.1)
       mammoth: 1.11.0
-      mem0ai: 2.2.1(@anthropic-ai/sdk@0.74.0(zod@4.4.3))(@azure/identity@4.13.0)(@azure/search-documents@12.2.0)(@cloudflare/workers-types@4.20260115.0)(@google/genai@1.37.0(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)))(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3))(@mistralai/mistralai@0.1.3(encoding@0.1.13))(@qdrant/js-client-rest@1.16.2(typescript@5.9.3))(@supabase/supabase-js@2.90.1)(@types/jest@29.5.14)(@types/pg@8.16.0)(@types/sqlite3@3.1.11)(cloudflare@4.5.0(encoding@0.1.13))(encoding@0.1.13)(groq-sdk@0.37.0(encoding@0.1.13))(neo4j-driver@5.28.2)(ollama@0.5.18)(pg@8.17.1)(redis@4.7.1)(sqlite3@5.1.7)(ws@8.18.3)
+      mem0ai: 2.2.1(@anthropic-ai/sdk@0.74.0(zod@4.4.3))(@azure/identity@4.13.0)(@azure/search-documents@12.2.0)(@cloudflare/workers-types@4.20260115.0)(@google/genai@1.37.0(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)))(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3))(@mistralai/mistralai@0.1.3(encoding@0.1.13))(@qdrant/js-client-rest@1.16.2(typescript@5.9.3))(@supabase/supabase-js@2.90.1)(@types/jest@29.5.14)(@types/pg@8.16.0)(@types/sqlite3@3.1.11)(cloudflare@4.5.0(encoding@0.1.13))(encoding@0.1.13)(groq-sdk@0.3.0(encoding@0.1.13))(neo4j-driver@5.28.2)(ollama@0.5.18)(pg@8.17.1)(redis@4.7.1)(sqlite3@5.1.7)(ws@8.18.3)
       mongodb: 6.3.0(@aws-sdk/credential-providers@3.970.0)(socks@2.8.7)
       mysql2: 3.16.0
       neo4j-driver: 5.28.2
@@ -21672,12 +21629,12 @@ snapshots:
 
   '@marijn/find-cluster-break@1.0.2': {}
 
-  '@mem0/community@0.0.1(9168d77e684af710f4a63535728000da)':
+  '@mem0/community@0.0.1(170e03e7b992ef1e85eeb0aabf1e394b)':
     dependencies:
-      '@langchain/community': 0.3.59(b28c6af60ac197e61a0d15165a699c4d)
+      '@langchain/community': 0.3.59(df4e5e1b9d6073778c18ca196d3629cc)
       '@langchain/core': 1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3)
       axios: 1.16.0(debug@4.4.3)
-      mem0ai: 2.2.1(@anthropic-ai/sdk@0.74.0(zod@4.4.3))(@azure/identity@4.13.0)(@azure/search-documents@12.2.0)(@cloudflare/workers-types@4.20260115.0)(@google/genai@1.37.0(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)))(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3))(@mistralai/mistralai@0.1.3(encoding@0.1.13))(@qdrant/js-client-rest@1.16.2(typescript@5.9.3))(@supabase/supabase-js@2.90.1)(@types/jest@29.5.14)(@types/pg@8.16.0)(@types/sqlite3@3.1.11)(cloudflare@4.5.0(encoding@0.1.13))(encoding@0.1.13)(groq-sdk@0.37.0(encoding@0.1.13))(neo4j-driver@5.28.2)(ollama@0.5.18)(pg@8.17.1)(redis@4.7.1)(sqlite3@5.1.7)(ws@8.18.3)
+      mem0ai: 2.2.1(@anthropic-ai/sdk@0.74.0(zod@4.4.3))(@azure/identity@4.13.0)(@azure/search-documents@12.2.0)(@cloudflare/workers-types@4.20260115.0)(@google/genai@1.37.0(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)))(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3))(@mistralai/mistralai@0.1.3(encoding@0.1.13))(@qdrant/js-client-rest@1.16.2(typescript@5.9.3))(@supabase/supabase-js@2.90.1)(@types/jest@29.5.14)(@types/pg@8.16.0)(@types/sqlite3@3.1.11)(cloudflare@4.5.0(encoding@0.1.13))(encoding@0.1.13)(groq-sdk@0.3.0(encoding@0.1.13))(neo4j-driver@5.28.2)(ollama@0.5.18)(pg@8.17.1)(redis@4.7.1)(sqlite3@5.1.7)(ws@8.18.3)
       uuid: 9.0.1
       zod: 4.4.3
     transitivePeerDependencies:
@@ -21863,18 +21820,6 @@ snapshots:
 
   '@mixmark-io/domino@2.2.0': {}
 
-  '@modelcontextprotocol/sdk@0.5.0':
-    dependencies:
-      content-type: 1.0.5
-      raw-body: 3.0.2
-      zod: 4.4.3
-
-  '@modelcontextprotocol/sdk@1.0.1':
-    dependencies:
-      content-type: 1.0.5
-      raw-body: 3.0.2
-      zod: 4.4.3
-
   '@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)':
     dependencies:
       '@hono/node-server': 1.19.14(hono@4.12.18)
@@ -21898,37 +21843,6 @@ snapshots:
       '@cfworker/json-schema': 4.1.1
     transitivePeerDependencies:
       - supports-color
-
-  '@modelcontextprotocol/server-brave-search@0.6.2':
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.0.1
-
-  '@modelcontextprotocol/server-github@2025.4.8':
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.0.1
-      '@types/node': 22.19.7
-      '@types/node-fetch': 2.6.13
-      node-fetch: 3.3.2
-      universal-user-agent: 7.0.3
-      zod: 4.4.3
-      zod-to-json-schema: 3.25.2(zod@4.4.3)
-
-  '@modelcontextprotocol/server-postgres@0.6.2':
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.0.1
-      pg: 8.17.1
-    transitivePeerDependencies:
-      - pg-native
-
-  '@modelcontextprotocol/server-sequential-thinking@0.6.2':
-    dependencies:
-      '@modelcontextprotocol/sdk': 0.5.0
-      chalk: 5.6.2
-      yargs: 17.7.2
-
-  '@modelcontextprotocol/server-slack@2025.4.25':
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.0.1
 
   '@mongodb-js/saslprep@1.4.4':
     dependencies:
@@ -25155,10 +25069,6 @@ snapshots:
     dependencies:
       undici-types: 5.26.5
 
-  '@types/node@22.19.7':
-    dependencies:
-      undici-types: 6.21.0
-
   '@types/node@24.10.9':
     dependencies:
       undici-types: 7.16.0
@@ -26359,6 +26269,8 @@ snapshots:
       bare-path: 3.0.0
     optional: true
 
+  base-64@0.1.0: {}
+
   base16@1.0.0: {}
 
   base64-js@1.5.1: {}
@@ -26673,6 +26585,8 @@ snapshots:
   character-entities@2.0.2: {}
 
   character-reference-invalid@1.1.4: {}
+
+  charenc@0.0.2: {}
 
   check-more-types@2.24.0: {}
 
@@ -27232,6 +27146,8 @@ snapshots:
       shebang-command: 2.0.0
       which: 2.0.2
 
+  crypt@0.0.2: {}
+
   crypto-js@4.2.0: {}
 
   crypto-random-string@2.0.0: {}
@@ -27785,6 +27701,11 @@ snapshots:
   diff@4.0.2: {}
 
   diff@5.2.0: {}
+
+  digest-fetch@1.3.0:
+    dependencies:
+      base-64: 0.1.0
+      md5: 2.3.0
 
   dingbat-to-unicode@1.0.1: {}
 
@@ -29562,6 +29483,20 @@ snapshots:
       - encoding
 
   graphql@16.12.0: {}
+
+  groq-sdk@0.3.0(encoding@0.1.13):
+    dependencies:
+      '@types/node': 18.19.130
+      '@types/node-fetch': 2.6.13
+      abort-controller: 3.0.0
+      agentkeepalive: 4.6.0
+      digest-fetch: 1.3.0
+      form-data-encoder: 1.7.2
+      formdata-node: 4.4.1
+      node-fetch: 2.7.0(encoding@0.1.13)
+      web-streams-polyfill: 3.3.3
+    transitivePeerDependencies:
+      - encoding
 
   groq-sdk@0.37.0(encoding@0.1.13):
     dependencies:
@@ -32048,6 +31983,12 @@ snapshots:
       mj-context-menu: 0.6.1
       speech-rule-engine: 4.1.2
 
+  md5@2.3.0:
+    dependencies:
+      charenc: 0.0.2
+      crypt: 0.0.2
+      is-buffer: 1.1.6
+
   mdast-util-definitions@5.1.2:
     dependencies:
       '@types/mdast': 3.0.15
@@ -32199,7 +32140,7 @@ snapshots:
     transitivePeerDependencies:
       - encoding
 
-  mem0ai@2.2.1(@anthropic-ai/sdk@0.74.0(zod@4.4.3))(@azure/identity@4.13.0)(@azure/search-documents@12.2.0)(@cloudflare/workers-types@4.20260115.0)(@google/genai@1.37.0(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)))(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3))(@mistralai/mistralai@0.1.3(encoding@0.1.13))(@qdrant/js-client-rest@1.16.2(typescript@5.9.3))(@supabase/supabase-js@2.90.1)(@types/jest@29.5.14)(@types/pg@8.16.0)(@types/sqlite3@3.1.11)(cloudflare@4.5.0(encoding@0.1.13))(encoding@0.1.13)(groq-sdk@0.37.0(encoding@0.1.13))(neo4j-driver@5.28.2)(ollama@0.5.18)(pg@8.17.1)(redis@4.7.1)(sqlite3@5.1.7)(ws@8.18.3):
+  mem0ai@2.2.1(@anthropic-ai/sdk@0.74.0(zod@4.4.3))(@azure/identity@4.13.0)(@azure/search-documents@12.2.0)(@cloudflare/workers-types@4.20260115.0)(@google/genai@1.37.0(@modelcontextprotocol/sdk@1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)))(@langchain/core@1.1.32(@opentelemetry/api@1.9.0)(@opentelemetry/exporter-trace-otlp-proto@0.213.0(@opentelemetry/api@1.9.0))(@opentelemetry/sdk-trace-base@2.6.0(@opentelemetry/api@1.9.0))(openai@4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3))(ws@8.18.3))(@mistralai/mistralai@0.1.3(encoding@0.1.13))(@qdrant/js-client-rest@1.16.2(typescript@5.9.3))(@supabase/supabase-js@2.90.1)(@types/jest@29.5.14)(@types/pg@8.16.0)(@types/sqlite3@3.1.11)(cloudflare@4.5.0(encoding@0.1.13))(encoding@0.1.13)(groq-sdk@0.3.0(encoding@0.1.13))(neo4j-driver@5.28.2)(ollama@0.5.18)(pg@8.17.1)(redis@4.7.1)(sqlite3@5.1.7)(ws@8.18.3):
     dependencies:
       '@anthropic-ai/sdk': 0.74.0(zod@4.4.3)
       '@azure/identity': 4.13.0
@@ -32215,7 +32156,7 @@ snapshots:
       '@types/sqlite3': 3.1.11
       axios: 1.16.0(debug@4.4.3)
       cloudflare: 4.5.0(encoding@0.1.13)
-      groq-sdk: 0.37.0(encoding@0.1.13)
+      groq-sdk: 0.3.0(encoding@0.1.13)
       neo4j-driver: 5.28.2
       ollama: 0.5.18
       openai: 4.96.0(encoding@0.1.13)(ws@8.18.3)(zod@4.4.3)
@@ -36023,22 +35964,6 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  supergateway@3.0.1(@cfworker/json-schema@4.1.1):
-    dependencies:
-      '@modelcontextprotocol/sdk': 1.29.0(@cfworker/json-schema@4.1.1)(zod@4.4.3)
-      body-parser: 2.0.2
-      cors: 2.8.5
-      express: 4.22.1
-      uuid: 11.1.0
-      ws: 8.18.3
-      yargs: 17.7.2
-      zod: 4.4.3
-    transitivePeerDependencies:
-      - '@cfworker/json-schema'
-      - bufferutil
-      - supports-color
-      - utf-8-validate
-
   supertest@7.2.2:
     dependencies:
       cookie-signature: 1.2.2
@@ -36741,8 +36666,6 @@ snapshots:
 
   undici-types@5.26.5: {}
 
-  undici-types@6.21.0: {}
-
   undici-types@7.16.0: {}
 
   undici@6.23.0: {}
@@ -36850,8 +36773,6 @@ snapshots:
       '@types/unist': 3.0.3
       unist-util-is: 6.0.1
       unist-util-visit-parents: 6.0.2
-
-  universal-user-agent@7.0.3: {}
 
   universalify@0.2.0: {}
 

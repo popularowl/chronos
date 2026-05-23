@@ -1,14 +1,12 @@
 import { useState } from 'react'
 import PropTypes from 'prop-types'
 import { useSelector } from 'react-redux'
-import { styled } from '@mui/material/styles'
 import {
     Box,
     Paper,
     Skeleton,
     Table,
     TableBody,
-    TableCell,
     TableContainer,
     TableHead,
     TableRow,
@@ -16,27 +14,8 @@ import {
     useTheme,
     Typography
 } from '@mui/material'
-import { tableCellClasses } from '@mui/material/TableCell'
 import DocumentStoreStatus from '@/views/docstore/DocumentStoreStatus'
-
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
-    borderColor: theme.palette.grey[900] + 25,
-
-    [`&.${tableCellClasses.head}`]: {
-        color: theme.palette.grey[900]
-    },
-    [`&.${tableCellClasses.body}`]: {
-        fontSize: 14,
-        height: 64
-    }
-}))
-
-const StyledTableRow = styled(TableRow)(() => ({
-    // hide last border
-    '&:last-child td, &:last-child th': {
-        border: 0
-    }
-}))
+import { StyledTableCell, StyledTableRow } from './TableStyles'
 
 export const DocumentStoreTable = ({ data, isLoading, onRowClick, images }) => {
     const theme = useTheme()
@@ -69,7 +48,7 @@ export const DocumentStoreTable = ({ data, isLoading, onRowClick, images }) => {
     return (
         <>
             <TableContainer sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }} component={Paper}>
-                <Table sx={{ minWidth: 650 }} size='small' aria-label='document_store_table'>
+                <Table sx={{ minWidth: 650 }} aria-label='document_store_table'>
                     <TableHead
                         sx={{
                             backgroundColor: customization.isDarkMode ? theme.palette.common.black : theme.palette.grey[100],

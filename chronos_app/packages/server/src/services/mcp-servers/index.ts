@@ -5,6 +5,7 @@ import { getErrorMessage } from '../../errors/utils'
 import { getRunningExpressApp } from '../../utils/getRunningExpressApp'
 import { MCPServerChangeKind, MCPServerStatus, MCPServerTransport } from '../../Interface'
 import mcpServerChangeLogService, { snapshotMCPServer } from '../mcp-server-change-log'
+import { getPresets, MCPPreset } from '../mcp-gateway/presets'
 
 const DEFAULT_MCP_TIMEOUT_MS = 30000
 
@@ -92,15 +93,17 @@ const stringifyJsonField = (value: unknown): string | undefined => {
 
 /**
  * Validates transport-specific required fields. `streamable-http` and `sse`
- * require a URL. `stdio` is reserved in the schema (locked decision #8) and
- * rejected at the service layer until v1.8.
+ * require a URL; `stdio` requires a non-empty `command` (the executable
+ * the gateway's stdio pool will spawn). v1.8.0 promoted `stdio` from a
+ * reserved schema slot to a fully-supported transport — args / env / outbound
+ * auth resolve through the credential vault at spawn time.
  */
 const assertTransportContract = (transport: MCPServerTransport, body: any): void => {
     if (transport === MCPServerTransport.STDIO) {
-        throw new InternalChronosError(
-            StatusCodes.NOT_IMPLEMENTED,
-            'stdio transport is reserved and not implemented in v1.6. Use streamable-http or sse.'
-        )
+        if (!body.command || typeof body.command !== 'string' || !body.command.trim()) {
+            throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'command is required for stdio transport')
+        }
+        return
     }
     if (transport === MCPServerTransport.STREAMABLE_HTTP || transport === MCPServerTransport.SSE) {
         if (!body.url) {
@@ -142,6 +145,8 @@ const createMCPServer = async (requestBody: any): Promise<MCPServer> => {
         newServer.transport = transport
         newServer.url = requestBody.url ?? undefined
         newServer.command = stringifyJsonField(requestBody.command)
+        newServer.args = stringifyJsonField(requestBody.args)
+        newServer.env = stringifyJsonField(requestBody.env)
         newServer.outboundAuth = stringifyJsonField(requestBody.outboundAuth)
         newServer.allowedTools = stringifyJsonField(requestBody.allowedTools)
         newServer.requestHeaders = stringifyJsonField(requestBody.requestHeaders)
@@ -214,7 +219,7 @@ const updateMCPServer = async (id: string, body: any): Promise<MCPServer> => {
             if (body[key] !== undefined) (server as any)[key] = body[key]
         }
 
-        const jsonFields: Array<keyof MCPServer> = ['command', 'outboundAuth', 'allowedTools', 'requestHeaders', 'policies']
+        const jsonFields: Array<keyof MCPServer> = ['command', 'args', 'env', 'outboundAuth', 'allowedTools', 'requestHeaders', 'policies']
         for (const key of jsonFields) {
             if (body[key] !== undefined) (server as any)[key] = stringifyJsonField(body[key])
         }
@@ -371,9 +376,10 @@ const testMCPServerConnection = async (id: string): Promise<any> => {
             throw new InternalChronosError(StatusCodes.NOT_FOUND, `MCP server ${id} not found`)
         }
         if (server.transport === MCPServerTransport.STDIO) {
-            throw new InternalChronosError(StatusCodes.NOT_IMPLEMENTED, 'stdio transport is not supported in v1.6')
-        }
-        if (!server.url) {
+            if (!server.command) {
+                throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'MCP server has no command configured')
+            }
+        } else if (!server.url) {
             throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'MCP server has no url configured')
         }
         if (!appServer.mcpGateway) {
@@ -427,9 +433,10 @@ const listMCPServerTools = async (id: string): Promise<any[]> => {
             throw new InternalChronosError(StatusCodes.CONFLICT, `MCP server ${server.slug} is disabled`)
         }
         if (server.transport === MCPServerTransport.STDIO) {
-            throw new InternalChronosError(StatusCodes.NOT_IMPLEMENTED, 'stdio transport is not supported in v1.6')
-        }
-        if (!server.url) {
+            if (!server.command) {
+                throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'MCP server has no command configured')
+            }
+        } else if (!server.url) {
             throw new InternalChronosError(StatusCodes.BAD_REQUEST, 'MCP server has no url configured')
         }
         if (!appServer.mcpGateway) {
@@ -492,6 +499,18 @@ const previewMCPServerTools = async (body: any): Promise<any[]> => {
     }
 }
 
+/**
+ * Returns the bundled MCP-server preset catalogue. Read-only data sourced
+ * from the in-process preset module — no DB access — so the controller
+ * stays a thin wrapper. The catalogue is gated by `ENABLE_MCP_SERVERS`
+ * for parity with the rest of the registry surface: a Chronos user who
+ * cannot create servers should not see the preset picker either.
+ */
+const listMCPServerPresets = (): MCPPreset[] => {
+    assertMCPServersEnabled()
+    return getPresets()
+}
+
 export default {
     isMCPServersEnabled,
     createMCPServer,
@@ -503,5 +522,6 @@ export default {
     toggleMCPServer,
     testMCPServerConnection,
     listMCPServerTools,
-    previewMCPServerTools
+    previewMCPServerTools,
+    listMCPServerPresets
 }

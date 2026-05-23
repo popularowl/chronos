@@ -30,6 +30,8 @@ const listMCPServerTools = (id) => client.get(`/mcp-servers/${id}/tools`)
 
 const previewMCPServerTools = (body) => client.post('/mcp-servers/preview-tools', body)
 
+const listMCPServerPresets = () => client.get('/mcp-servers/presets')
+
 const getMCPServerChangeLog = (id, params = {}) =>
     client.get(`/mcp-servers/${id}/change-log`, {
         params: {
@@ -48,5 +50,6 @@ export default {
     testMCPServerConnection,
     listMCPServerTools,
     previewMCPServerTools,
-    getMCPServerChangeLog
+    getMCPServerChangeLog,
+    listMCPServerPresets
 }

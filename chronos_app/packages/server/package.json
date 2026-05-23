@@ -3,7 +3,7 @@
     "version": "1.8.0",
     "description": "Intelligex Chronos Server",
     "scripts": {
-        "build": "tsc",
+        "build": "tsc && node ./scripts/copy-preset-assets.js",
         "start": "node --no-deprecation dist/index-server.js",
         "clean": "rimraf dist",
         "nuke": "rm -rf dist node_modules .turbo",

@@ -154,6 +154,20 @@ const previewMCPServerTools = async (req: Request, res: Response, next: NextFunc
 }
 
 /**
+ * Returns the bundled MCP-server preset catalogue. Static config served
+ * to the UI's "Register from preset" picker so the Chronos user can
+ * one-click prefill the registration dialog for common MCP servers.
+ */
+const listMCPServerPresets = async (_req: Request, res: Response, next: NextFunction) => {
+    try {
+        const presets = mcpServersService.listMCPServerPresets()
+        return res.json({ presets })
+    } catch (error) {
+        next(error)
+    }
+}
+
+/**
  * Returns the change-history rows for one MCP server, newest-first. Paginated
  * via the standard `page` / `limit` query params. Feeds the **History** tab
  * on `MCPServerDetail` (v1.8.0 Group A — UI slice A2).
@@ -189,5 +203,6 @@ export default {
     testMCPServerConnection,
     listMCPServerTools,
     previewMCPServerTools,
-    getMCPServerChangeLog
+    getMCPServerChangeLog,
+    listMCPServerPresets
 }

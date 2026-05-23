@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 
 import {
@@ -243,12 +243,15 @@ const Agents = () => {
         return sortAgents(raw.filter(filterAgents))
     })()
 
-    const goToDetail = (agent) => {
+    const agentDetailHref = (agent) => {
         if (agent.runtimeType === 'BUILT_IN' && agent.builtinAgentflowId) {
-            navigate(`/canvas/${agent.builtinAgentflowId}`)
-            return
+            return `/canvas/${agent.builtinAgentflowId}`
         }
-        navigate(`/agents/${agent.id}`)
+        return `/agents/${agent.id}`
+    }
+
+    const goToDetail = (agent) => {
+        navigate(agentDetailHref(agent))
     }
 
     return (
@@ -261,9 +264,9 @@ const Agents = () => {
                         <ViewHeader
                             onSearchChange={onSearchChange}
                             search={true}
-                            searchPlaceholder='Search Agents'
+                            searchPlaceholder='Search'
                             title='Agents'
-                            description='Registered agent invocation surfaces — HTTP runtime or canvas-built'
+                            description='Agent registry - lists all agents registered in Chronos'
                         >
                             <ButtonGroup disableElevation aria-label='outlined primary button group'>
                                 <StyledPermissionButton
@@ -298,7 +301,7 @@ const Agents = () => {
                                             }}
                                         >
                                             <StyledTableRow>
-                                                <StyledTableCell>
+                                                <StyledTableCell sx={{ pl: 2.5 }}>
                                                     <TableSortLabel
                                                         active={orderBy === 'name'}
                                                         direction={order}
@@ -310,17 +313,15 @@ const Agents = () => {
                                                 <StyledTableCell>Runtime</StyledTableCell>
                                                 <StyledTableCell>Status</StyledTableCell>
                                                 <StyledTableCell sx={{ minWidth: 220 }}>Allowed MCP Tools</StyledTableCell>
-                                                <StyledTableCell>Enabled</StyledTableCell>
-                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
-                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
-                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
+                                                <StyledTableCell align='right'>Enabled</StyledTableCell>
+                                                <StyledTableCell align='center'>Actions</StyledTableCell>
                                             </StyledTableRow>
                                         </TableHead>
                                         <TableBody>
                                             {rows.map((agent) => (
                                                 <StyledTableRow key={agent.id} hover>
-                                                    <StyledTableCell scope='row'>
-                                                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+                                                    <StyledTableCell scope='row' sx={{ pl: 2.5 }}>
+                                                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2.5 }}>
                                                             <Box
                                                                 sx={{
                                                                     width: 35,
@@ -337,13 +338,13 @@ const Agents = () => {
                                                                 <IconRobot size={20} color={theme.palette.grey[700]} />
                                                             </Box>
                                                             <Box
-                                                                component='span'
+                                                                component={Link}
+                                                                to={agentDetailHref(agent)}
                                                                 sx={{
-                                                                    cursor: 'pointer',
                                                                     color: theme.palette.primary.main,
+                                                                    textDecoration: 'none',
                                                                     '&:hover': { textDecoration: 'underline' }
                                                                 }}
-                                                                onClick={() => goToDetail(agent)}
                                                             >
                                                                 {agent.name}
                                                             </Box>
@@ -422,10 +423,10 @@ const Agents = () => {
                                                             )
                                                         })()}
                                                     </StyledTableCell>
-                                                    <StyledTableCell>
+                                                    <StyledTableCell align='right'>
                                                         <Switch checked={agent.enabled} onChange={() => handleToggle(agent)} size='small' />
                                                     </StyledTableCell>
-                                                    <StyledTableCell>
+                                                    <StyledTableCell align='right'>
                                                         <PermissionIconButton
                                                             permissionId={'agents:view'}
                                                             title='Open detail'
@@ -434,8 +435,6 @@ const Agents = () => {
                                                         >
                                                             <IconExternalLink />
                                                         </PermissionIconButton>
-                                                    </StyledTableCell>
-                                                    <StyledTableCell>
                                                         <PermissionIconButton
                                                             permissionId={'agents:update'}
                                                             title='Edit'
@@ -444,8 +443,6 @@ const Agents = () => {
                                                         >
                                                             <IconEdit />
                                                         </PermissionIconButton>
-                                                    </StyledTableCell>
-                                                    <StyledTableCell>
                                                         <PermissionIconButton
                                                             permissionId={'agents:delete'}
                                                             title='Delete'
@@ -465,14 +462,14 @@ const Agents = () => {
                         )}
                         {!isLoading && total === 0 && (
                             <Stack sx={{ alignItems: 'center', justifyContent: 'center' }} flexDirection='column'>
-                                <Box sx={{ p: 2, height: 'auto' }}>
+                                <Box sx={{ p: 12, height: 'auto' }}>
                                     <img
                                         style={{ objectFit: 'cover', height: '20vh', width: 'auto' }}
                                         src={ToolEmptySVG}
                                         alt='AgentsEmpty'
                                     />
                                 </Box>
-                                <div>No Agents Registered Yet</div>
+                                <div>No Agents Registered</div>
                             </Stack>
                         )}
                     </Stack>

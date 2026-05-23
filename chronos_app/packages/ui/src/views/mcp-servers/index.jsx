@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 
 import {
     Box,
     Button,
-    ButtonGroup,
     Chip,
     Paper,
     Skeleton,
@@ -19,7 +18,7 @@ import {
     Tooltip,
     useTheme
 } from '@mui/material'
-import { IconEdit, IconExternalLink, IconPlug, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
+import { IconEdit, IconExternalLink, IconLoader, IconPlug, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
 
 import MainCard from '@/ui-component/cards/MainCard'
 import ViewHeader from '@/layout/MainLayout/ViewHeader'
@@ -30,6 +29,7 @@ import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyle
 import ConfirmDialog from '@/ui-component/dialog/ConfirmDialog'
 
 import MCPServerDialog from './MCPServerDialog'
+import PresetPickerDialog from './PresetPickerDialog'
 
 import mcpServersApi from '@/api/mcp-servers'
 import useApi from '@/hooks/useApi'
@@ -76,6 +76,7 @@ const MCPServers = () => {
     const [isLoading, setLoading] = useState(true)
     const [showDialog, setShowDialog] = useState(false)
     const [dialogProps, setDialogProps] = useState({})
+    const [showPresetPicker, setShowPresetPicker] = useState(false)
 
     const [currentPage, setCurrentPage] = useState(1)
     const [pageLimit, setPageLimit] = useState(DEFAULT_ITEMS_PER_PAGE)
@@ -129,6 +130,27 @@ const MCPServers = () => {
             type: 'ADD',
             cancelButtonName: 'Cancel',
             confirmButtonName: 'Register'
+        })
+        setShowDialog(true)
+    }
+
+    const openPresetPicker = () => {
+        setShowPresetPicker(true)
+    }
+
+    const onPickCustom = () => {
+        setShowPresetPicker(false)
+        addNew()
+    }
+
+    const onPresetPick = (preset) => {
+        setShowPresetPicker(false)
+        setDialogProps({
+            title: `Register ${preset.displayName}`,
+            type: 'ADD',
+            cancelButtonName: 'Cancel',
+            confirmButtonName: 'Register',
+            presetData: preset
         })
         setShowDialog(true)
     }
@@ -223,6 +245,19 @@ const MCPServers = () => {
         return sortServers(raw.filter(filterServers))
     })()
 
+    // Auto-poll while at least one row sits in `UNKNOWN` — newly-registered
+    // stdio servers carry that status until the gateway's first probe
+    // resolves (cold-start + tools/list, typically a few seconds). The
+    // interval self-cancels once every row has flipped to HEALTHY /
+    // UNHEALTHY / DISABLED so steady-state pages don't poll the server.
+    useEffect(() => {
+        const anyProbing = rows.some((row) => row.status === 'UNKNOWN')
+        if (!anyProbing) return undefined
+        const handle = setInterval(() => refresh(currentPage, pageLimit), 3000)
+        return () => clearInterval(handle)
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [rows, currentPage, pageLimit])
+
     return (
         <>
             <MainCard>
@@ -233,21 +268,19 @@ const MCPServers = () => {
                         <ViewHeader
                             onSearchChange={onSearchChange}
                             search={true}
-                            searchPlaceholder='Search MCP Servers'
+                            searchPlaceholder='Search'
                             title='MCP Servers'
-                            description='Registered MCP servers reachable through the platform gateway'
+                            description='MCP registry - lists all MCP servers registered in Chronos'
                         >
-                            <ButtonGroup disableElevation aria-label='outlined primary button group'>
-                                <StyledPermissionButton
-                                    permissionId={'mcp-servers:create'}
-                                    variant='contained'
-                                    onClick={addNew}
-                                    startIcon={<IconPlus />}
-                                    sx={{ borderRadius: 2, height: 40 }}
-                                >
-                                    Register MCP Server
-                                </StyledPermissionButton>
-                            </ButtonGroup>
+                            <StyledPermissionButton
+                                permissionId={'mcp-servers:create'}
+                                variant='contained'
+                                onClick={openPresetPicker}
+                                startIcon={<IconPlus />}
+                                sx={{ borderRadius: 2, height: 40 }}
+                            >
+                                Register MCP Server
+                            </StyledPermissionButton>
                         </ViewHeader>
                         {isLoading && (
                             <Box>
@@ -270,7 +303,7 @@ const MCPServers = () => {
                                             }}
                                         >
                                             <StyledTableRow>
-                                                <StyledTableCell>
+                                                <StyledTableCell sx={{ pl: 2.5 }}>
                                                     <TableSortLabel
                                                         active={orderBy === 'name'}
                                                         direction={order}
@@ -291,17 +324,15 @@ const MCPServers = () => {
                                                 <StyledTableCell>Transport</StyledTableCell>
                                                 <StyledTableCell>Status</StyledTableCell>
                                                 <StyledTableCell>URL</StyledTableCell>
-                                                <StyledTableCell>Enabled</StyledTableCell>
-                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
-                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
-                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
+                                                <StyledTableCell align='right'>Enabled</StyledTableCell>
+                                                <StyledTableCell align='center'>Actions</StyledTableCell>
                                             </StyledTableRow>
                                         </TableHead>
                                         <TableBody>
                                             {rows.map((server) => (
                                                 <StyledTableRow key={server.id} hover>
-                                                    <StyledTableCell scope='row'>
-                                                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+                                                    <StyledTableCell scope='row' sx={{ pl: 2.5 }}>
+                                                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2.5 }}>
                                                             <Box
                                                                 sx={{
                                                                     width: 35,
@@ -318,13 +349,13 @@ const MCPServers = () => {
                                                                 <IconPlug size={20} color={theme.palette.grey[700]} />
                                                             </Box>
                                                             <Box
-                                                                component='span'
+                                                                component={Link}
+                                                                to={`/mcp-servers/${server.id}`}
                                                                 sx={{
-                                                                    cursor: 'pointer',
                                                                     color: theme.palette.primary.main,
+                                                                    textDecoration: 'none',
                                                                     '&:hover': { textDecoration: 'underline' }
                                                                 }}
-                                                                onClick={() => navigate(`/mcp-servers/${server.id}`)}
                                                             >
                                                                 {server.name}
                                                             </Box>
@@ -339,22 +370,31 @@ const MCPServers = () => {
                                                         />
                                                     </StyledTableCell>
                                                     <StyledTableCell>
-                                                        <Chip
-                                                            size='small'
-                                                            label={(server.status || '').toLowerCase()}
-                                                            color={
-                                                                server.status === 'HEALTHY'
-                                                                    ? undefined
-                                                                    : STATUS_CHIP_COLOR[server.status] || 'default'
-                                                            }
-                                                            sx={{
-                                                                ...(server.status === 'HEALTHY' && {
-                                                                    backgroundColor: theme.palette.success.dark,
-                                                                    color: theme.palette.common.white
-                                                                }),
-                                                                ...(server.status === 'DISABLED' && { opacity: 0.6 })
-                                                            }}
-                                                        />
+                                                        {server.status === 'UNKNOWN' ? (
+                                                            <Chip
+                                                                size='small'
+                                                                variant='outlined'
+                                                                icon={<IconLoader size={14} className='spin-animation' />}
+                                                                label='probing…'
+                                                            />
+                                                        ) : (
+                                                            <Chip
+                                                                size='small'
+                                                                label={(server.status || '').toLowerCase()}
+                                                                color={
+                                                                    server.status === 'HEALTHY'
+                                                                        ? undefined
+                                                                        : STATUS_CHIP_COLOR[server.status] || 'default'
+                                                                }
+                                                                sx={{
+                                                                    ...(server.status === 'HEALTHY' && {
+                                                                        backgroundColor: theme.palette.success.dark,
+                                                                        color: theme.palette.common.white
+                                                                    }),
+                                                                    ...(server.status === 'DISABLED' && { opacity: 0.6 })
+                                                                }}
+                                                            />
+                                                        )}
                                                     </StyledTableCell>
                                                     <StyledTableCell sx={{ maxWidth: 280 }}>
                                                         <Tooltip title={server.url || ''}>
@@ -369,14 +409,14 @@ const MCPServers = () => {
                                                             </Box>
                                                         </Tooltip>
                                                     </StyledTableCell>
-                                                    <StyledTableCell>
+                                                    <StyledTableCell align='right'>
                                                         <Switch
                                                             checked={server.enabled}
                                                             onChange={() => handleToggle(server)}
                                                             size='small'
                                                         />
                                                     </StyledTableCell>
-                                                    <StyledTableCell>
+                                                    <StyledTableCell align='right'>
                                                         <PermissionIconButton
                                                             permissionId={'mcp-servers:view'}
                                                             title='Open detail'
@@ -385,8 +425,6 @@ const MCPServers = () => {
                                                         >
                                                             <IconExternalLink />
                                                         </PermissionIconButton>
-                                                    </StyledTableCell>
-                                                    <StyledTableCell>
                                                         <PermissionIconButton
                                                             permissionId={'mcp-servers:update'}
                                                             title='Edit'
@@ -395,8 +433,6 @@ const MCPServers = () => {
                                                         >
                                                             <IconEdit />
                                                         </PermissionIconButton>
-                                                    </StyledTableCell>
-                                                    <StyledTableCell>
                                                         <PermissionIconButton
                                                             permissionId={'mcp-servers:delete'}
                                                             title='Delete'
@@ -416,20 +452,26 @@ const MCPServers = () => {
                         )}
                         {!isLoading && total === 0 && (
                             <Stack sx={{ alignItems: 'center', justifyContent: 'center' }} flexDirection='column'>
-                                <Box sx={{ p: 2, height: 'auto' }}>
+                                <Box sx={{ p: 12, height: 'auto' }}>
                                     <img
                                         style={{ objectFit: 'cover', height: '20vh', width: 'auto' }}
                                         src={ToolEmptySVG}
                                         alt='MCPServersEmpty'
                                     />
                                 </Box>
-                                <div>No MCP Servers Registered Yet</div>
+                                <div>No MCP Servers Registered</div>
                             </Stack>
                         )}
                     </Stack>
                 )}
             </MainCard>
             <MCPServerDialog show={showDialog} dialogProps={dialogProps} onCancel={() => setShowDialog(false)} onConfirm={onConfirm} />
+            <PresetPickerDialog
+                show={showPresetPicker}
+                onCancel={() => setShowPresetPicker(false)}
+                onPick={onPresetPick}
+                onCustom={onPickCustom}
+            />
             <ConfirmDialog />
         </>
     )

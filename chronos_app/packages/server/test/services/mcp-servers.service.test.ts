@@ -111,10 +111,10 @@ export function mcpServersServiceTest() {
                 ).rejects.toMatchObject({ statusCode: 400, message: expect.stringContaining('Invalid transport') })
             })
 
-            it('rejects stdio transport with 501 (reserved in v1.6)', async () => {
+            it('rejects stdio server without command (v1.8+)', async () => {
                 await expect(mcpServersService.createMCPServer({ name: 'x', transport: 'stdio' })).rejects.toMatchObject({
-                    statusCode: 501,
-                    message: expect.stringContaining('stdio')
+                    statusCode: 400,
+                    message: expect.stringContaining('command')
                 })
             })
 
@@ -284,12 +284,15 @@ export function mcpServersServiceTest() {
                 await expect(mcpServersService.listMCPServerTools('s-1')).rejects.toMatchObject({ statusCode: 409 })
             })
 
-            it('returns 501 for stdio transport', async () => {
-                mockRepository.findOneBy.mockResolvedValue(baseServer({ transport: 'stdio' }))
-                await expect(mcpServersService.listMCPServerTools('s-1')).rejects.toMatchObject({ statusCode: 501 })
+            it('returns 400 for stdio server without command', async () => {
+                mockRepository.findOneBy.mockResolvedValue(baseServer({ transport: 'stdio', url: undefined, command: undefined }))
+                await expect(mcpServersService.listMCPServerTools('s-1')).rejects.toMatchObject({
+                    statusCode: 400,
+                    message: expect.stringContaining('command')
+                })
             })
 
-            it('returns 400 when server has no url', async () => {
+            it('returns 400 when HTTP server has no url', async () => {
                 mockRepository.findOneBy.mockResolvedValue(baseServer({ url: undefined }))
                 await expect(mcpServersService.listMCPServerTools('s-1')).rejects.toMatchObject({ statusCode: 400 })
             })
@@ -335,12 +338,15 @@ export function mcpServersServiceTest() {
                 await expect(mcpServersService.testMCPServerConnection('missing')).rejects.toMatchObject({ statusCode: 404 })
             })
 
-            it('returns 501 for stdio transport', async () => {
-                mockRepository.findOneBy.mockResolvedValue(baseServer({ transport: 'stdio' }))
-                await expect(mcpServersService.testMCPServerConnection('s-1')).rejects.toMatchObject({ statusCode: 501 })
+            it('returns 400 for stdio server without command', async () => {
+                mockRepository.findOneBy.mockResolvedValue(baseServer({ transport: 'stdio', url: undefined, command: undefined }))
+                await expect(mcpServersService.testMCPServerConnection('s-1')).rejects.toMatchObject({
+                    statusCode: 400,
+                    message: expect.stringContaining('command')
+                })
             })
 
-            it('returns 400 when server has no url', async () => {
+            it('returns 400 when HTTP server has no url', async () => {
                 mockRepository.findOneBy.mockResolvedValue(baseServer({ url: undefined }))
                 await expect(mcpServersService.testMCPServerConnection('s-1')).rejects.toMatchObject({ statusCode: 400 })
             })

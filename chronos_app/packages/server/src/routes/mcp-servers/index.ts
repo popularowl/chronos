@@ -6,6 +6,11 @@ const router = express.Router()
 
 router.post('/', checkPermission('mcp-servers:create'), mcpServersController.createMCPServer)
 
+// `presets` is a static catalogue route — declared before the `/:id`
+// param route so it isn't swallowed by the dynamic match. Gated by
+// `mcp-servers:create` because the picker is a creation affordance.
+router.get('/presets', checkPermission('mcp-servers:create'), mcpServersController.listMCPServerPresets)
+
 router.get('/', checkPermission('mcp-servers:view'), mcpServersController.getAllMCPServers)
 router.get('/:id', checkPermission('mcp-servers:view'), mcpServersController.getMCPServerById)
 

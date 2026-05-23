@@ -267,7 +267,7 @@ export const buildStdioTransport = (resolved: ResolvedStdioConfig, slug: string,
     const params: StdioServerParameters = {
         command: resolved.command,
         args: resolved.args,
-        env: { ...filterStringEnv(process.env), ...resolved.env },
+        env: { ...sanitizeChildEnv(process.env), ...resolved.env },
         cwd: process.cwd(),
         stderr: 'pipe'
     }
@@ -298,13 +298,38 @@ export const buildStdioTransport = (resolved: ResolvedStdioConfig, slug: string,
     return transport
 }
 
-const filterStringEnv = (env: NodeJS.ProcessEnv): Record<string, string> => {
+/**
+ * Keys that match this pattern are package-manager coordination state
+ * injected by the launcher (`npm_*` from npm / npx, `PNPM_*` from pnpm,
+ * `INIT_CWD` from both). Useful to the launcher's own subcommands but
+ * meaningless — and in pnpm's case, often warning-noisy — when inherited
+ * by a grandchild MCP server that boots its own `npx` / `node` toolchain.
+ * Stripping them keeps Chronos's own PATH / HOME / locale inherits intact
+ * without polluting the child with the runner's view of the world.
+ */
+const RUNNER_COORDINATION_KEY = /^(npm_|PNPM_)/i
+const RUNNER_COORDINATION_EXACT = new Set(['INIT_CWD'])
+
+/**
+ * Returns a child-safe view of `process.env`. Filters non-string values
+ * (same guarantee as the previous `filterStringEnv`) and additionally
+ * strips package-manager coordination keys so spawned MCP servers don't
+ * inherit them. Operator-provided env (`resolved.env`) still overrides
+ * anything that survives the strip.
+ */
+const sanitizeChildEnv = (env: NodeJS.ProcessEnv): Record<string, string> => {
     const out: Record<string, string> = {}
     for (const [k, v] of Object.entries(env)) {
-        if (typeof v === 'string') out[k] = v
+        if (typeof v !== 'string') continue
+        if (RUNNER_COORDINATION_KEY.test(k)) continue
+        if (RUNNER_COORDINATION_EXACT.has(k)) continue
+        out[k] = v
     }
     return out
 }
+
+/** Test seam — exported so the env-sanitisation suite can assert on the strip rules directly. */
+export const __sanitizeChildEnvForTest = sanitizeChildEnv
 
 const emitStderrLine = (slug: string, level: 'info' | 'debug', line: string): void => {
     const message = `[stdio:${slug}] ${line}`
