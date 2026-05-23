@@ -1,18 +1,12 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 
 import {
     Box,
     Button,
-    ButtonGroup,
     Chip,
-    ClickAwayListener,
-    Grow,
-    MenuItem,
-    MenuList,
     Paper,
-    Popper,
     Skeleton,
     Stack,
     Switch,
@@ -24,7 +18,7 @@ import {
     Tooltip,
     useTheme
 } from '@mui/material'
-import { IconCaretDown, IconEdit, IconExternalLink, IconLoader, IconPlug, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
+import { IconEdit, IconExternalLink, IconLoader, IconPlug, IconPlus, IconTrash, IconX } from '@tabler/icons-react'
 
 import MainCard from '@/ui-component/cards/MainCard'
 import ViewHeader from '@/layout/MainLayout/ViewHeader'
@@ -83,8 +77,6 @@ const MCPServers = () => {
     const [showDialog, setShowDialog] = useState(false)
     const [dialogProps, setDialogProps] = useState({})
     const [showPresetPicker, setShowPresetPicker] = useState(false)
-    const [splitMenuOpen, setSplitMenuOpen] = useState(false)
-    const splitMenuAnchor = useRef(null)
 
     const [currentPage, setCurrentPage] = useState(1)
     const [pageLimit, setPageLimit] = useState(DEFAULT_ITEMS_PER_PAGE)
@@ -143,8 +135,12 @@ const MCPServers = () => {
     }
 
     const openPresetPicker = () => {
-        setSplitMenuOpen(false)
         setShowPresetPicker(true)
+    }
+
+    const onPickCustom = () => {
+        setShowPresetPicker(false)
+        addNew()
     }
 
     const onPresetPick = (preset) => {
@@ -272,59 +268,19 @@ const MCPServers = () => {
                         <ViewHeader
                             onSearchChange={onSearchChange}
                             search={true}
-                            searchPlaceholder='Search MCP Servers'
+                            searchPlaceholder='Search'
                             title='MCP Servers'
-                            description='Registered MCP servers reachable through the platform gateway'
+                            description='MCP registry - lists all MCP servers registered in Chronos'
                         >
-                            <ButtonGroup
-                                ref={splitMenuAnchor}
-                                disableElevation
+                            <StyledPermissionButton
+                                permissionId={'mcp-servers:create'}
                                 variant='contained'
-                                aria-label='register mcp server split button'
+                                onClick={openPresetPicker}
+                                startIcon={<IconPlus />}
+                                sx={{ borderRadius: 2, height: 40 }}
                             >
-                                <StyledPermissionButton
-                                    permissionId={'mcp-servers:create'}
-                                    variant='contained'
-                                    onClick={addNew}
-                                    startIcon={<IconPlus />}
-                                    sx={{ borderRadius: 2, height: 40 }}
-                                >
-                                    Register MCP Server
-                                </StyledPermissionButton>
-                                <StyledPermissionButton
-                                    permissionId={'mcp-servers:create'}
-                                    variant='contained'
-                                    size='small'
-                                    aria-label='register from preset'
-                                    aria-haspopup='menu'
-                                    aria-expanded={splitMenuOpen ? 'true' : undefined}
-                                    onClick={() => setSplitMenuOpen((prev) => !prev)}
-                                    sx={{ borderRadius: 2, height: 40, minWidth: 0, px: 1 }}
-                                >
-                                    <IconCaretDown size={16} />
-                                </StyledPermissionButton>
-                            </ButtonGroup>
-                            <Popper
-                                open={splitMenuOpen}
-                                anchorEl={splitMenuAnchor.current}
-                                role={undefined}
-                                transition
-                                disablePortal
-                                placement='bottom-end'
-                                sx={{ zIndex: 1300 }}
-                            >
-                                {({ TransitionProps }) => (
-                                    <Grow {...TransitionProps}>
-                                        <Paper>
-                                            <ClickAwayListener onClickAway={() => setSplitMenuOpen(false)}>
-                                                <MenuList autoFocusItem={splitMenuOpen} dense>
-                                                    <MenuItem onClick={openPresetPicker}>From preset…</MenuItem>
-                                                </MenuList>
-                                            </ClickAwayListener>
-                                        </Paper>
-                                    </Grow>
-                                )}
-                            </Popper>
+                                Register MCP Server
+                            </StyledPermissionButton>
                         </ViewHeader>
                         {isLoading && (
                             <Box>
@@ -347,7 +303,7 @@ const MCPServers = () => {
                                             }}
                                         >
                                             <StyledTableRow>
-                                                <StyledTableCell>
+                                                <StyledTableCell sx={{ pl: 2.5 }}>
                                                     <TableSortLabel
                                                         active={orderBy === 'name'}
                                                         direction={order}
@@ -368,17 +324,15 @@ const MCPServers = () => {
                                                 <StyledTableCell>Transport</StyledTableCell>
                                                 <StyledTableCell>Status</StyledTableCell>
                                                 <StyledTableCell>URL</StyledTableCell>
-                                                <StyledTableCell>Enabled</StyledTableCell>
-                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
-                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
-                                                <StyledTableCell style={{ width: '5%' }}> </StyledTableCell>
+                                                <StyledTableCell align='right'>Enabled</StyledTableCell>
+                                                <StyledTableCell align='center'>Actions</StyledTableCell>
                                             </StyledTableRow>
                                         </TableHead>
                                         <TableBody>
                                             {rows.map((server) => (
                                                 <StyledTableRow key={server.id} hover>
-                                                    <StyledTableCell scope='row'>
-                                                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 1 }}>
+                                                    <StyledTableCell scope='row' sx={{ pl: 2.5 }}>
+                                                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2.5 }}>
                                                             <Box
                                                                 sx={{
                                                                     width: 35,
@@ -455,14 +409,14 @@ const MCPServers = () => {
                                                             </Box>
                                                         </Tooltip>
                                                     </StyledTableCell>
-                                                    <StyledTableCell>
+                                                    <StyledTableCell align='right'>
                                                         <Switch
                                                             checked={server.enabled}
                                                             onChange={() => handleToggle(server)}
                                                             size='small'
                                                         />
                                                     </StyledTableCell>
-                                                    <StyledTableCell>
+                                                    <StyledTableCell align='right'>
                                                         <PermissionIconButton
                                                             permissionId={'mcp-servers:view'}
                                                             title='Open detail'
@@ -471,8 +425,6 @@ const MCPServers = () => {
                                                         >
                                                             <IconExternalLink />
                                                         </PermissionIconButton>
-                                                    </StyledTableCell>
-                                                    <StyledTableCell>
                                                         <PermissionIconButton
                                                             permissionId={'mcp-servers:update'}
                                                             title='Edit'
@@ -481,8 +433,6 @@ const MCPServers = () => {
                                                         >
                                                             <IconEdit />
                                                         </PermissionIconButton>
-                                                    </StyledTableCell>
-                                                    <StyledTableCell>
                                                         <PermissionIconButton
                                                             permissionId={'mcp-servers:delete'}
                                                             title='Delete'
@@ -502,21 +452,26 @@ const MCPServers = () => {
                         )}
                         {!isLoading && total === 0 && (
                             <Stack sx={{ alignItems: 'center', justifyContent: 'center' }} flexDirection='column'>
-                                <Box sx={{ p: 2, height: 'auto' }}>
+                                <Box sx={{ p: 12, height: 'auto' }}>
                                     <img
                                         style={{ objectFit: 'cover', height: '20vh', width: 'auto' }}
                                         src={ToolEmptySVG}
                                         alt='MCPServersEmpty'
                                     />
                                 </Box>
-                                <div>No MCP Servers Registered Yet</div>
+                                <div>No MCP Servers Registered</div>
                             </Stack>
                         )}
                     </Stack>
                 )}
             </MainCard>
             <MCPServerDialog show={showDialog} dialogProps={dialogProps} onCancel={() => setShowDialog(false)} onConfirm={onConfirm} />
-            <PresetPickerDialog show={showPresetPicker} onCancel={() => setShowPresetPicker(false)} onPick={onPresetPick} />
+            <PresetPickerDialog
+                show={showPresetPicker}
+                onCancel={() => setShowPresetPicker(false)}
+                onPick={onPresetPick}
+                onCustom={onPickCustom}
+            />
             <ConfirmDialog />
         </>
     )

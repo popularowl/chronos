@@ -29,7 +29,7 @@ import { HIDE_CANVAS_DIALOG, SHOW_CANVAS_DIALOG } from '@/store/actions'
  * pre-filled. Presets are fetched once per open and never mutate, so
  * we keep them in local state — no Redux integration needed.
  */
-const PresetPickerDialog = ({ show, onCancel, onPick }) => {
+const PresetPickerDialog = ({ show, onCancel, onPick, onCustom }) => {
     const portalElement = document.getElementById('portal')
     const dispatch = useDispatch()
     const theme = useTheme()
@@ -215,7 +215,8 @@ const PresetPickerDialog = ({ show, onCancel, onPick }) => {
                     </Stack>
                 )}
             </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
+            <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
+                <Button onClick={onCustom}>None of these — register a custom server</Button>
                 <Button onClick={onCancel}>Cancel</Button>
             </DialogActions>
         </Dialog>
@@ -227,7 +228,8 @@ const PresetPickerDialog = ({ show, onCancel, onPick }) => {
 PresetPickerDialog.propTypes = {
     show: PropTypes.bool,
     onCancel: PropTypes.func,
-    onPick: PropTypes.func
+    onPick: PropTypes.func,
+    onCustom: PropTypes.func
 }
 
 export default PresetPickerDialog
