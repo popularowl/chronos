@@ -1,39 +1,7 @@
 import PropTypes from 'prop-types'
 import { useSelector } from 'react-redux'
-import { styled } from '@mui/material/styles'
-import { tableCellClasses } from '@mui/material/TableCell'
-import {
-    Button,
-    Paper,
-    Skeleton,
-    Table,
-    TableBody,
-    TableCell,
-    TableContainer,
-    TableHead,
-    TableRow,
-    Typography,
-    useTheme
-} from '@mui/material'
-
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
-    borderColor: theme.palette.grey[900] + 25,
-
-    [`&.${tableCellClasses.head}`]: {
-        color: theme.palette.grey[900]
-    },
-    [`&.${tableCellClasses.body}`]: {
-        fontSize: 14,
-        height: 64
-    }
-}))
-
-const StyledTableRow = styled(TableRow)(() => ({
-    // hide last border
-    '&:last-child td, &:last-child th': {
-        border: 0
-    }
-}))
+import { Button, Paper, Skeleton, Table, TableBody, TableContainer, TableHead, TableRow, Typography, useTheme } from '@mui/material'
+import { StyledTableCell, StyledTableRow } from './TableStyles'
 
 export const ToolsTable = ({ data, isLoading, onSelect }) => {
     const theme = useTheme()
@@ -42,7 +10,7 @@ export const ToolsTable = ({ data, isLoading, onSelect }) => {
     return (
         <>
             <TableContainer sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }} component={Paper}>
-                <Table sx={{ minWidth: 650 }} size='small' aria-label='a dense table'>
+                <Table sx={{ minWidth: 650 }} aria-label='a dense table'>
                     <TableHead
                         sx={{
                             backgroundColor: customization.isDarkMode ? theme.palette.common.black : theme.palette.grey[100],

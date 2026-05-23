@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 
 import {
@@ -243,12 +243,15 @@ const Agents = () => {
         return sortAgents(raw.filter(filterAgents))
     })()
 
-    const goToDetail = (agent) => {
+    const agentDetailHref = (agent) => {
         if (agent.runtimeType === 'BUILT_IN' && agent.builtinAgentflowId) {
-            navigate(`/canvas/${agent.builtinAgentflowId}`)
-            return
+            return `/canvas/${agent.builtinAgentflowId}`
         }
-        navigate(`/agents/${agent.id}`)
+        return `/agents/${agent.id}`
+    }
+
+    const goToDetail = (agent) => {
+        navigate(agentDetailHref(agent))
     }
 
     return (
@@ -335,13 +338,13 @@ const Agents = () => {
                                                                 <IconRobot size={20} color={theme.palette.grey[700]} />
                                                             </Box>
                                                             <Box
-                                                                component='span'
+                                                                component={Link}
+                                                                to={agentDetailHref(agent)}
                                                                 sx={{
-                                                                    cursor: 'pointer',
                                                                     color: theme.palette.primary.main,
+                                                                    textDecoration: 'none',
                                                                     '&:hover': { textDecoration: 'underline' }
                                                                 }}
-                                                                onClick={() => goToDetail(agent)}
                                                             >
                                                                 {agent.name}
                                                             </Box>

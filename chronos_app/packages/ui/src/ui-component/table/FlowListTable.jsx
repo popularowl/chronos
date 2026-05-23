@@ -2,7 +2,6 @@ import { useState } from 'react'
 import PropTypes from 'prop-types'
 import { useSelector } from 'react-redux'
 import moment from 'moment'
-import { styled } from '@mui/material/styles'
 import {
     Box,
     Chip,
@@ -11,7 +10,6 @@ import {
     Stack,
     Table,
     TableBody,
-    TableCell,
     TableContainer,
     TableHead,
     TableRow,
@@ -20,31 +18,13 @@ import {
     Typography,
     useTheme
 } from '@mui/material'
-import { tableCellClasses } from '@mui/material/TableCell'
+import { IconUsersGroup } from '@tabler/icons-react'
 import FlowListMenu from '../button/FlowListMenu'
 import { Link } from 'react-router-dom'
 import { useAuth } from '@/hooks/useAuth'
 
 import MoreItemsTooltip from '../tooltip/MoreItemsTooltip'
-
-const StyledTableCell = styled(TableCell)(({ theme }) => ({
-    borderColor: theme.palette.grey[900] + 25,
-
-    [`&.${tableCellClasses.head}`]: {
-        color: theme.palette.grey[900]
-    },
-    [`&.${tableCellClasses.body}`]: {
-        fontSize: 14,
-        height: 64
-    }
-}))
-
-const StyledTableRow = styled(TableRow)(() => ({
-    // hide last border
-    '&:last-child td, &:last-child th': {
-        border: 0
-    }
-}))
+import { StyledTableCell, StyledTableRow } from './TableStyles'
 
 const getLocalStorageKeyName = (name) => `agentflowcanvas_${name}`
 
@@ -99,7 +79,7 @@ export const FlowListTable = ({
     return (
         <>
             <TableContainer sx={{ border: 1, borderColor: theme.palette.grey[900] + 25, borderRadius: 2 }} component={Paper}>
-                <Table sx={{ minWidth: 650 }} size='small' aria-label='a dense table'>
+                <Table sx={{ minWidth: 650 }} aria-label='a dense table'>
                     <TableHead
                         sx={{
                             backgroundColor: customization.isDarkMode ? theme.palette.common.black : theme.palette.grey[100],
@@ -107,27 +87,24 @@ export const FlowListTable = ({
                         }}
                     >
                         <TableRow>
-                            <StyledTableCell component='th' scope='row' style={{ width: '20%' }} key='0'>
+                            <StyledTableCell component='th' scope='row' sx={{ pl: 2.5 }} style={{ width: '25%' }} key='0'>
                                 <TableSortLabel active={orderBy === 'name'} direction={order} onClick={() => handleRequestSort('name')}>
                                     Name
                                 </TableSortLabel>
                             </StyledTableCell>
-                            <StyledTableCell style={{ width: '20%' }} key='1'>
-                                Category
-                            </StyledTableCell>
-                            <StyledTableCell style={{ width: '25%' }} key='2'>
+                            <StyledTableCell style={{ width: '30%' }} key='2'>
                                 Nodes
                             </StyledTableCell>
                             <StyledTableCell style={{ width: '10%' }} key='version'>
                                 Deployed
                             </StyledTableCell>
-                            <StyledTableCell style={{ width: '15%' }} key='3'>
+                            <StyledTableCell style={{ width: '25%' }} key='3'>
                                 <TableSortLabel
                                     active={orderBy === 'updatedDate'}
                                     direction={order}
                                     onClick={() => handleRequestSort('updatedDate')}
                                 >
-                                    Last Modified Date
+                                    Last Modified
                                 </TableSortLabel>
                             </StyledTableCell>
                             {isActionsAvailable && (
@@ -188,43 +165,51 @@ export const FlowListTable = ({
                         ) : (
                             <>
                                 {sortedData.filter(filterFunction).map((row, index) => (
-                                    <StyledTableRow key={index}>
-                                        <StyledTableCell key='0'>
-                                            <Tooltip title={row.templateName || row.name}>
-                                                <Typography
+                                    <StyledTableRow hover key={index}>
+                                        <StyledTableCell scope='row' sx={{ pl: 2.5 }} key='0'>
+                                            <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: 2.5 }}>
+                                                <Box
                                                     sx={{
-                                                        display: '-webkit-box',
-                                                        fontSize: 14,
-                                                        fontWeight: 500,
-                                                        WebkitLineClamp: 2,
-                                                        WebkitBoxOrient: 'vertical',
-                                                        textOverflow: 'ellipsis',
-                                                        overflow: 'hidden'
+                                                        width: 35,
+                                                        height: 35,
+                                                        borderRadius: '50%',
+                                                        backgroundColor: customization.isDarkMode
+                                                            ? theme.palette.common.white
+                                                            : theme.palette.grey[300] + 75,
+                                                        display: 'flex',
+                                                        alignItems: 'center',
+                                                        justifyContent: 'center',
+                                                        flexShrink: 0
                                                     }}
                                                 >
-                                                    <Link to={onFlowClick(row)} style={{ color: '#2196f3', textDecoration: 'none' }}>
-                                                        {row.templateName || row.name}
-                                                    </Link>
-                                                </Typography>
-                                            </Tooltip>
-                                        </StyledTableCell>
-                                        <StyledTableCell key='1'>
-                                            <div
-                                                style={{
-                                                    display: 'flex',
-                                                    flexDirection: 'row',
-                                                    flexWrap: 'wrap',
-                                                    marginTop: 5
-                                                }}
-                                            >
-                                                &nbsp;
-                                                {row.category &&
-                                                    row.category
-                                                        .split(';')
-                                                        .map((tag, index) => (
-                                                            <Chip key={index} label={tag} style={{ marginRight: 5, marginBottom: 5 }} />
-                                                        ))}
-                                            </div>
+                                                    <IconUsersGroup size={20} color={theme.palette.grey[700]} />
+                                                </Box>
+                                                <Tooltip title={row.templateName || row.name}>
+                                                    <Typography
+                                                        sx={{
+                                                            display: '-webkit-box',
+                                                            fontSize: 14,
+                                                            fontWeight: 500,
+                                                            WebkitLineClamp: 2,
+                                                            WebkitBoxOrient: 'vertical',
+                                                            textOverflow: 'ellipsis',
+                                                            overflow: 'hidden'
+                                                        }}
+                                                    >
+                                                        <Box
+                                                            component={Link}
+                                                            to={onFlowClick(row)}
+                                                            sx={{
+                                                                color: theme.palette.primary.main,
+                                                                textDecoration: 'none',
+                                                                '&:hover': { textDecoration: 'underline' }
+                                                            }}
+                                                        >
+                                                            {row.templateName || row.name}
+                                                        </Box>
+                                                    </Typography>
+                                                </Tooltip>
+                                            </Box>
                                         </StyledTableCell>
                                         <StyledTableCell key='2'>
                                             {(images[row.id] || icons[row.id]) && (

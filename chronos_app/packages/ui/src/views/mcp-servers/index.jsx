@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 
 import {
@@ -349,13 +349,13 @@ const MCPServers = () => {
                                                                 <IconPlug size={20} color={theme.palette.grey[700]} />
                                                             </Box>
                                                             <Box
-                                                                component='span'
+                                                                component={Link}
+                                                                to={`/mcp-servers/${server.id}`}
                                                                 sx={{
-                                                                    cursor: 'pointer',
                                                                     color: theme.palette.primary.main,
+                                                                    textDecoration: 'none',
                                                                     '&:hover': { textDecoration: 'underline' }
                                                                 }}
-                                                                onClick={() => navigate(`/mcp-servers/${server.id}`)}
                                                             >
                                                                 {server.name}
                                                             </Box>
