@@ -40,6 +40,16 @@ export interface ToolInvocationAuditInput {
      * `PolicyOutcome` for v1.8+ callsites. v1.8.0 Group A.
      */
     policyOutcome?: PolicyOutcome | null
+    /**
+     * Redacted + size-capped MCP `tools/call` request `arguments` and
+     * response `result`. Both NULL unless `AUDIT_FULL_PAYLOADS=true`.
+     * The gateway runs the raw values through `prepareForAudit` before
+     * passing them here — never store unredacted payloads. Typed as `any`
+     * to match the entity column (TypeORM's `DeepPartial` chokes on
+     * `unknown` JSON-transformer columns).
+     */
+    requestPayload?: any
+    responsePayload?: any
 }
 
 /**
@@ -157,6 +167,8 @@ const exportToolInvocationsCsv = async (filters: ToolInvocationAuditFilters = {}
         'callId',
         'userId',
         'policyOutcome',
+        'requestPayload',
+        'responsePayload',
         'createdDate'
     ] as const
 

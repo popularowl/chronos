@@ -153,6 +153,7 @@ import { addAgentflowsCountUtilTest } from './utils/addAgentflowsCount.util.test
 import { validateKeyExtraUtilTest } from './utils/validateKeyExtra.util.test'
 import { addChatMessageFeedbackUtilTest } from './utils/addChatMessageFeedback.util.test'
 import { interfaceDocumentStoreUtilTest } from './utils/interfaceDocumentStore.util.test'
+import { redactPayloadUtilTest } from './utils/redactPayload.util.test'
 import { errorUtilsTest } from './errors/utils.test'
 import { internalChronosErrorTest } from './errors/internalChronosError.test'
 import { cachePoolTest } from './CachePool.test'
@@ -330,6 +331,7 @@ describe('Utils Test', () => {
     validateKeyExtraUtilTest()
     addChatMessageFeedbackUtilTest()
     interfaceDocumentStoreUtilTest()
+    redactPayloadUtilTest()
 })
 
 describe('Errors Test', () => {
