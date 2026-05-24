@@ -1,33 +1,286 @@
+import { forwardRef, useCallback, useEffect, useState } from 'react'
 import PropTypes from 'prop-types'
-import { useNavigate } from 'react-router-dom'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import moment from 'moment'
 
-import { Box, Button, Chip, Divider, Drawer, IconButton, Stack, Tooltip, Typography } from '@mui/material'
+import { Box, Button, Chip, Drawer, Tooltip, Typography } from '@mui/material'
+import { alpha, styled, useTheme } from '@mui/material/styles'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import DragHandleIcon from '@mui/icons-material/DragHandle'
 import ErrorIcon from '@mui/icons-material/Error'
-import { IconCopy, IconExternalLink, IconX } from '@tabler/icons-react'
+import { RichTreeView } from '@mui/x-tree-view/RichTreeView'
+import { useTreeItem2 } from '@mui/x-tree-view/useTreeItem2'
+import {
+    TreeItem2Checkbox,
+    TreeItem2Content,
+    TreeItem2GroupTransition,
+    TreeItem2IconContainer,
+    TreeItem2Label,
+    TreeItem2Root
+} from '@mui/x-tree-view/TreeItem2'
+import { TreeItem2Icon } from '@mui/x-tree-view/TreeItem2Icon'
+import { TreeItem2Provider } from '@mui/x-tree-view/TreeItem2Provider'
+import { IconAlertTriangle, IconCopy, IconExternalLink, IconInbox, IconSend, IconShieldCheck, IconTool, IconX } from '@tabler/icons-react'
 
 import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction } from '@/store/actions'
-import { PolicyOutcomeDetail } from './PolicyOutcome'
+import { AuditNodeDetails } from './AuditNodeDetails'
 
-const DRAWER_WIDTH = 560
+const MIN_DRAWER_WIDTH = 400
+const DEFAULT_DRAWER_WIDTH = window.innerWidth - 400
+const MAX_DRAWER_WIDTH = window.innerWidth
+
+const KIND_ICON = {
+    invocation: IconTool,
+    request: IconSend,
+    response: IconInbox,
+    policy: IconShieldCheck,
+    error: IconAlertTriangle
+}
+
+// Tree-kind accent color resolved from the MUI theme palette so the tree
+// shares the same color language as the executions drawer and status icons.
+// Kept inline (not extracted to a shared util) since the two audit-drawer
+// files are the only consumers.
+const getKindColor = (theme, kind) => {
+    switch (kind) {
+        case 'request':
+            return theme.palette.warning.main
+        case 'response':
+            return theme.palette.info.main
+        case 'policy':
+            return theme.palette.success.dark
+        case 'error':
+            return theme.palette.error.main
+        case 'invocation':
+        default:
+            return theme.palette.primary.main
+    }
+}
+
+const getStatusIcon = (status) => {
+    switch (status) {
+        case 'FINISHED':
+            return CheckCircleIcon
+        case 'ERROR':
+            return ErrorIcon
+        default:
+            return null
+    }
+}
+
+const getStatusColor = (status) => {
+    switch (status) {
+        case 'FINISHED':
+            return 'success.dark'
+        case 'ERROR':
+            return 'error.main'
+        default:
+            return undefined
+    }
+}
+
+const StyledTreeItemRoot = styled(TreeItem2Root)(({ theme }) => ({
+    color: theme.palette.grey[400]
+}))
+
+const CustomTreeItemContent = styled(TreeItem2Content)(({ theme }) => ({
+    flexDirection: 'row-reverse',
+    borderRadius: theme.spacing(0.7),
+    marginBottom: theme.spacing(0.5),
+    marginTop: theme.spacing(0.5),
+    padding: theme.spacing(0.5),
+    paddingRight: theme.spacing(1),
+    fontWeight: 500,
+    '&:hover': {
+        backgroundColor: alpha(theme.palette.primary.main, 0.1),
+        color: 'white',
+        ...theme.applyStyles('light', { color: theme.palette.primary.main })
+    },
+    [`&.Mui-focused, &.Mui-selected, &.Mui-selected.Mui-focused`]: {
+        backgroundColor: theme.palette.primary.dark,
+        color: theme.palette.primary.contrastText,
+        ...theme.applyStyles('light', { backgroundColor: theme.palette.primary.main })
+    }
+}))
+
+const StyledTreeItemLabelText = styled(Typography)(({ theme }) => ({
+    color: theme.palette.text.primary
+}))
+
+const CustomLabel = ({ kind, statusIcon: StatusIcon, statusColor, children, ...other }) => {
+    const theme = useTheme()
+    const KindIcon = KIND_ICON[kind] || IconTool
+    const kindColor = getKindColor(theme, kind)
+    return (
+        <TreeItem2Label {...other} sx={{ display: 'flex', alignItems: 'center' }}>
+            <Box sx={{ mr: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <KindIcon size={18} color={kindColor} />
+            </Box>
+            <StyledTreeItemLabelText sx={{ flex: 1 }}>{children}</StyledTreeItemLabelText>
+            {StatusIcon && <Box component={StatusIcon} sx={{ ml: 1, fontSize: '1.2rem', color: statusColor }} />}
+        </TreeItem2Label>
+    )
+}
+
+CustomLabel.propTypes = {
+    kind: PropTypes.string,
+    statusIcon: PropTypes.elementType,
+    statusColor: PropTypes.string,
+    children: PropTypes.node
+}
+
+const CustomTreeItem = forwardRef(function CustomTreeItem(props, ref) {
+    const { id, itemId, label, disabled, children, ...other } = props
+    const theme = useTheme()
+    const {
+        getRootProps,
+        getContentProps,
+        getIconContainerProps,
+        getCheckboxProps,
+        getLabelProps,
+        getGroupTransitionProps,
+        status,
+        publicAPI
+    } = useTreeItem2({ id, itemId, children, label, disabled, rootRef: ref })
+
+    const item = publicAPI.getItem(itemId)
+    const statusIcon = getStatusIcon(item?.status)
+    const statusColor = getStatusColor(item?.status)
+    const connectorColor = getKindColor(theme, item?.data?.kind)
+
+    return (
+        <TreeItem2Provider itemId={itemId}>
+            <StyledTreeItemRoot {...getRootProps(other)}>
+                <CustomTreeItemContent {...getContentProps()}>
+                    <TreeItem2IconContainer {...getIconContainerProps()}>
+                        <TreeItem2Icon status={status} />
+                    </TreeItem2IconContainer>
+                    <TreeItem2Checkbox {...getCheckboxProps()} />
+                    <CustomLabel
+                        {...getLabelProps({
+                            kind: item?.data?.kind,
+                            statusIcon,
+                            statusColor
+                        })}
+                    />
+                </CustomTreeItemContent>
+                {children && (
+                    <TreeItem2GroupTransition
+                        {...getGroupTransitionProps()}
+                        style={{
+                            borderLeft: `1px dashed ${connectorColor}`,
+                            marginLeft: '13px',
+                            paddingLeft: '8px'
+                        }}
+                    />
+                )}
+            </StyledTreeItemRoot>
+        </TreeItem2Provider>
+    )
+})
+
+CustomTreeItem.propTypes = {
+    id: PropTypes.string,
+    itemId: PropTypes.string,
+    label: PropTypes.string,
+    disabled: PropTypes.bool,
+    children: PropTypes.node
+}
+
+const buildAuditTree = (row) => {
+    if (!row) return []
+    const invocationStatus = row.success ? 'FINISHED' : 'ERROR'
+    const children = []
+    if (row.requestPayload != null) {
+        children.push({
+            id: 'request',
+            label: 'Request',
+            status: 'FINISHED',
+            data: { kind: 'request', raw: row.requestPayload },
+            children: []
+        })
+    }
+    if (row.responsePayload != null) {
+        children.push({
+            id: 'response',
+            label: 'Response',
+            status: row.success ? 'FINISHED' : 'ERROR',
+            data: { kind: 'response', raw: row.responsePayload },
+            children: []
+        })
+    }
+    children.push({
+        id: 'policy',
+        label: 'Policy',
+        status: undefined,
+        data: { kind: 'policy', raw: { policyOutcome: row.policyOutcome ?? null } },
+        children: []
+    })
+    if (!row.success && row.errorMessage) {
+        children.push({
+            id: 'error',
+            label: 'Error',
+            status: 'ERROR',
+            data: { kind: 'error', raw: { errorMessage: row.errorMessage } },
+            children: []
+        })
+    }
+    return [
+        {
+            id: 'invocation',
+            label: row.namespacedTool || 'Tool invocation',
+            status: invocationStatus,
+            data: { kind: 'invocation', raw: row },
+            children
+        }
+    ]
+}
+
+const collectAllIds = (nodes) => {
+    const ids = []
+    const walk = (list) => {
+        list.forEach((node) => {
+            ids.push(node.id)
+            if (node.children?.length) walk(node.children)
+        })
+    }
+    walk(nodes)
+    return ids
+}
+
+const findNode = (nodes, id) => {
+    for (const node of nodes) {
+        if (node.id === id) return node
+        if (node.children) {
+            const found = findNode(node.children, id)
+            if (found) return found
+        }
+    }
+    return null
+}
 
 /**
  * Sliding drawer detail view for a single `tool_invocation_audit` row.
- * Mirrors the Agent Executions drawer pattern — atomic events (one execution,
- * one audit row) get a right-anchored peek surface; aggregating entities
- * (agents, MCP servers) keep their full-page detail routes. Width is static
- * (audit content is concise — ~10 fields) rather than the resizable shape
- * the heavier Executions drawer needs.
- *
- * Agent and MCP server rows surface as outlined "Go to" chips matching the
- * Agent Executions detail pattern (window.open into a new tab so the drawer
- * stays in place for ongoing inspection).
+ * Mirrors the Agent Executions drawer for visual + interaction parity: resizable
+ * width, two-pane tree + detail body, header chip toolbar with timestamp row.
+ * Audit rows are atomic events with no nested execution, so the tree is
+ * synthesised from facets of the row (invocation / policy / [error]).
  */
 const AuditRowDetails = ({ open, row, onClose }) => {
     const dispatch = useDispatch()
-    const navigate = useNavigate()
+    const customization = useSelector((state) => state.customization)
+    const [drawerWidth, setDrawerWidth] = useState(Math.min(DEFAULT_DRAWER_WIDTH, MAX_DRAWER_WIDTH))
+    const [tree, setTree] = useState([])
+    const [expandedItems, setExpandedItems] = useState([])
+    const [selectedItem, setSelectedItem] = useState(null)
+    const [copied, setCopied] = useState(false)
+
+    useEffect(() => {
+        const newTree = buildAuditTree(row)
+        setTree(newTree)
+        setExpandedItems(collectAllIds(newTree))
+        setSelectedItem(newTree[0] || null)
+    }, [row])
 
     const showCopied = (label) =>
         dispatch(
@@ -45,17 +298,70 @@ const AuditRowDetails = ({ open, row, onClose }) => {
             })
         )
 
-    const copy = (value, label) => {
-        if (!value) return
-        navigator.clipboard.writeText(value)
-        showCopied(label)
+    const copyAuditId = () => {
+        if (!row?.id) return
+        navigator.clipboard.writeText(row.id)
+        setCopied(true)
+        showCopied('Audit ID')
+        setTimeout(() => setCopied(false), 2000)
     }
 
-    const goToRelatedByCallId = () => {
-        if (!row?.callId) return
-        onClose?.()
-        navigate(`/audit-log?callId=${encodeURIComponent(row.callId)}`)
+    const handleMouseMove = useCallback((e) => {
+        const newWidth = document.body.offsetWidth - e.clientX
+        if (newWidth >= MIN_DRAWER_WIDTH && newWidth <= MAX_DRAWER_WIDTH) {
+            setDrawerWidth(newWidth)
+        }
+    }, [])
+
+    const handleMouseUp = useCallback(() => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+    }, [handleMouseMove])
+
+    const handleMouseDown = useCallback(() => {
+        document.addEventListener('mousemove', handleMouseMove)
+        document.addEventListener('mouseup', handleMouseUp)
+    }, [handleMouseMove, handleMouseUp])
+
+    const handleNodeSelect = (_event, itemId) => {
+        const node = findNode(tree, itemId)
+        if (node) setSelectedItem(node)
     }
+
+    const resizeHandle = (
+        <button
+            aria-label='Resize drawer'
+            style={{
+                position: 'absolute',
+                left: 0,
+                top: 0,
+                bottom: 0,
+                width: '8px',
+                cursor: 'ew-resize',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: 0,
+                border: 'none',
+                background: 'transparent'
+            }}
+            onMouseDown={handleMouseDown}
+            onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    handleMouseDown()
+                }
+            }}
+        >
+            <DragHandleIcon
+                sx={{
+                    transform: 'rotate(90deg)',
+                    fontSize: '20px',
+                    color: customization.isDarkMode ? 'white' : 'action.disabled'
+                }}
+            />
+        </button>
+    )
 
     return (
         <Drawer
@@ -63,188 +369,92 @@ const AuditRowDetails = ({ open, row, onClose }) => {
             anchor='right'
             open={open}
             onClose={onClose}
-            sx={{ width: DRAWER_WIDTH, flexShrink: 0, '& .MuiDrawer-paper': { width: DRAWER_WIDTH, height: '100%' } }}
+            sx={{
+                width: drawerWidth,
+                flexShrink: 0,
+                '& .MuiDrawer-paper': { width: drawerWidth, height: '100%' }
+            }}
         >
+            {resizeHandle}
             {row && (
-                <Stack sx={{ height: '100%' }}>
-                    <Box sx={{ p: 2.5, pb: 2 }}>
-                        <Stack direction='row' alignItems='center' spacing={1}>
-                            {row.success ? (
-                                <Box component={CheckCircleIcon} sx={{ color: 'success.dark', fontSize: 28 }} />
-                            ) : (
-                                <Box component={ErrorIcon} sx={{ color: 'error.main', fontSize: 28 }} />
-                            )}
-                            <Typography variant='h4' sx={{ flexGrow: 1, fontFamily: 'monospace' }}>
-                                {row.namespacedTool}
-                            </Typography>
-                            <Tooltip title='Close'>
-                                <IconButton onClick={onClose} size='small'>
-                                    <IconX size={18} />
-                                </IconButton>
-                            </Tooltip>
-                        </Stack>
-                        <Stack direction='row' spacing={2} sx={{ mt: 1, color: 'text.secondary' }}>
-                            <Typography variant='body2'>{row.success ? 'Success' : 'Failure'}</Typography>
-                            <Typography variant='body2'>·</Typography>
-                            <Typography variant='body2'>{row.durationMs}ms</Typography>
-                            <Typography variant='body2'>·</Typography>
-                            <Typography variant='body2'>{moment(row.createdDate).format('MMM D, YYYY h:mm A')}</Typography>
-                        </Stack>
+                <Box sx={{ display: 'flex', height: '100%', flexDirection: 'row' }}>
+                    <Box
+                        sx={{
+                            flex: '1 1 35%',
+                            padding: 2,
+                            borderRight: 1,
+                            borderColor: 'divider',
+                            overflow: 'auto'
+                        }}
+                    >
+                        <Box
+                            sx={{
+                                pb: 1,
+                                mb: 2,
+                                backgroundColor: (theme) => theme.palette.background.paper,
+                                borderBottom: 1,
+                                borderColor: 'divider'
+                            }}
+                        >
+                            <Box>
+                                {row.agentId && (
+                                    <Chip
+                                        sx={{ pl: 1 }}
+                                        icon={<IconExternalLink size={15} />}
+                                        variant='outlined'
+                                        label={row.agentSlug || 'Go to Agent'}
+                                        className='button'
+                                        onClick={() => window.open(`/agents/${row.agentId}`, '_blank')}
+                                    />
+                                )}
+                                {row.mcpServerId && (
+                                    <Chip
+                                        sx={{ ml: 1, pl: 1 }}
+                                        icon={<IconExternalLink size={15} />}
+                                        variant='outlined'
+                                        label={row.mcpServerSlug || 'Go to MCP Server'}
+                                        className='button'
+                                        onClick={() => window.open(`/mcp-servers/${row.mcpServerId}`, '_blank')}
+                                    />
+                                )}
+                                {row.id && (
+                                    <Tooltip title={`Audit ID: ${row.id}`} placement='top'>
+                                        <Chip
+                                            sx={{ ml: 1, pl: 1 }}
+                                            icon={<IconCopy size={15} />}
+                                            variant='outlined'
+                                            label={copied ? 'Copied!' : 'Copy ID'}
+                                            className='button'
+                                            onClick={copyAuditId}
+                                        />
+                                    </Tooltip>
+                                )}
+
+                                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 1 }}>
+                                    <Typography sx={{ flex: 1 }} color='text.primary'>
+                                        {row.createdDate ? moment(row.createdDate).format('MMM D, YYYY h:mm A') : 'N/A'}
+                                    </Typography>
+                                </Box>
+                            </Box>
+                        </Box>
+
+                        <RichTreeView
+                            expandedItems={expandedItems}
+                            onExpandedItemsChange={(_event, ids) => setExpandedItems(ids)}
+                            selectedItems={selectedItem ? [selectedItem.id] : []}
+                            onSelectedItemsChange={handleNodeSelect}
+                            items={tree}
+                            slots={{ item: CustomTreeItem }}
+                        />
                     </Box>
 
-                    <Divider />
-
-                    <Box sx={{ flexGrow: 1, overflowY: 'auto', p: 2.5 }}>
-                        <Stack spacing={3}>
-                            {!row.success && row.errorMessage && (
-                                <Box>
-                                    <Typography variant='overline'>Error</Typography>
-                                    <Box
-                                        sx={{
-                                            mt: 0.5,
-                                            p: 1.5,
-                                            borderRadius: 1,
-                                            backgroundColor: 'error.lighter',
-                                            color: 'error.dark',
-                                            fontSize: '0.85rem',
-                                            fontFamily: 'monospace',
-                                            whiteSpace: 'pre-wrap',
-                                            wordBreak: 'break-word'
-                                        }}
-                                    >
-                                        {row.errorMessage}
-                                    </Box>
-                                </Box>
-                            )}
-
-                            <Box>
-                                <Typography variant='overline'>Agent</Typography>
-                                <Box sx={{ mt: 0.5 }}>
-                                    {row.agentId ? (
-                                        <Chip
-                                            sx={{ pl: 1 }}
-                                            icon={<IconExternalLink size={15} />}
-                                            variant='outlined'
-                                            label={row.agentSlug || 'Go to Agent'}
-                                            className='button'
-                                            onClick={() => window.open(`/agents/${row.agentId}`, '_blank')}
-                                        />
-                                    ) : (
-                                        <Typography variant='body2' sx={{ color: 'text.secondary' }}>
-                                            {row.agentSlug || '—'}
-                                        </Typography>
-                                    )}
-                                </Box>
-                                <IdRow value={row.agentId} label='Agent ID' onCopy={() => copy(row.agentId, 'Agent ID')} />
-                            </Box>
-
-                            <Box>
-                                <Typography variant='overline'>MCP Server</Typography>
-                                <Box sx={{ mt: 0.5 }}>
-                                    {row.mcpServerId ? (
-                                        <Chip
-                                            sx={{ pl: 1 }}
-                                            icon={<IconExternalLink size={15} />}
-                                            variant='outlined'
-                                            label={row.mcpServerSlug || 'Go to MCP Server'}
-                                            className='button'
-                                            onClick={() => window.open(`/mcp-servers/${row.mcpServerId}`, '_blank')}
-                                        />
-                                    ) : (
-                                        <Typography variant='body2' sx={{ color: 'text.secondary' }}>
-                                            {row.mcpServerSlug || '—'}
-                                        </Typography>
-                                    )}
-                                </Box>
-                                <IdRow
-                                    value={row.mcpServerId}
-                                    label='MCP Server ID'
-                                    onCopy={() => copy(row.mcpServerId, 'MCP Server ID')}
-                                />
-                            </Box>
-
-                            <Box>
-                                <Typography variant='overline'>Tool</Typography>
-                                <Box sx={{ mt: 0.5 }}>
-                                    <Chip sx={{ pl: 1, fontFamily: 'monospace' }} variant='outlined' label={row.namespacedTool || '—'} />
-                                </Box>
-                                <Typography variant='body2' sx={{ mt: 0.5, color: 'text.secondary' }}>
-                                    Bare:{' '}
-                                    <Box component='span' sx={{ fontFamily: 'monospace' }}>
-                                        {row.toolName || '—'}
-                                    </Box>
-                                </Typography>
-                            </Box>
-
-                            <Box>
-                                <Typography variant='overline'>Policy</Typography>
-                                <Box sx={{ mt: 0.5 }}>
-                                    <PolicyOutcomeDetail value={row.policyOutcome} />
-                                </Box>
-                            </Box>
-
-                            <Box>
-                                <Typography variant='overline'>Call ID</Typography>
-                                <Box sx={{ mt: 0.5 }}>
-                                    {row.callId ? (
-                                        <Chip
-                                            sx={{ pl: 1, fontFamily: 'monospace' }}
-                                            icon={<IconExternalLink size={15} />}
-                                            variant='outlined'
-                                            label={row.callId}
-                                            className='button'
-                                            onClick={goToRelatedByCallId}
-                                        />
-                                    ) : (
-                                        <Typography variant='body2' sx={{ color: 'text.secondary' }}>
-                                            —
-                                        </Typography>
-                                    )}
-                                </Box>
-                            </Box>
-                        </Stack>
+                    <Box sx={{ flex: '1 1 65%', padding: 2, overflow: 'auto' }}>
+                        <AuditNodeDetails node={selectedItem} row={row} />
                     </Box>
-                </Stack>
+                </Box>
             )}
         </Drawer>
     )
-}
-
-/**
- * Single-line ID row with a copy-to-clipboard button. Used for raw UUID
- * fields that the Chronos user occasionally needs to paste into a CLI / SQL
- * console but doesn't want shouting at them in the layout.
- */
-const IdRow = ({ value, label, onCopy }) => {
-    if (!value) return null
-    return (
-        <Stack direction='row' spacing={1} alignItems='center' sx={{ mt: 0.5, color: 'text.secondary' }}>
-            <Box
-                component='span'
-                sx={{
-                    flexGrow: 1,
-                    fontFamily: 'monospace',
-                    fontSize: '0.78rem',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap'
-                }}
-            >
-                {value}
-            </Box>
-            <Tooltip title={`Copy ${label}`}>
-                <IconButton size='small' onClick={onCopy}>
-                    <IconCopy size={14} />
-                </IconButton>
-            </Tooltip>
-        </Stack>
-    )
-}
-
-IdRow.propTypes = {
-    value: PropTypes.string,
-    label: PropTypes.string,
-    onCopy: PropTypes.func
 }
 
 AuditRowDetails.propTypes = {
@@ -263,6 +473,8 @@ AuditRowDetails.propTypes = {
         callId: PropTypes.string,
         userId: PropTypes.string,
         policyOutcome: PropTypes.oneOf([null, undefined, 'PASSED', 'RETRIED', 'RATE_LIMITED', 'CIRCUIT_OPEN']),
+        requestPayload: PropTypes.any,
+        responsePayload: PropTypes.any,
         createdDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)])
     }),
     onClose: PropTypes.func

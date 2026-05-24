@@ -297,8 +297,8 @@ const MCPServerDetail = () => {
         <>
             <MainCard>
                 <Stack flexDirection='column' sx={{ gap: 3 }}>
-                    {/* Header bar — back, identity title, page-level actions */}
-                    <Stack direction='row' alignItems='center' spacing={1} flexWrap='wrap' useFlexGap>
+                    {/* Header bar — back, identity title + description, page-level actions */}
+                    <Stack direction='row' alignItems='center' spacing={1} flexWrap='wrap' useFlexGap sx={{ pt: 2 }}>
                         <Tooltip title='Back to MCP servers'>
                             <IconButton onClick={() => navigate('/mcp-servers')}>
                                 <IconArrowLeft size={20} />
@@ -317,9 +317,14 @@ const MCPServerDetail = () => {
                         >
                             <IconPlug size={20} color={theme.palette.grey[700]} />
                         </Box>
-                        <Typography variant='h3' sx={{ flexGrow: 1 }}>
-                            MCP Server: {server.name}
-                        </Typography>
+                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Typography variant='h3'>MCP Server: {server.name}</Typography>
+                            {server.description && (
+                                <Typography variant='body2' sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', mt: 0.5 }}>
+                                    {server.description}
+                                </Typography>
+                            )}
+                        </Box>
                     </Stack>
 
                     {/* Identity — one-row apikey-style table */}
@@ -498,16 +503,6 @@ const MCPServerDetail = () => {
                         <Alert severity='error' variant='outlined' sx={{ alignItems: 'center' }}>
                             <strong>Last health error:</strong> {server.lastHealthError}
                         </Alert>
-                    )}
-
-                    {/* Description — only when set */}
-                    {server.description && (
-                        <Box>
-                            <Typography variant='overline'>Description</Typography>
-                            <Typography variant='body2' sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
-                                {server.description}
-                            </Typography>
-                        </Box>
                     )}
                 </Stack>
             </MainCard>

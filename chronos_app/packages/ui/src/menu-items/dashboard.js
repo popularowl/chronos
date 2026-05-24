@@ -97,22 +97,85 @@ const dashboard = {
                     permission: 'mcp-servers:view'
                 },
                 {
-                    id: 'audit-log',
-                    title: 'Audit Log',
-                    type: 'item',
-                    url: '/audit-log',
-                    icon: icons.IconHistory,
-                    breadcrumbs: true,
-                    permission: 'mcp-servers:view'
-                },
-                {
                     id: 'agentflows',
                     title: 'Agentflows',
-                    type: 'item',
-                    url: '/agentflows',
+                    type: 'collapse',
                     icon: icons.IconUsersGroup,
-                    breadcrumbs: true,
-                    permission: 'agentflows:view'
+                    children: [
+                        {
+                            id: 'agentflows-all',
+                            title: 'All Agentflows',
+                            type: 'item',
+                            url: '/agentflows',
+                            icon: icons.IconList,
+                            breadcrumbs: true,
+                            permission: 'agentflows:view'
+                        },
+                        {
+                            id: 'skills',
+                            title: 'Skills',
+                            type: 'item',
+                            url: '/skills',
+                            icon: icons.IconSparkles,
+                            breadcrumbs: true,
+                            permission: 'skills:view'
+                        },
+                        {
+                            id: 'tools',
+                            title: 'Tools',
+                            type: 'item',
+                            url: '/tools',
+                            icon: icons.IconTool,
+                            breadcrumbs: true,
+                            permission: 'tools:view'
+                        },
+                        {
+                            id: 'templates',
+                            title: 'Templates',
+                            type: 'item',
+                            url: '/templates',
+                            icon: icons.IconTemplate,
+                            breadcrumbs: true,
+                            permission: 'templates:marketplace,templates:custom'
+                        },
+                        {
+                            id: 'variables',
+                            title: 'Variables',
+                            type: 'item',
+                            url: '/variables',
+                            icon: icons.IconVariable,
+                            breadcrumbs: true,
+                            permission: 'variables:view'
+                        },
+                        {
+                            id: 'document-stores',
+                            title: 'Document Stores',
+                            type: 'item',
+                            url: '/document-stores',
+                            icon: icons.IconFiles,
+                            breadcrumbs: true,
+                            permission: 'documentStores:view'
+                        },
+                        {
+                            id: 'schedules',
+                            title: 'Schedules',
+                            type: 'item',
+                            url: '/schedules',
+                            icon: icons.IconCalendarTime,
+                            breadcrumbs: true,
+                            permission: 'schedules:view'
+                        },
+                        {
+                            id: 'webhooks',
+                            title: 'Webhooks',
+                            type: 'item',
+                            url: '/webhooks',
+                            icon: icons.IconWebhook,
+                            breadcrumbs: true,
+                            permission: 'webhooks:view',
+                            display: 'feat:webhooks'
+                        }
+                    ]
                 },
                 {
                     id: 'executions',
@@ -124,77 +187,77 @@ const dashboard = {
                     permission: 'executions:view'
                 },
                 {
-                    id: 'schedules',
-                    title: 'Schedules',
+                    id: 'audit-log',
+                    title: 'Audit Log',
                     type: 'item',
-                    url: '/schedules',
-                    icon: icons.IconCalendarTime,
+                    url: '/audit-log',
+                    icon: icons.IconHistory,
                     breadcrumbs: true,
-                    permission: 'schedules:view'
+                    permission: 'mcp-servers:view'
                 },
                 {
-                    id: 'webhooks',
-                    title: 'Webhooks',
-                    type: 'item',
-                    url: '/webhooks',
-                    icon: icons.IconWebhook,
-                    breadcrumbs: true,
-                    permission: 'webhooks:view',
-                    display: 'feat:webhooks'
+                    id: 'management',
+                    title: 'Management',
+                    type: 'collapse',
+                    icon: icons.IconStack2,
+                    children: [
+                        {
+                            id: 'apikey',
+                            title: 'API Credentials',
+                            type: 'item',
+                            url: '/apikey',
+                            icon: icons.IconKey,
+                            breadcrumbs: true,
+                            permission: 'apikeys:view'
+                        },
+                        {
+                            id: 'credentials',
+                            title: 'Credentials',
+                            type: 'item',
+                            url: '/credentials',
+                            icon: icons.IconLock,
+                            breadcrumbs: true,
+                            permission: 'credentials:view'
+                        },
+                        {
+                            id: 'cost-dashboard',
+                            title: 'Cost Dashboard',
+                            type: 'item',
+                            url: '/dashboard',
+                            icon: icons.IconChartBar,
+                            breadcrumbs: true,
+                            permission: 'dashboard:view',
+                            display: 'feat:dashboard'
+                        },
+                        {
+                            id: 'users',
+                            title: 'Users',
+                            type: 'item',
+                            url: '/users',
+                            icon: icons.IconUsers,
+                            breadcrumbs: true,
+                            permission: 'users:manage'
+                        },
+                        {
+                            id: 'logs',
+                            title: 'Logs',
+                            type: 'item',
+                            url: '/logs',
+                            icon: icons.IconList,
+                            breadcrumbs: true,
+                            display: 'feat:logs',
+                            permission: 'logs:view'
+                        }
+                    ]
                 },
                 {
-                    id: 'templates',
-                    title: 'Templates',
+                    id: 'account',
+                    title: 'Account Settings',
                     type: 'item',
-                    url: '/templates',
-                    icon: icons.IconTemplate,
+                    url: '/account',
+                    icon: icons.IconSettings,
                     breadcrumbs: true,
-                    permission: 'templates:marketplace,templates:custom'
-                },
-                {
-                    id: 'skills',
-                    title: 'Skills',
-                    type: 'item',
-                    url: '/skills',
-                    icon: icons.IconSparkles,
-                    breadcrumbs: true,
-                    permission: 'skills:view'
-                },
-                {
-                    id: 'tools',
-                    title: 'Tools',
-                    type: 'item',
-                    url: '/tools',
-                    icon: icons.IconTool,
-                    breadcrumbs: true,
-                    permission: 'tools:view'
-                },
-                {
-                    id: 'credentials',
-                    title: 'Credentials',
-                    type: 'item',
-                    url: '/credentials',
-                    icon: icons.IconLock,
-                    breadcrumbs: true,
-                    permission: 'credentials:view'
-                },
-                {
-                    id: 'variables',
-                    title: 'Variables',
-                    type: 'item',
-                    url: '/variables',
-                    icon: icons.IconVariable,
-                    breadcrumbs: true,
-                    permission: 'variables:view'
-                },
-                {
-                    id: 'document-stores',
-                    title: 'Document Stores',
-                    type: 'item',
-                    url: '/document-stores',
-                    icon: icons.IconFiles,
-                    breadcrumbs: true,
-                    permission: 'documentStores:view'
+                    display: 'feat:account'
                 }
             ]
         },
@@ -232,83 +295,6 @@ const dashboard = {
                     breadcrumbs: true,
                     display: 'feat:evaluations',
                     permission: 'evaluations:view'
-                }
-            ]
-        },
-        {
-            id: 'mgmt',
-            title: 'Management',
-            type: 'group',
-            children: [
-                {
-                    id: 'apikey',
-                    title: 'API Credentials',
-                    type: 'item',
-                    url: '/apikey',
-                    icon: icons.IconKey,
-                    breadcrumbs: true,
-                    permission: 'apikeys:view'
-                },
-                {
-                    id: 'cost-dashboard',
-                    title: 'Cost Dashboard',
-                    type: 'item',
-                    url: '/dashboard',
-                    icon: icons.IconChartBar,
-                    breadcrumbs: true,
-                    permission: 'dashboard:view',
-                    display: 'feat:dashboard'
-                }
-            ]
-        },
-        {
-            id: 'administration',
-            title: 'Administration',
-            type: 'group',
-            children: [
-                {
-                    id: 'users',
-                    title: 'Users',
-                    type: 'item',
-                    url: '/users',
-                    icon: icons.IconUsers,
-                    breadcrumbs: true,
-                    permission: 'users:manage'
-                }
-            ]
-        },
-        {
-            id: 'others',
-            title: 'Others',
-            type: 'group',
-            children: [
-                {
-                    id: 'logs',
-                    title: 'Logs',
-                    type: 'item',
-                    url: '/logs',
-                    icon: icons.IconList,
-                    breadcrumbs: true,
-                    display: 'feat:logs',
-                    permission: 'logs:view'
-                },
-                // {
-                //     id: 'files',
-                //     title: 'Files',
-                //     type: 'item',
-                //     url: '/files',
-                //     icon: icons.IconFileDatabase,
-                //     breadcrumbs: true,
-                //     display: 'feat:files',
-                // },
-                {
-                    id: 'account',
-                    title: 'Account Settings',
-                    type: 'item',
-                    url: '/account',
-                    icon: icons.IconSettings,
-                    breadcrumbs: true,
-                    display: 'feat:account'
                 }
             ]
         }

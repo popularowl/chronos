@@ -243,12 +243,7 @@ const Agents = () => {
         return sortAgents(raw.filter(filterAgents))
     })()
 
-    const agentDetailHref = (agent) => {
-        if (agent.runtimeType === 'BUILT_IN' && agent.builtinAgentflowId) {
-            return `/canvas/${agent.builtinAgentflowId}`
-        }
-        return `/agents/${agent.id}`
-    }
+    const agentDetailHref = (agent) => `/agents/${agent.id}`
 
     const goToDetail = (agent) => {
         navigate(agentDetailHref(agent))

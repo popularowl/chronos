@@ -13,6 +13,7 @@ import { createModuleLogger } from '../../utils/logger'
 
 const logger = createModuleLogger('MCPGateway')
 import auditService from '../audit'
+import { prepareForAudit } from '../../utils/redactPayload.util'
 import httpAgentRuntime from '../agent-runtime-http'
 import { PolicyState, resolvePolicies, runWithPolicy } from './policy'
 import {
@@ -28,6 +29,20 @@ const DEFAULT_IDLE_TIMEOUT_MS = 300000
 const REAPER_INTERVAL_MS = 60000
 const DEFAULT_TOOL_CALL_TIMEOUT_MS = 30000
 const DEFAULT_HEALTH_TIMEOUT_MS = 5000
+
+/**
+ * Opt-in capture of MCP `tools/call` request `arguments` and response
+ * `result` bodies into `tool_invocation_audit.requestPayload` /
+ * `responsePayload`. Defaults to OFF — payload bodies can contain secrets
+ * and PII; enabling this turns the audit table into the highest-value
+ * breach target in the system. Always confirm a redaction + retention
+ * plan exists before flipping this on in production. See
+ * `docs/environment-variables.md` and `utils/redactPayload.util.ts`.
+ */
+const AUDIT_FULL_PAYLOADS = process.env.AUDIT_FULL_PAYLOADS === 'true'
+if (AUDIT_FULL_PAYLOADS) {
+    logger.warn('AUDIT_FULL_PAYLOADS=true: capturing MCP request/response bodies into tool_invocation_audit (redacted + size-capped)')
+}
 
 interface PoolEntry {
     client: Client
@@ -238,7 +253,9 @@ export class MCPGateway {
                 errorMessage: null,
                 callId: callContext.callId ?? null,
                 userId: agent.userId ?? null,
-                policyOutcome: outcome
+                policyOutcome: outcome,
+                requestPayload: AUDIT_FULL_PAYLOADS ? prepareForAudit(params ?? {}) : null,
+                responsePayload: AUDIT_FULL_PAYLOADS ? prepareForAudit(result) : null
             })
             return result
         } catch (error) {
@@ -272,7 +289,12 @@ export class MCPGateway {
                 errorMessage,
                 callId: callContext.callId ?? null,
                 userId: agent.userId ?? null,
-                policyOutcome
+                policyOutcome,
+                // Capture the attempted request on failure too — useful for
+                // forensics ("what was the agent trying to do?"). No response
+                // body exists on the error path; `errorMessage` carries it.
+                requestPayload: AUDIT_FULL_PAYLOADS ? prepareForAudit(params ?? {}) : null,
+                responsePayload: null
             })
             // Preserve policy-rejection status codes so the controller
             // returns the right HTTP shape (429 / 503) instead of 502.

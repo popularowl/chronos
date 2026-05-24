@@ -27,20 +27,25 @@ import {
 import {
     IconArrowLeft,
     IconCopy,
-    IconEdit,
+    IconExternalLink,
     IconEye,
     IconEyeOff,
     IconRefresh,
     IconRobot,
     IconSend,
-    IconTrash,
     IconX
 } from '@tabler/icons-react'
+import Menu from '@mui/material/Menu'
+import { styled, alpha } from '@mui/material/styles'
+import EditIcon from '@mui/icons-material/Edit'
+import FileDeleteIcon from '@mui/icons-material/Delete'
+import OpenInNewIcon from '@mui/icons-material/OpenInNew'
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
 
 import MainCard from '@/ui-component/cards/MainCard'
 import ErrorBoundary from '@/ErrorBoundary'
 import { StyledButton } from '@/ui-component/button/StyledButton'
-import { StyledPermissionButton } from '@/ui-component/button/RBACButtons'
+import { PermissionMenuItem } from '@/ui-component/button/RBACButtons'
 import { StyledTableCell, StyledTableRow } from '@/ui-component/table/TableStyles'
 import ConfirmDialog from '@/ui-component/dialog/ConfirmDialog'
 
@@ -54,6 +59,41 @@ import useConfirm from '@/hooks/useConfirm'
 import { useError } from '@/store/context/ErrorContext'
 import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction } from '@/store/actions'
 import useNotifier from '@/utils/useNotifier'
+
+/**
+ * Header Options-dropdown styling. Mirrors `MCPServerDetail`'s StyledMenu so
+ * the visual treatment matches across detail pages — right-anchored, rounded
+ * corners, soft drop shadow, secondary-coloured icons.
+ */
+const StyledMenu = styled((props) => (
+    <Menu
+        elevation={0}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+        {...props}
+    />
+))(({ theme }) => ({
+    '& .MuiPaper-root': {
+        borderRadius: 6,
+        marginTop: theme.spacing(1),
+        minWidth: 180,
+        boxShadow:
+            'rgb(255, 255, 255) 0px 0px 0px 0px, rgba(0, 0, 0, 0.05) 0px 0px 0px 1px, rgba(0, 0, 0, 0.1) 0px 10px 15px -3px, rgba(0, 0, 0, 0.05) 0px 4px 6px -2px',
+        '& .MuiMenu-list': {
+            padding: '4px 0'
+        },
+        '& .MuiMenuItem-root': {
+            '& .MuiSvgIcon-root': {
+                fontSize: 18,
+                color: theme.palette.text.secondary,
+                marginRight: theme.spacing(1.5)
+            },
+            '&:active': {
+                backgroundColor: alpha(theme.palette.primary.main, theme.palette.action.selectedOpacity)
+            }
+        }
+    }
+}))
 
 const STATUS_CHIP_COLOR = {
     HEALTHY: 'success',
@@ -103,6 +143,10 @@ const AgentDetail = () => {
     const [testLoading, setTestLoading] = useState(false)
     const [rotateLoading, setRotateLoading] = useState(false)
     const [toggleLoading, setToggleLoading] = useState(false)
+    const [menuAnchorEl, setMenuAnchorEl] = useState(null)
+    const menuOpen = Boolean(menuAnchorEl)
+    const openMenu = (event) => setMenuAnchorEl(event.currentTarget)
+    const closeMenu = () => setMenuAnchorEl(null)
     // Anchor for the "Copied!" Popover, mirroring the /apikey API Key cell
     // pattern. The Popover dismisses itself after a short delay so the cell
     // stays clean.
@@ -166,6 +210,13 @@ const AgentDetail = () => {
     const onCopyToken = (event) => {
         if (!agent?.mcpGatewayToken) return
         navigator.clipboard.writeText(agent.mcpGatewayToken)
+        setCopyAnchorEl(event.currentTarget)
+        setTimeout(() => setCopyAnchorEl(null), 1500)
+    }
+
+    const onCopyAgentflowId = (event) => {
+        if (!agent?.builtinAgentflowId) return
+        navigator.clipboard.writeText(agent.builtinAgentflowId)
         setCopyAnchorEl(event.currentTarget)
         setTimeout(() => setCopyAnchorEl(null), 1500)
     }
@@ -260,6 +311,7 @@ const AgentDetail = () => {
     }
 
     const isHttp = agent.runtimeType === 'HTTP'
+    const isBuiltIn = agent.runtimeType === 'BUILT_IN'
     const tableHeaderSx = {
         backgroundColor: customization.isDarkMode ? theme.palette.common.black : theme.palette.grey[100],
         height: 56
@@ -270,8 +322,8 @@ const AgentDetail = () => {
         <>
             <MainCard>
                 <Stack flexDirection='column' sx={{ gap: 3 }}>
-                    {/* Header bar — back, identity title, page-level actions */}
-                    <Stack direction='row' alignItems='center' spacing={1} flexWrap='wrap' useFlexGap>
+                    {/* Header bar — back, identity title + description, page-level actions */}
+                    <Stack direction='row' alignItems='center' spacing={1} flexWrap='wrap' useFlexGap sx={{ pt: 2 }}>
                         <Tooltip title='Back to agents'>
                             <IconButton onClick={() => navigate('/agents')}>
                                 <IconArrowLeft size={20} />
@@ -290,9 +342,14 @@ const AgentDetail = () => {
                         >
                             <IconRobot size={20} color={theme.palette.grey[700]} />
                         </Box>
-                        <Typography variant='h3' sx={{ flexGrow: 1 }}>
-                            Agent: {agent.name}
-                        </Typography>
+                        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+                            <Typography variant='h3'>Agent: {agent.name}</Typography>
+                            {agent.description && (
+                                <Typography variant='body2' sx={{ color: 'text.secondary', whiteSpace: 'pre-wrap', mt: 0.5 }}>
+                                    {agent.description}
+                                </Typography>
+                            )}
+                        </Box>
                         {isHttp && (
                             <Tooltip title='HTTP GET reachability probe'>
                                 <span>
@@ -307,23 +364,6 @@ const AgentDetail = () => {
                                 </span>
                             </Tooltip>
                         )}
-                        <StyledPermissionButton
-                            permissionId={'agents:update'}
-                            variant='outlined'
-                            startIcon={<IconEdit size={16} />}
-                            onClick={onEdit}
-                        >
-                            Edit
-                        </StyledPermissionButton>
-                        <StyledPermissionButton
-                            permissionId={'agents:delete'}
-                            variant='outlined'
-                            color='error'
-                            startIcon={<IconTrash size={16} />}
-                            onClick={onDelete}
-                        >
-                            Delete
-                        </StyledPermissionButton>
                     </Stack>
 
                     {/* Identity — one-row apikey-style table */}
@@ -334,9 +374,12 @@ const AgentDetail = () => {
                                     <StyledTableCell>Slug</StyledTableCell>
                                     <StyledTableCell>Runtime</StyledTableCell>
                                     <StyledTableCell>Status</StyledTableCell>
-                                    <StyledTableCell sx={{ minWidth: 220 }}>Tools</StyledTableCell>
+                                    {isHttp && <StyledTableCell sx={{ minWidth: 220 }}>Tools</StyledTableCell>}
                                     <StyledTableCell>Created</StyledTableCell>
                                     <StyledTableCell>Enabled</StyledTableCell>
+                                    <StyledTableCell align='right' sx={{ width: 120 }}>
+                                        Actions
+                                    </StyledTableCell>
                                 </StyledTableRow>
                             </TableHead>
                             <TableBody>
@@ -363,19 +406,21 @@ const AgentDetail = () => {
                                             }}
                                         />
                                     </StyledTableCell>
-                                    <StyledTableCell>
-                                        {allowedTools.length === 0 ? (
-                                            <Typography variant='body2' sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
-                                                none
-                                            </Typography>
-                                        ) : (
-                                            <Stack direction='row' spacing={0.5} flexWrap='wrap' useFlexGap>
-                                                {allowedTools.map((t) => (
-                                                    <Chip key={t} label={t} size='small' variant='outlined' />
-                                                ))}
-                                            </Stack>
-                                        )}
-                                    </StyledTableCell>
+                                    {isHttp && (
+                                        <StyledTableCell>
+                                            {allowedTools.length === 0 ? (
+                                                <Typography variant='body2' sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                                                    none
+                                                </Typography>
+                                            ) : (
+                                                <Stack direction='row' spacing={0.5} flexWrap='wrap' useFlexGap>
+                                                    {allowedTools.map((t) => (
+                                                        <Chip key={t} label={t} size='small' variant='outlined' />
+                                                    ))}
+                                                </Stack>
+                                            )}
+                                        </StyledTableCell>
+                                    )}
                                     <StyledTableCell>
                                         {agent.createdDate ? moment(agent.createdDate).format('MMMM Do, YYYY HH:mm:ss') : '—'}
                                     </StyledTableCell>
@@ -396,6 +441,19 @@ const AgentDetail = () => {
                                                 />
                                             </span>
                                         </Tooltip>
+                                    </StyledTableCell>
+                                    <StyledTableCell align='right'>
+                                        <Button
+                                            size='small'
+                                            aria-controls={menuOpen ? 'agent-options-menu' : undefined}
+                                            aria-haspopup='true'
+                                            aria-expanded={menuOpen ? 'true' : undefined}
+                                            disableElevation
+                                            onClick={openMenu}
+                                            endIcon={<KeyboardArrowDownIcon />}
+                                        >
+                                            Options
+                                        </Button>
                                     </StyledTableCell>
                                 </StyledTableRow>
                             </TableBody>
@@ -491,24 +549,42 @@ const AgentDetail = () => {
                             <Table sx={{ minWidth: 650 }} aria-label='backing agentflow'>
                                 <TableHead sx={tableHeaderSx}>
                                     <StyledTableRow>
-                                        <StyledTableCell>Backing Agentflow ID</StyledTableCell>
-                                        <StyledTableCell>Canvas</StyledTableCell>
+                                        <StyledTableCell>Agentflow ID</StyledTableCell>
+                                        <StyledTableCell sx={{ minWidth: 220 }}>Tools</StyledTableCell>
                                     </StyledTableRow>
                                 </TableHead>
                                 <TableBody>
                                     <StyledTableRow>
-                                        <StyledTableCell sx={{ fontFamily: 'monospace' }}>
-                                            {agent.builtinAgentflowId || '—'}
+                                        <StyledTableCell>
+                                            {agent.builtinAgentflowId ? (
+                                                <Stack direction='row' alignItems='center' spacing={1}>
+                                                    <Chip
+                                                        sx={{ pl: 1, fontFamily: 'monospace' }}
+                                                        icon={<IconExternalLink size={15} />}
+                                                        variant='outlined'
+                                                        label={agent.builtinAgentflowId}
+                                                        onClick={() => navigate(`/canvas/${agent.builtinAgentflowId}`)}
+                                                    />
+                                                    <IconButton title='Copy' color='success' onClick={onCopyAgentflowId}>
+                                                        <IconCopy />
+                                                    </IconButton>
+                                                </Stack>
+                                            ) : (
+                                                '—'
+                                            )}
                                         </StyledTableCell>
                                         <StyledTableCell>
-                                            <Button
-                                                size='small'
-                                                variant='outlined'
-                                                disabled={!agent.builtinAgentflowId}
-                                                onClick={() => navigate(`/canvas/${agent.builtinAgentflowId}`)}
-                                            >
-                                                Open in canvas
-                                            </Button>
+                                            {allowedTools.length === 0 ? (
+                                                <Typography variant='body2' sx={{ fontStyle: 'italic', color: 'text.secondary' }}>
+                                                    none
+                                                </Typography>
+                                            ) : (
+                                                <Stack direction='row' spacing={0.5} flexWrap='wrap' useFlexGap>
+                                                    {allowedTools.map((t) => (
+                                                        <Chip key={t} label={t} size='small' variant='outlined' />
+                                                    ))}
+                                                </Stack>
+                                            )}
                                         </StyledTableCell>
                                     </StyledTableRow>
                                 </TableBody>
@@ -521,16 +597,6 @@ const AgentDetail = () => {
                         <Alert severity='error' variant='outlined' sx={{ alignItems: 'center' }}>
                             <strong>Last health error:</strong> {agent.lastHealthError}
                         </Alert>
-                    )}
-
-                    {/* Description — only when set */}
-                    {agent.description && (
-                        <Box>
-                            <Typography variant='overline'>Description</Typography>
-                            <Typography variant='body2' sx={{ mt: 0.5, whiteSpace: 'pre-wrap' }}>
-                                {agent.description}
-                            </Typography>
-                        </Box>
                     )}
                 </Stack>
             </MainCard>
@@ -546,6 +612,51 @@ const AgentDetail = () => {
                     {tab === 1 && <AgentMetricsTab agent={agent} />}
                 </MainCard>
             </Box>
+
+            <StyledMenu
+                id='agent-options-menu'
+                anchorEl={menuAnchorEl}
+                open={menuOpen}
+                onClose={closeMenu}
+                MenuListProps={{ 'aria-labelledby': 'agent-options-menu' }}
+            >
+                <PermissionMenuItem
+                    permissionId={'agents:update'}
+                    onClick={() => {
+                        closeMenu()
+                        onEdit()
+                    }}
+                    disableRipple
+                >
+                    <EditIcon />
+                    Edit
+                </PermissionMenuItem>
+                {isBuiltIn && agent.builtinAgentflowId && (
+                    <PermissionMenuItem
+                        permissionId={'agents:view'}
+                        onClick={() => {
+                            closeMenu()
+                            navigate(`/canvas/${agent.builtinAgentflowId}`)
+                        }}
+                        disableRipple
+                    >
+                        <OpenInNewIcon />
+                        Open in Canvas
+                    </PermissionMenuItem>
+                )}
+                <PermissionMenuItem
+                    permissionId={'agents:delete'}
+                    onClick={() => {
+                        closeMenu()
+                        onDelete()
+                    }}
+                    disableRipple
+                    sx={{ color: 'error.main', '& .MuiSvgIcon-root': { color: 'error.main !important' } }}
+                >
+                    <FileDeleteIcon />
+                    Delete
+                </PermissionMenuItem>
+            </StyledMenu>
 
             <AgentDialog
                 show={showDialog}

@@ -2,11 +2,26 @@ import { Entity, Column, Index, PrimaryGeneratedColumn, CreateDateColumn } from 
 import { PolicyOutcome } from '../../Interface'
 
 /**
+ * Stores JSON values as text in both sqlite + postgres without forcing
+ * callers to deal with the wire format. Null/undefined round-trip as NULL.
+ * String values that already happen to be valid JSON are still re-serialized
+ * (so a stored value is always a JSON literal of the original shape).
+ */
+const jsonTransformer = {
+    to: (value: unknown): string | null => (value == null ? null : JSON.stringify(value)),
+    from: (value: string | null): unknown => {
+        if (value == null) return null
+        try {
+            return JSON.parse(value)
+        } catch {
+            return value
+        }
+    }
+}
+
+/**
  * Persistent audit row for every MCP tool invocation brokered through the
- * Chronos gateway. One row per call (success or failure). Promoted from
- * v1.6's structured `logger.info({ event: 'mcp.tool.invoke' })` lines so
- * post-hoc queries (compliance, billing, debugging) don't depend on log
- * aggregator state.
+ * Chronos gateway. One row per call (success or failure).
  *
  * Writes are best-effort and fire-and-forget — see `auditService.recordToolInvocation`.
  * The structured logger.info line is kept as the streaming/fallback record.
@@ -63,6 +78,26 @@ export class ToolInvocationAudit {
     @Index()
     @Column({ type: 'varchar', nullable: true })
     policyOutcome: PolicyOutcome | null
+
+    /**
+     * Stringified MCP `tools/call` `arguments` object as dispatched by the
+     * gateway. NULL when payload capture is disabled (`AUDIT_FULL_PAYLOADS`)
+     * Redacted + size-capped at the gateway before
+     * write — never stored raw. See `utils/redactPayload.util.ts`. Typed as
+     * `any` so TypeORM's `DeepPartial` insertion type stays usable; the
+     * transformer round-trips any JSON-serializable shape.
+     */
+    @Column({ type: 'text', nullable: true, transformer: jsonTransformer })
+    requestPayload: any
+
+    /**
+     * Stringified MCP `tools/call` result object as returned by the
+     * upstream server. NULL on errors (the `errorMessage` column carries
+     * failure shape) and when payload capture is disabled. Redacted +
+     * size-capped at the gateway before write.
+     */
+    @Column({ type: 'text', nullable: true, transformer: jsonTransformer })
+    responsePayload: any
 
     @Index()
     @Column({ type: 'timestamp' })

@@ -15,6 +15,7 @@ import { AddMCPServerPolicies1800000000013 } from './1800000000013-AddMCPServerP
 import { CreateMCPServerChangeLog1800000000014 } from './1800000000014-CreateMCPServerChangeLog'
 import { AddPolicyOutcomeToToolInvocationAudit1800000000015 } from './1800000000015-AddPolicyOutcomeToToolInvocationAudit'
 import { AddStdioFieldsToMCPServer1800000000016 } from './1800000000016-AddStdioFieldsToMCPServer'
+import { AddPayloadFieldsToToolInvocationAudit1800000000017 } from './1800000000017-AddPayloadFieldsToToolInvocationAudit'
 
 export const postgresMigrations = [
     ConsolidatedBaseline1800000000000,
@@ -33,5 +34,6 @@ export const postgresMigrations = [
     AddMCPServerPolicies1800000000013,
     CreateMCPServerChangeLog1800000000014,
     AddPolicyOutcomeToToolInvocationAudit1800000000015,
-    AddStdioFieldsToMCPServer1800000000016
+    AddStdioFieldsToMCPServer1800000000016,
+    AddPayloadFieldsToToolInvocationAudit1800000000017
 ]

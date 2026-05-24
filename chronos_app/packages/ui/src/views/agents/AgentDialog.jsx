@@ -1,6 +1,6 @@
 import { createPortal } from 'react-dom'
 import PropTypes from 'prop-types'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useDispatch } from 'react-redux'
 import { Link as RouterLink } from 'react-router-dom'
 
@@ -113,6 +113,19 @@ const AgentDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
     const [discoverLoading, setDiscoverLoading] = useState(false)
 
     const [fieldErrors, setFieldErrors] = useState({})
+
+    /**
+     * Built-in agents derive their version from the backing agentflow:
+     * `v{publishedVersion}` when the agentflow has been published at least
+     * once, `draft` while it lives only as `flowData`. HTTP agents keep
+     * the freeform `Agent.version` string the agent developer declares.
+     */
+    const builtinVersionDisplay = useMemo(() => {
+        if (runtimeType !== 'BUILT_IN' || !builtinAgentflowId) return null
+        const flow = agentflows.find((f) => f.id === builtinAgentflowId)
+        if (!flow) return null
+        return flow.publishedVersion ? `v${flow.publishedVersion}` : 'draft'
+    }, [runtimeType, builtinAgentflowId, agentflows])
 
     const showSuccess = (message) =>
         enqueueSnackbar({
@@ -300,7 +313,10 @@ const AgentDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
             name,
             slug: slug || undefined,
             description: description || undefined,
-            version: version || '1.0.0',
+            // BUILT_IN agents derive their version from the backing agentflow
+            // (see `builtinVersionDisplay`) so the column stops drifting from
+            // the actual published version when the dialog is saved.
+            version: runtimeType === 'BUILT_IN' && builtinVersionDisplay ? builtinVersionDisplay : version || '1.0.0',
             runtimeType,
             enabled
         }
@@ -482,14 +498,27 @@ const AgentDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                     </Box>
                     <Box>
                         <Typography variant='overline'>Version</Typography>
-                        <OutlinedInput
-                            fullWidth
-                            size='small'
-                            value={version}
-                            onChange={(e) => setVersion(e.target.value)}
-                            placeholder='1.0.0'
-                            sx={{ fontFamily: 'monospace' }}
-                        />
+                        {runtimeType === 'BUILT_IN' ? (
+                            <>
+                                <OutlinedInput
+                                    fullWidth
+                                    size='small'
+                                    disabled
+                                    value={builtinVersionDisplay || '—'}
+                                    sx={{ fontFamily: 'monospace' }}
+                                />
+                                <FormHelperText>Inherited from agentflow</FormHelperText>
+                            </>
+                        ) : (
+                            <OutlinedInput
+                                fullWidth
+                                size='small'
+                                value={version}
+                                onChange={(e) => setVersion(e.target.value)}
+                                placeholder='1.0.0'
+                                sx={{ fontFamily: 'monospace' }}
+                            />
+                        )}
                     </Box>
 
                     {runtimeType === 'HTTP' && (

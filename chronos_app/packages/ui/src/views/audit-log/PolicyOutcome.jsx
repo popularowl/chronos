@@ -5,9 +5,9 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import { IconRefresh, IconHourglass, IconBolt } from '@tabler/icons-react'
 
 /**
- * Single source of truth for how each `PolicyOutcome` value (v1.8.0 Group A)
- * is rendered across the audit-log surfaces — the per-server Recent
- * Invocations tab, the global `/audit-log` table, and the
+ * Single source of truth for how each `PolicyOutcome` value is rendered
+ * across the audit-log.
+ * Recent Invocations tab, the global `/audit-log` table, and the
  * `AuditRowDetails` drawer all import from here. Co-locates label, tone,
  * icon, and explanatory copy so a label change doesn't need to be made in
  * four files.
@@ -22,7 +22,7 @@ export const POLICY_OUTCOME_META = {
         label: 'passed',
         tone: 'success',
         Icon: CheckCircleIcon,
-        description: 'Call ran without retry or policy short-circuit.'
+        description: 'Request ran without retries or policy short-circuit.'
     },
     RETRIED: {
         label: 'retried',
@@ -72,11 +72,14 @@ export const PolicyOutcomeCell = ({ value }) => {
         <Tooltip title={meta.description}>
             <Chip
                 size='small'
-                color={meta.tone}
                 variant='outlined'
                 icon={<Icon size={14} />}
                 label={meta.label}
-                sx={{ '& .MuiChip-icon': { ml: 0.5 } }}
+                sx={{
+                    borderColor: toneToColor[meta.tone],
+                    color: toneToColor[meta.tone],
+                    '& .MuiChip-icon': { color: toneToColor[meta.tone], ml: 0.5 }
+                }}
             />
         </Tooltip>
     )
@@ -100,11 +103,14 @@ export const PolicyOutcomeDetail = ({ value }) => {
             <Stack direction='row' spacing={1} alignItems='center'>
                 <Chip
                     size='small'
-                    color={meta.tone}
                     variant='outlined'
                     icon={<Icon size={14} />}
                     label={meta.label}
-                    sx={{ '& .MuiChip-icon': { ml: 0.5 } }}
+                    sx={{
+                        borderColor: toneToColor[meta.tone],
+                        color: toneToColor[meta.tone],
+                        '& .MuiChip-icon': { color: toneToColor[meta.tone], ml: 0.5 }
+                    }}
                 />
             </Stack>
             <Typography variant='body2' sx={{ color: 'text.secondary' }}>

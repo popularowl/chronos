@@ -262,7 +262,7 @@ const CustomTreeItem = forwardRef(function CustomTreeItem(props, ref) {
                     <TreeItem2GroupTransition
                         {...getGroupTransitionProps()}
                         style={{
-                            borderLeft: `${status.selected ? '3px solid' : '1px dashed'} ${(() => {
+                            borderLeft: `1px dashed ${(() => {
                                 const nodeName = item.name || item.id?.split('_')[0]
                                 const foundIcon = AGENTFLOW_ICONS.find((icon) => icon.name === nodeName)
                                 return foundIcon ? foundIcon.color : theme.palette.primary.main
