@@ -24,8 +24,14 @@ const NavGroup = ({ item }) => {
 
         // Handle item and group types
         switch (menu.type) {
-            case 'collapse':
-                return <NavCollapse key={menu.id} menu={menu} level={level} />
+            case 'collapse': {
+                // OR-of-children: hide the entire collapse when no child passes
+                // its own permission / display gate. Otherwise the user sees an
+                // empty disclosure they can't act on.
+                const visibleChildren = (menu.children || []).filter(shouldDisplayMenu)
+                if (visibleChildren.length === 0) return null
+                return <NavCollapse key={menu.id} menu={{ ...menu, children: visibleChildren }} level={level} />
+            }
             case 'item':
                 return <NavItem key={menu.id} item={menu} level={level} navType='MENU' />
             default:

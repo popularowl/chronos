@@ -1,6 +1,7 @@
 import PropTypes from 'prop-types'
-import { useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
+import { useLocation } from 'react-router-dom'
 
 // material-ui
 import { useTheme } from '@mui/material/styles'
@@ -18,14 +19,44 @@ import { IconChevronDown, IconChevronUp } from '@tabler/icons-react'
 const NavCollapse = ({ menu, level }) => {
     const theme = useTheme()
     const customization = useSelector((state) => state.customization)
+    const location = useLocation()
 
-    const [open, setOpen] = useState(false)
-    const [selected, setSelected] = useState(null)
+    // Flat list of every descendant route this collapse owns, so we can
+    // auto-open when the user lands on any of them directly.
+    const descendantUrls = useMemo(() => {
+        const urls = []
+        const collect = (item) => {
+            if (item.url) urls.push(item.url)
+            if (item.children) item.children.forEach(collect)
+        }
+        if (menu.children) menu.children.forEach(collect)
+        return urls
+    }, [menu])
+
+    const hasActiveDescendant = useMemo(
+        () => descendantUrls.some((url) => location.pathname === url || location.pathname.startsWith(url + '/')),
+        [descendantUrls, location.pathname]
+    )
+
+    const [open, setOpen] = useState(hasActiveDescendant)
+
+    // Sync open state to the active route on every navigation: open when
+    // we own the new route, close when we don't. Manual expand/collapse
+    // by the user is preserved while they stay on the same route (this
+    // effect only fires on actual path changes).
+    useEffect(() => {
+        setOpen(hasActiveDescendant)
+    }, [location.pathname, hasActiveDescendant])
 
     const handleClick = () => {
         setOpen(!open)
-        setSelected(!selected ? menu.id : null)
     }
+
+    // The parent row highlights when (and only when) the active route is
+    // one of its descendants. Prevents the "two items selected" bug where
+    // local click state would keep the parent purple after a child took
+    // over the active highlight.
+    const selected = hasActiveDescendant
 
     // menu collapse & item
     const menus = menu.children?.map((item) => {
@@ -49,8 +80,8 @@ const NavCollapse = ({ menu, level }) => {
     ) : (
         <FiberManualRecordIcon
             sx={{
-                width: selected === menu.id ? 8 : 6,
-                height: selected === menu.id ? 8 : 6
+                width: selected ? 8 : 6,
+                height: selected ? 8 : 6
             }}
             fontSize={level > 0 ? 'inherit' : 'medium'}
         />
@@ -67,13 +98,13 @@ const NavCollapse = ({ menu, level }) => {
                     py: level > 1 ? 1 : 1.25,
                     pl: `${level * 24}px`
                 }}
-                selected={selected === menu.id}
+                selected={selected}
                 onClick={handleClick}
             >
                 <ListItemIcon sx={{ my: 'auto', minWidth: !menu.icon ? 18 : 36 }}>{menuIcon}</ListItemIcon>
                 <ListItemText
                     primary={
-                        <Typography variant={selected === menu.id ? 'h5' : 'body1'} color='inherit' sx={{ my: 'auto' }}>
+                        <Typography variant={selected ? 'h5' : 'body1'} color='inherit' sx={{ my: 'auto' }}>
                             {menu.title}
                         </Typography>
                     }
