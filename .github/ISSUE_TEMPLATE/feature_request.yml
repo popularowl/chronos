@@ -41,13 +41,12 @@ body:
       label: Area
       multiple: true
       options:
-        - Visual builder (UI)
-        - Agent runtime / LangGraph
-        - Nodes / integrations
+        - Visual agent builder
+        - Agent registry or gateway
+        - MCP registry or gateway
         - Observability & tracing
         - Cost & performance dashboard
         - Scheduling
-        - Auth / SSO
         - Deployment / Docker
         - Docs
 

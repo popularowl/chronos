@@ -17,16 +17,17 @@ export function redactPayloadUtilTest() {
             })
 
             it('matches denylist keys case-insensitively', () => {
-                const input = { Password: 'x', API_KEY: 'y', AuthOrIzaTion: 'z', clientsecret: 'w' }
+                const input = { Password: 'x', API_KEY: 'y', AuthOrIzaTion: 'z', clientsecret: 'w', uniqueField: 'keep' }
                 const out = redactSecrets(input) as Record<string, unknown>
                 expect(out.Password).toBe('[REDACTED]')
                 expect(out.API_KEY).toBe('[REDACTED]')
                 expect(out.AuthOrIzaTion).toBe('[REDACTED]')
-                // 'clientsecret' (lowercase, no separator) is NOT in the denylist
-                // — we only catch 'clientSecret' / 'client_secret'. Document this
-                // gap so the test fails loudly if someone "fixes" it without
-                // adding the variant intentionally.
-                expect(out.clientsecret).toBe('w')
+                // 'clientsecret' (all lowercase) matches the lowercased form of
+                // the 'clientSecret' denylist entry, so case-insensitive matching
+                // catches it too.
+                expect(out.clientsecret).toBe('[REDACTED]')
+                // Sanity: keys not on the denylist pass through untouched.
+                expect(out.uniqueField).toBe('keep')
             })
 
             it('recurses into nested objects', () => {

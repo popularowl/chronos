@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux'
 import moment from 'moment'
 
 import { Box, Button, Chip, Drawer, Tooltip, Typography } from '@mui/material'
-import { alpha, styled } from '@mui/material/styles'
+import { alpha, styled, useTheme } from '@mui/material/styles'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import DragHandleIcon from '@mui/icons-material/DragHandle'
 import ErrorIcon from '@mui/icons-material/Error'
@@ -20,7 +20,7 @@ import {
 } from '@mui/x-tree-view/TreeItem2'
 import { TreeItem2Icon } from '@mui/x-tree-view/TreeItem2Icon'
 import { TreeItem2Provider } from '@mui/x-tree-view/TreeItem2Provider'
-import { IconAlertTriangle, IconCopy, IconExternalLink, IconShieldCheck, IconTool, IconX } from '@tabler/icons-react'
+import { IconAlertTriangle, IconCopy, IconExternalLink, IconInbox, IconSend, IconShieldCheck, IconTool, IconX } from '@tabler/icons-react'
 
 import { enqueueSnackbar as enqueueSnackbarAction, closeSnackbar as closeSnackbarAction } from '@/store/actions'
 import { AuditNodeDetails } from './AuditNodeDetails'
@@ -31,14 +31,30 @@ const MAX_DRAWER_WIDTH = window.innerWidth
 
 const KIND_ICON = {
     invocation: IconTool,
+    request: IconSend,
+    response: IconInbox,
     policy: IconShieldCheck,
     error: IconAlertTriangle
 }
 
-const KIND_COLOR = {
-    invocation: '#7986CB',
-    policy: '#4DB6AC',
-    error: '#E57373'
+// Tree-kind accent color resolved from the MUI theme palette so the tree
+// shares the same color language as the executions drawer and status icons.
+// Kept inline (not extracted to a shared util) since the two audit-drawer
+// files are the only consumers.
+const getKindColor = (theme, kind) => {
+    switch (kind) {
+        case 'request':
+            return theme.palette.warning.main
+        case 'response':
+            return theme.palette.info.main
+        case 'policy':
+            return theme.palette.success.dark
+        case 'error':
+            return theme.palette.error.main
+        case 'invocation':
+        default:
+            return theme.palette.primary.main
+    }
 }
 
 const getStatusIcon = (status) => {
@@ -92,8 +108,9 @@ const StyledTreeItemLabelText = styled(Typography)(({ theme }) => ({
 }))
 
 const CustomLabel = ({ kind, statusIcon: StatusIcon, statusColor, children, ...other }) => {
+    const theme = useTheme()
     const KindIcon = KIND_ICON[kind] || IconTool
-    const kindColor = KIND_COLOR[kind] || '#7986CB'
+    const kindColor = getKindColor(theme, kind)
     return (
         <TreeItem2Label {...other} sx={{ display: 'flex', alignItems: 'center' }}>
             <Box sx={{ mr: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -114,6 +131,7 @@ CustomLabel.propTypes = {
 
 const CustomTreeItem = forwardRef(function CustomTreeItem(props, ref) {
     const { id, itemId, label, disabled, children, ...other } = props
+    const theme = useTheme()
     const {
         getRootProps,
         getContentProps,
@@ -128,6 +146,7 @@ const CustomTreeItem = forwardRef(function CustomTreeItem(props, ref) {
     const item = publicAPI.getItem(itemId)
     const statusIcon = getStatusIcon(item?.status)
     const statusColor = getStatusColor(item?.status)
+    const connectorColor = getKindColor(theme, item?.data?.kind)
 
     return (
         <TreeItem2Provider itemId={itemId}>
@@ -145,7 +164,16 @@ const CustomTreeItem = forwardRef(function CustomTreeItem(props, ref) {
                         })}
                     />
                 </CustomTreeItemContent>
-                {children && <TreeItem2GroupTransition {...getGroupTransitionProps()} />}
+                {children && (
+                    <TreeItem2GroupTransition
+                        {...getGroupTransitionProps()}
+                        style={{
+                            borderLeft: `1px dashed ${connectorColor}`,
+                            marginLeft: '13px',
+                            paddingLeft: '8px'
+                        }}
+                    />
+                )}
             </StyledTreeItemRoot>
         </TreeItem2Provider>
     )
@@ -163,6 +191,24 @@ const buildAuditTree = (row) => {
     if (!row) return []
     const invocationStatus = row.success ? 'FINISHED' : 'ERROR'
     const children = []
+    if (row.requestPayload != null) {
+        children.push({
+            id: 'request',
+            label: 'Request',
+            status: 'FINISHED',
+            data: { kind: 'request', raw: row.requestPayload },
+            children: []
+        })
+    }
+    if (row.responsePayload != null) {
+        children.push({
+            id: 'response',
+            label: 'Response',
+            status: row.success ? 'FINISHED' : 'ERROR',
+            data: { kind: 'response', raw: row.responsePayload },
+            children: []
+        })
+    }
     children.push({
         id: 'policy',
         label: 'Policy',
@@ -427,6 +473,8 @@ AuditRowDetails.propTypes = {
         callId: PropTypes.string,
         userId: PropTypes.string,
         policyOutcome: PropTypes.oneOf([null, undefined, 'PASSED', 'RETRIED', 'RATE_LIMITED', 'CIRCUIT_OPEN']),
+        requestPayload: PropTypes.any,
+        responsePayload: PropTypes.any,
         createdDate: PropTypes.oneOfType([PropTypes.string, PropTypes.instanceOf(Date)])
     }),
     onClose: PropTypes.func
