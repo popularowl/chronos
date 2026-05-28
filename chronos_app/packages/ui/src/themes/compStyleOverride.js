@@ -42,6 +42,19 @@ export default function componentStyleOverrides(theme) {
                 }
             }
         },
+        MuiLink: {
+            defaultProps: {
+                underline: 'hover'
+            },
+            styleOverrides: {
+                root: {
+                    color: theme.colors?.primaryMain,
+                    '&:hover': {
+                        color: theme?.customization?.isDarkMode ? theme.colors?.darkPrimaryDark : theme.colors?.primaryDark
+                    }
+                }
+            }
+        },
         MuiSvgIcon: {
             styleOverrides: {
                 root: {

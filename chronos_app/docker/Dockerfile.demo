@@ -1,6 +1,6 @@
-# Demo-stack Chronos image.
+# Specific Chronos container image for demo purpose.
 #
-# Extends the canonical Dockerfile.local with `uv` / `uvx` python package manager
+# Extends the Dockerfile.local with `uv` / `uvx` python package manager
 # to get local fetch MCP preset (which spawns `uvx mcp-server-fetch`) working
 # out of the box when registered via the demo seeder.
 #

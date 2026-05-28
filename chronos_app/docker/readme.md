@@ -2,45 +2,23 @@
 
 This directory hosts the Dockerfiles, compose files, and supporting code for running Chronos in containers.
 
-## Directory layout
-
-```
-docker/
-├── Dockerfile.local              canonical build (production-shaped)
-├── Dockerfile.demo               extends Dockerfile.local with `uv` for the fetch MCP preset
-├── docker-compose.demo.yml       primary path — zero-touch evaluator demo
-├── docker-compose.yml            basic single-service deployment
-├── docker-compose.walkthrough.yml   manual agent-registry walkthrough (uses ./references/)
-├── docker-compose.smoke.yml      internal smoke test (uses ./fixtures/)
-├── docker-compose-workers.yml    horizontal-scale worker deployment
-├── docker-compose-vectordb.yml   Qdrant + Ollama for embeddings
-├── docker-compose-schedules.yml  scheduled-agent deployment
-├── docker-compose-opentelemetry.yml   OTel collector + Jaeger
-├── references/                   operator-copyable reference code (see references/readme.md)
-│   ├── agent-http/
-│   └── mcp-streamable-http/
-├── fixtures/                     in-tree test fixtures, NOT for copying (see fixtures/readme.md)
-│   ├── mcp-stdio/
-│   └── smoke-runner/
-├── seeders/                      build/seed tooling
-│   └── demo-seed/                 idempotent seeder for docker-compose.demo.yml
-└── observability/
-```
-
 ## Quickstart — demo stack (recommended)
 
-The fastest way to evaluate Chronos. Boots Chronos + Postgres, then a one-shot seeder registers two MCP servers (Memory + Fetch) and an OpenRouter credential so an agentflow you build in the canvas can call real tools without any post-boot configuration.
+The fastest way to evaluate Chronos. This compose will start Chronos and Postgres containers, then a simple seeder registers two MCP servers (Memory + Fetch) and visual agentflow with preset OpenRouter credentials
 
 ```bash
 cd chronos/chronos_app/docker
 docker build -f Dockerfile.demo -t chronos:demo ..
-OPENROUTER_API_KEY=sk-or-... OPENROUTER_LLM_MODEL=openai/gpt-4o-mini \
-  docker compose -f docker-compose.demo.yml up
+
+export OPENROUTER_API_KEY=sk-or-...
+export OPENROUTER_LLM_MODEL=openai/gpt-4o-mini \
+
+docker compose -f docker-compose.demo.yml up
 # chronos is now accessible on http://localhost:3001
 # login: admin@admin.com / test1234
 ```
 
-What lands after boot:
+After compose starts you get:
 
 -   An **OpenRouter** credential the canvas can attach to any Chat node.
 -   Two **MCP servers** registered as stdio (Memory via `npx`, Fetch via `uvx`). Both should reach `HEALTHY` within a few seconds.
@@ -117,7 +95,7 @@ docker compose -f docker-compose-vectordb.yml exec ollama ollama pull nomic-embe
 
 ## Env Variables
 
-To persista the data, or supply data to Chronos app you can use the following enviroenment variables. For more options see [.env.example](.env.example)
+To supply data to Chronos app during the startup you can use the following enviroenment variables - see [.env.example](.env.example)
 
 ## Compose files at a glance
 

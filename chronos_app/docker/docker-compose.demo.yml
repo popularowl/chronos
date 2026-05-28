@@ -1,4 +1,4 @@
-## Chronos demo stack — 5-minute evaluator path.
+## Chronos demo stack — 5-minute up and running path.
 ##
 ## Boots Chronos + Postgres, then runs a one off seeder that POSTs:
 ##   - one OpenRouter credential (uses OPENROUTER_API_KEY from host env)
@@ -54,7 +54,7 @@ services:
         volumes:
             - ./.postgres_data:/var/lib/postgresql/data
 
-    ## One-shot seeder. Builds from ./examples/demo-seed, waits for chronos
+    ## One time seeder. Builds from ./examples/demo-seed, waits for chronos
     ## to come up, POSTs the seed JSON files, exits. The compose's default
     ## restart policy is "no", so the container stays Exited after a clean
     ## run — re-runs of `docker compose up` will re-execute it (idempotent

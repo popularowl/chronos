@@ -575,23 +575,22 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
 
     const component = show ? (
         <Dialog fullWidth maxWidth='md' open={show} onClose={onCancel} aria-labelledby='mcp-server-dialog-title'>
-            <DialogTitle sx={{ fontSize: '1rem' }} id='mcp-server-dialog-title'>
+            <DialogTitle sx={{ fontSize: '1rem', px: 3.5, pt: 3, pb: 1.5 }} id='mcp-server-dialog-title'>
                 {dialogProps.title}
             </DialogTitle>
-            <DialogContent>
-                <Stack spacing={2} sx={{ mt: 1 }}>
+            <DialogContent sx={{ px: 3.5, pb: 3, '&.MuiDialogContent-root': { pt: 1 } }}>
+                <Stack spacing={2}>
                     {activePreset && (
                         <Box
                             sx={{
-                                p: 1.5,
+                                p: 2,
                                 border: 1,
                                 borderRadius: 1.5,
                                 borderColor: 'divider',
                                 bgcolor: 'action.hover'
                             }}
                         >
-                            <Typography variant='subtitle2'>Registering from preset: {activePreset.displayName}</Typography>
-                            <Typography variant='caption' sx={{ color: 'text.secondary', display: 'block' }}>
+                            <Typography variant='body2' sx={{ color: 'text.secondary', display: 'block' }}>
                                 Fields below are pre-filled from the preset. Edit any of them before saving.
                             </Typography>
                             {activePreset.requiredCredentialSchema && (
@@ -1061,7 +1060,7 @@ const MCPServerDialog = ({ show, dialogProps, onCancel, onConfirm }) => {
                     </Box>
                 </Stack>
             </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2 }}>
+            <DialogActions sx={{ px: 3.5, pb: 2.5 }}>
                 {isEdit && (
                     <>
                         <StyledButton color='error' variant='contained' onClick={onDelete}>

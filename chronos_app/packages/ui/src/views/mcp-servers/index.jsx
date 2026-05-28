@@ -146,7 +146,7 @@ const MCPServers = () => {
     const onPresetPick = (preset) => {
         setShowPresetPicker(false)
         setDialogProps({
-            title: `Register ${preset.displayName}`,
+            title: `Registering ${preset.displayName} MCP Server`,
             type: 'ADD',
             cancelButtonName: 'Cancel',
             confirmButtonName: 'Register',

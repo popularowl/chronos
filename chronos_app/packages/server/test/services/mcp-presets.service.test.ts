@@ -29,7 +29,7 @@ export function mcpPresetsServiceTest() {
             expect(unique.size).toBe(ids.length)
         })
 
-        it.each([['github'], ['postgresql'], ['memory'], ['time'], ['fetch']])('bundles the %s preset', (id) => {
+        it.each([['filesystem'], ['sqlite'], ['memory'], ['time'], ['fetch']])('bundles the %s preset', (id: string) => {
             const match = presets.find((p) => p.id === id)
             expect(match).toBeDefined()
         })
@@ -124,8 +124,8 @@ export function mcpPresetsServiceTest() {
         })
 
         it('getPreset(id) returns the matching preset or undefined', () => {
-            const github = getPreset('github')
-            expect(github?.id).toBe('github')
+            const memory = getPreset('memory')
+            expect(memory?.id).toBe('memory')
             const missing = getPreset('definitely-not-a-preset')
             expect(missing).toBeUndefined()
         })

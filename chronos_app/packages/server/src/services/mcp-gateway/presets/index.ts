@@ -4,8 +4,8 @@ import { join } from 'path'
 import { MCPServerTransport } from '../../../Interface'
 
 import { MCPPreset } from './types'
-import githubPreset from './github'
-import postgresqlPreset from './postgresql'
+import filesystemPreset from './filesystem'
+import sqlitePreset from './sqlite'
 import memoryPreset from './memory'
 import timePreset from './time'
 import fetchPreset from './fetch'
@@ -19,7 +19,7 @@ export { isExecutableOnPath, __resetPathProbeCache } from './probe'
  * picker grid. New presets are added by dropping a `<id>.ts` file under
  * this directory, an `icons/<id>.svg` file beside it, and a line here.
  */
-const PRESETS: MCPPreset[] = [githubPreset, postgresqlPreset, memoryPreset, timePreset, fetchPreset]
+const PRESETS: MCPPreset[] = [filesystemPreset, sqlitePreset, memoryPreset, timePreset, fetchPreset]
 
 /**
  * Cache of inlined icon SVG content keyed by preset id. Populated lazily

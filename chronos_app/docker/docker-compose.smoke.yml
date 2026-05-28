@@ -1,13 +1,11 @@
-## v1.8 smoke test — boots Chronos + Postgres + a self-contained smoke
-## runner that drives a real MCP-protocol round-trip end-to-end.
-##
-## The runner contains both a tiny embedded MCP server (Streamable HTTP,
+## smoke test specific compose.
+## includes runner which contains both a tiny embedded MCP server (Streamable HTTP,
 ## exposes a single `add` tool) and a test driver. It logs into Chronos,
 ## registers the MCP server and an HTTP agent, then opens an MCP
 ## Streamable HTTP session against `/api/v1/mcp-gateway/:agentId` with
 ## the new agent's MCP gateway token and asserts a `tools/call` result.
 ##
-## Run:
+## Ho to run:
 ##
 ##     docker build -f Dockerfile.local -t chronos:local ..
 ##     docker compose -f docker-compose.smoke.yml up \
@@ -29,12 +27,12 @@ services:
             DEBUG: true
             LOG_SANITIZE_HEADER_FIELDS: authorization,x-api-key,x-auth-token,cookie
             LOG_SANITIZE_BODY_FIELDS: password,pwd,pass,secret,token,apikey,api_key,accesstoken,access_token,refreshtoken
-            ENABLE_AGENTS: "true"
-            ENABLE_MCP_SERVERS: "true"
-            ALLOW_LOOPBACK_AGENTS: "true"
-            MCP_SERVER_HEALTH_POLL_INTERVAL_MS: "2000"
+            ENABLE_AGENTS: 'true'
+            ENABLE_MCP_SERVERS: 'true'
+            ALLOW_LOOPBACK_AGENTS: 'true'
+            MCP_SERVER_HEALTH_POLL_INTERVAL_MS: '2000'
         ports:
-            - "3001:3000"
+            - '3001:3000'
         depends_on:
             - postgres
 
@@ -54,11 +52,11 @@ services:
             CHRONOS_USER_PASSWORD: test1234
             ## Where the test driver mounts the embedded MCP server. Chronos
             ## reaches it via the docker network.
-            MCP_BIND_PORT: "7800"
+            MCP_BIND_PORT: '7800'
             MCP_PUBLIC_URL: http://smoke-runner:7800/mcp
             ## Where the test driver mounts an agent /health stub so the
             ## agent registration's serviceEndpoint passes URL validation.
-            AGENT_BIND_PORT: "8001"
+            AGENT_BIND_PORT: '8001'
             AGENT_PUBLIC_URL: http://smoke-runner:8001
         depends_on:
             - chronos

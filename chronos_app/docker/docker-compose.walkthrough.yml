@@ -1,11 +1,14 @@
 ## Agent registry + MCP gateway walkthrough compose.
 ##
-## Boots Chronos + Postgres + a streamable-http MCP server (./references/mcp-streamable-http)
-## + a minimal HTTP agent (./references/agent-http) that calls back into the
+## Starts containers:
+##   - chronos:local
+##   - postgres:15
+##   - simple streamable-http MCP server (./references/mcp-streamable-http)
+##   - simple HTTP agent (./references/agent-http) that calls back into the
 ## Chronos MCP gateway when prompted with `<n> + <m>`.
 ##
 ## See ./references/readme.md for the manual registration walkthrough.
-## For the zero-touch demo path, prefer docker-compose.demo.yml instead.
+## If you are looking for the fully working setup demo by just running docker compose, see docker-compose.demo.yml instead.
 ##
 services:
     chronos:
@@ -22,13 +25,13 @@ services:
             LOG_SANITIZE_HEADER_FIELDS: authorization,x-api-key,x-auth-token,cookie
             LOG_SANITIZE_BODY_FIELDS: password,pwd,pass,secret,token,apikey,api_key,accesstoken,access_token,refreshtoken
             ## agent Registry + MCP gateway flags
-            ENABLE_AGENTS: "true"
-            ENABLE_MCP_SERVERS: "true"
+            ENABLE_AGENTS: 'true'
+            ENABLE_MCP_SERVERS: 'true'
             ## Required: the docker bridge network uses RFC1918 addresses, which
             ## the SSRF gate would otherwise reject. dev-only.
-            ALLOW_LOOPBACK_AGENTS: "true"
+            ALLOW_LOOPBACK_AGENTS: 'true'
         ports:
-            - "3001:3000"
+            - '3001:3000'
         volumes:
             - ./.chronos:/root/.chronos
         depends_on:
@@ -37,7 +40,7 @@ services:
     postgres:
         image: postgres:15
         ports:
-            - "5432:5432"
+            - '5432:5432'
         volumes:
             - ./.postgres_data:/var/lib/postgresql/data
         environment:
@@ -55,9 +58,9 @@ services:
         build:
             context: ./references/mcp-streamable-http
         environment:
-            PORT: "7800"
+            PORT: '7800'
         ports:
-            - "7800:7800"
+            - '7800:7800'
 
     ## Minimal agent. Implements GET /health and POST /v1/chat/completions.
     ## When the last user message contains an expression like `2 + 3`, it
@@ -73,9 +76,9 @@ services:
         build:
             context: ./references/agent-http
         environment:
-            PORT: "8001"
-            MCP_GATEWAY_TOKEN: "${EXAMPLE_AGENT_MCP_GATEWAY_TOKEN:-}"
+            PORT: '8001'
+            MCP_GATEWAY_TOKEN: '${EXAMPLE_AGENT_MCP_GATEWAY_TOKEN:-}'
         ports:
-            - "8001:8001"
+            - '8001:8001'
         depends_on:
             - chronos

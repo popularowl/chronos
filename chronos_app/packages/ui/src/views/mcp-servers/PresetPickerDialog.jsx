@@ -11,6 +11,7 @@ import {
     DialogActions,
     DialogContent,
     DialogTitle,
+    Link,
     Skeleton,
     Stack,
     Tooltip,
@@ -96,13 +97,22 @@ const PresetPickerDialog = ({ show, onCancel, onPick, onCustom }) => {
 
     const component = show ? (
         <Dialog fullWidth maxWidth='md' open={show} onClose={onCancel} aria-labelledby='mcp-preset-picker-title'>
-            <DialogTitle sx={{ fontSize: '1rem' }} id='mcp-preset-picker-title'>
-                Register from preset
+            <DialogTitle sx={{ fontSize: '1rem', px: 3.5, pt: 3, pb: 1.5 }} id='mcp-preset-picker-title'>
+                Register MCP server. From the preset or custom
             </DialogTitle>
-            <DialogContent>
+            <DialogContent sx={{ px: 3.5, pb: 3, '&.MuiDialogContent-root': { pt: 1 } }}>
                 <Typography variant='body2' sx={{ mb: 2, color: theme.palette.text.secondary }}>
-                    Bundled MCP servers you can register with one click. Pick a card to pre-fill the registration form — you can still edit
-                    every field before saving.
+                    <Link
+                        component='button'
+                        type='button'
+                        variant='body2'
+                        onClick={onCustom}
+                        sx={{ fontWeight: 500, verticalAlign: 'baseline' }}
+                    >
+                        Register a new MCP Server
+                    </Link>
+                    . Or choose one of the example MCP servers from the list below. Pick a card to pre-fill the MCP server registration
+                    form.
                 </Typography>
                 {loading && (
                     <Stack spacing={1.5}>
@@ -147,7 +157,7 @@ const PresetPickerDialog = ({ show, onCancel, onPick, onCustom }) => {
                                         border: 1,
                                         borderColor: theme.palette.divider,
                                         borderRadius: 2,
-                                        p: 2,
+                                        p: 2.5,
                                         display: 'flex',
                                         gap: 1.5,
                                         alignItems: 'flex-start',
@@ -215,8 +225,7 @@ const PresetPickerDialog = ({ show, onCancel, onPick, onCustom }) => {
                     </Stack>
                 )}
             </DialogContent>
-            <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'space-between' }}>
-                <Button onClick={onCustom}>None of these — register a custom server</Button>
+            <DialogActions sx={{ px: 3.5, py: 2, justifyContent: 'flex-end' }}>
                 <Button onClick={onCancel}>Cancel</Button>
             </DialogActions>
         </Dialog>
